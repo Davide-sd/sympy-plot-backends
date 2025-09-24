@@ -1,7 +1,7 @@
 import ipywidgets
 from sympy import latex
 from sympy.external import import_module
-from spb.defaults import cfg, TWO_D_B, THREE_D_B
+from spb.defaults import TWO_D_B, THREE_D_B
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import (
     modify_parameterized_doc,
@@ -190,7 +190,6 @@ def _get_widget_from_param_module(obj: param.Parameterized, p_name: str):
     return widget
 
 
-
 @modify_parameterized_doc()
 class InteractivePlot(IPlot):
     def __init__(self, *series, **kwargs):
@@ -258,8 +257,8 @@ class InteractivePlot(IPlot):
             self._additional_widgets = additional_widgets
             accordions = [
                 ipywidgets.Accordion(
-                    children=[ipywidgets.VBox(v)], titles=[k])
-                    for k, v in additional_widgets.items()
+                    children=[ipywidgets.VBox(v)], titles=[k]
+                ) for k, v in additional_widgets.items()
             ]
             self._grid_widgets = _build_grid_layout(
                 list(self._params_widgets.values()) + accordions,
@@ -311,8 +310,13 @@ class InteractivePlot(IPlot):
 
     def show(self):
         # create the output figure
-        if (isinstance(self.backend, MB) or
-            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
+        if (
+            isinstance(self.backend, MB)
+            or (
+                isinstance(self.backend, PlotGrid)
+                and self.backend.is_matplotlib_fig
+            )
+        ):
             # without plt.ioff, picture will show up twice. Morover, there
             # won't be any update
             self.backend.plt.ioff()
@@ -340,11 +344,16 @@ class InteractivePlot(IPlot):
         else:
             self._output_figure = self.backend.fig
 
-        if (isinstance(self.backend, MB) or
-            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
+        if (
+            isinstance(self.backend, MB)
+            or (
+                isinstance(self.backend, PlotGrid)
+                and self.backend.is_matplotlib_fig
+            )
+        ):
             # turn back interactive behavior with plt.ion, so that picture
             # will be updated.
-            self.backend.plt.ion() # without it there won't be any update
+            self.backend.plt.ion()  # without it there won't be any update
 
         if self.layout == "tb":
             return ipywidgets.VBox([self._grid_widgets, self._output_figure])

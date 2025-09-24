@@ -129,8 +129,10 @@ class PlotlyBackend(Plot):
 
         super().__init__(*series, **kwargs)
 
-        if (self.update_event and any(isinstance(s, Vector2DSeries) for
-            s in series)):
+        if (
+            self.update_event and any(isinstance(s, Vector2DSeries)
+            for s in series)
+        ):
             warnings.warn(
                 "You are trying to use `update_event=True` with a 2D quiver "
                 "plot. This is likely going to cause a render-loop. You might "

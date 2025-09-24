@@ -12,7 +12,7 @@ class Animation(BaseAnimation, IPlot):
         super().__init__(
             layout="bb",
             ncols=1,
-            _original_params = kwargs.get("params", {})
+            _original_params=kwargs.get("params", {})
         )
 
         plotgrid = kwargs.get("plotgrid", None)
@@ -55,7 +55,7 @@ class Animation(BaseAnimation, IPlot):
                 warn_not_installed=True,
                 min_module_version='2.3.0')
             with self._output_figure:
-                clear_output(True) # NOTE: this is the cause of flickering
+                clear_output(True)  # NOTE: this is the cause of flickering
                 bokeh.io.show(self.backend.fig)
 
     def _get_iplot_kw(self):
@@ -65,8 +65,13 @@ class Animation(BaseAnimation, IPlot):
 
     def show(self):
         # create the output figure
-        if (isinstance(self.backend, MB) or
-            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
+        if (
+            isinstance(self.backend, MB)
+            or (
+                isinstance(self.backend, PlotGrid)
+                and self.backend.is_matplotlib_fig
+            )
+        ):
             # without plt.ioff, picture will show up twice. Morover, there
             # won't be any update
             self.backend.plt.ioff()
@@ -86,11 +91,16 @@ class Animation(BaseAnimation, IPlot):
         else:
             self._output_figure = self.backend.fig
 
-        if (isinstance(self.backend, MB) or
-            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
+        if (
+            isinstance(self.backend, MB)
+            or (
+                isinstance(self.backend, PlotGrid)
+                and self.backend.is_matplotlib_fig
+            )
+        ):
             # turn back interactive behavior with plt.ion, so that picture
             # will be updated.
-            self.backend.plt.ion() # without it there won't be any update
+            self.backend.plt.ion()  # without it there won't be any update
 
         return ipywidgets.VBox([self._output_figure, self._play_widget])
 
@@ -260,7 +270,7 @@ def animation(*series, show=True, **kwargs):
            wireframe=True, wf_n1=30, wf_n2=30,
            wf_rendering_kw={"width": 0.005},
            animation=True,
-           title=(r"theta={:.4f}; \, a={:.4f}", t, a),
+           title=("theta={:.4f}; \\, a={:.4f}", t, a),
            backend=KB, grid=False, show=False
        )
        p.show()
@@ -332,7 +342,7 @@ def animation(*series, show=True, **kwargs):
            animation=True, params={b: (10, 0), c: (20, max_r)},
            title=("b={:.2f}; c={:.2f}", b, c),
            show=False, xlim=(-max_r, max_r), ylim=(-max_r, max_r))
-       p3 = plot_complex(gamma(d*z), (z, -3-3*I, 3+3*I), title=r"$\gamma(d \, z)$",
+       p3 = plot_complex(gamma(d*z), (z, -3-3*I, 3+3*I), title="$\\gamma(d \\, z)$",
            animation=True, params={d: (-1, 1)}, coloring="b", grid=False, show=False)
        gs = GridSpec(3, 4)
        mapping = {

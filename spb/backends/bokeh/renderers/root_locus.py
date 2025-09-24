@@ -25,7 +25,6 @@ def _get_x_y_coords(roots, gains):
 
 def _draw_root_locus_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    np = p.np
     roots, gains = data
 
     color = next(p._cl) if s.line_color is None else s.line_color
@@ -50,11 +49,13 @@ def _draw_root_locus_helper(renderer, data):
     p._fig.add_tools(p.bokeh.models.TapTool())
 
     zrk = p.merge({},
-        dict(marker="o", line_color=color, line_width=2,
+        dict(
+            marker="o", line_color=color, line_width=2,
             fill_color="white", size=7),
         s._zeros_rk)
-    prk =  p.merge({},
-        dict(marker="x", line_color=color, line_width=2, size=10),
+    prk = p.merge({},
+        dict(
+            marker="x", line_color=color, line_width=2, size=10),
         s._poles_rk)
 
     hz = p._fig.scatter(
@@ -77,7 +78,6 @@ def _draw_root_locus_helper(renderer, data):
 
 def _update_root_locus_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
-    np = p.np
     roots, gains = data
 
     x, y, gains = _get_x_y_coords(roots, gains)

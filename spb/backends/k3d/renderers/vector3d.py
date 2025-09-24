@@ -136,5 +136,3 @@ class Vector3DRenderer(Renderer):
         self.previous_only_integers = s.only_integers
         self.color_map = None
         self.solid_color = None
-
-

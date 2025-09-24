@@ -2,10 +2,9 @@ import math
 import param
 from spb.wegert import wegert
 from sympy import (
-    latex, Tuple, symbols, sympify, Expr, lambdify, im, re
+    latex, Tuple, sympify, Expr, lambdify, im, re
 )
 from sympy.external import import_module
-import warnings
 from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.series.evaluator import (
     _NMixin,
@@ -590,7 +589,7 @@ class RiemannSphereSeries(
             # it is rather unuseful to allow interactive-widgets plot.
             raise ValueError(
                 "Complex function can only have one free symbol. "
-                "Received free symbols: %s" % f.free_symbols)
+                "Received free symbols: %s" % expr.free_symbols)
         # NOTE: we can easily create a sphere with a single data series.
         # However, K3DBackend is unable to properly visualize it, and it
         # would require a few hours of work to apply the necessary edits.

@@ -276,7 +276,6 @@ def vector_field_2d(
     range_x = kwargs.pop("range1", range_x)
     range_y = kwargs.pop("range2", range_y)
 
-
     if v is None:
         u, v, _ = _split_vector(u)
     is_vec_lambda_function = any(callable(e) for e in [u, v])
@@ -588,7 +587,6 @@ def vector_field_3d(
     range_x = kwargs.pop("range1", range_x)
     range_y = kwargs.pop("range2", range_y)
     range_z = kwargs.pop("range3", range_z)
-
 
     if ((v is None) and w) or ((w is None) and v):
         raise ValueError(

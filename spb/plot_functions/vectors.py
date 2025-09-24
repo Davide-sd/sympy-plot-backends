@@ -298,7 +298,7 @@ def plot_vector(*args, **kwargs):
                width=0.025,
                color_map=k3d.colormaps.matplotlib_color_maps.plasma
            ),
-           title=r"Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z")
+           title="Rössler \\, attractor", xlabel="x", ylabel="y", zlabel="z")
 
     Visually verify the normal vector to a circular cone surface.
     The following steps are executed:

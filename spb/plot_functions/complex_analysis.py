@@ -219,8 +219,8 @@ def _plot_complex(*args, allow_lambda=False, pcl=False, **kwargs):
     if not pcl:
         series = _build_series(*args, allow_lambda=allow_lambda, **kwargs)
     else:
-        series = _build_complex_point_series(*
-        args, allow_lambda=allow_lambda, pcl=True, **kwargs)
+        series = _build_complex_point_series(
+            *args, allow_lambda=allow_lambda, pcl=True, **kwargs)
 
     if len(series) == 0:
         warnings.warn("No series found. Check your keyword arguments.")
@@ -238,9 +238,14 @@ def _set_axis_labels(series, kwargs):
             kwargs["xlabel"] = "Real"
         if kwargs.get("ylabel", None) is None:
             kwargs["ylabel"] = "Abs"
-    elif all(s.is_domain_coloring or s.is_3Dsurface or s.is_contour or
-        isinstance(s, ComplexPointSeries) or
-        s.is_parametric for s in series):
+    elif all(
+        s.is_domain_coloring
+        or s.is_3Dsurface
+        or s.is_contour or
+        isinstance(s, ComplexPointSeries)
+        or s.is_parametric
+        for s in series
+    ):
         # when plotting real/imaginary or domain coloring/3D plots, the
         # horizontal axis is the real, the vertical axis is the imaginary
         if kwargs.get("xlabel", None) is None:
@@ -1151,7 +1156,8 @@ def plot_riemann_sphere(
 
     if kwargs.get("threed", False):
         if kwargs.get("params", dict()):
-            raise NotImplementedError("Interactive widgets plots over the "
+            raise NotImplementedError(
+                "Interactive widgets plots over the "
                 "Riemann sphere is not implemented.")
         series = riemann_sphere_3d(expr, **kwargs)
         kwargs.setdefault("xlabel", "Re")

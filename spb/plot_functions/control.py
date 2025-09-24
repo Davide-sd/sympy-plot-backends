@@ -9,9 +9,8 @@ from spb.graphics.control import (
 )
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
-from spb.series import HVLineSeries
 from spb.utils import _instantiate_backend, is_siso, tf_to_sympy, tf_to_control
-from sympy import exp, latex, sympify, Expr
+from sympy import Expr
 from sympy.external import import_module
 
 
@@ -240,7 +239,7 @@ def _set_upper_limits(systems, upper_limit, is_step=True, **kwargs):
     value.
     """
     if (not upper_limit) and (not kwargs.get("params", None)):
-        sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+        sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
         TransferFunctionMatrix = sm.control.lti.TransferFunctionMatrix
         sympy_systems = [tf_to_sympy(s) for s in systems]
         # if multiple mimo systems are being plotted, unpack them
@@ -764,7 +763,7 @@ def plot_ramp_response(
         kw = kwargs.copy()
         kw["label"] = l
         series.extend(
-                ramp_response(
+            ramp_response(
                 s, prec, slope, lower_limit, upper_limit,
                 control=control, input=input, output=output, **kw
             )
@@ -840,7 +839,7 @@ def plot_bode_phase(
     series = []
     for s, l in systems:
         series.extend(
-                bode_phase(
+            bode_phase(
                 s, label=l, initial_exp=initial_exp, final_exp=final_exp,
                 freq_unit=freq_unit, phase_unit=phase_unit,
                 unwrap=unwrap, **kwargs

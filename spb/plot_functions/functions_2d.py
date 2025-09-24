@@ -20,9 +20,8 @@ from spb.defaults import TWO_D_B
 from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
 from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.graphics import (
-    graphics, line, line_parametric_2d, line_parametric_3d,
-    surface, surface_parametric, surface_revolution, surface_spherical,
-    contour, implicit_2d, implicit_3d, list_2d, list_3d, geometry
+    graphics, line, line_parametric_2d,
+    surface, contour, implicit_2d, list_2d, geometry
 )
 from spb.series import (
     Parametric2DLineSeries, PlaneSeries, GenericDataSeries,
@@ -1513,8 +1512,8 @@ def plot_geometry(*args, **kwargs):
         has_param, has_ipywidgets, has_tuples = False, False, False
         if param and any(isinstance(t, param.Parameter) for t in params.values()):
             has_param = True
-        if ipywidgets and any(isinstance(t, ipywidgets.Widget)
-            for t in params.values()):
+        if ipywidgets and any(
+            isinstance(t, ipywidgets.Widget) for t in params.values()):
             has_ipywidgets = True
         if any(hasattr(t, "__iter__") for t in params.values()):
             has_tuples = True

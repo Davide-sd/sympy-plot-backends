@@ -18,9 +18,9 @@ def _get_x_y_coords(roots):
     y = np.concatenate(y)
     return x, y
 
+
 def _draw_root_locus_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    np = p.np
     roots, gains = data
 
     color = next(p._cl) if s.line_color is None else s.line_color
@@ -43,10 +43,12 @@ def _draw_root_locus_helper(renderer, data):
             [], [], color=color, label=s.get_label(p.use_latex))
         p._legend_handles.append(proxy_artist)
 
-    zrk = p.merge({},
+    zrk = p.merge(
+        {},
         dict(marker="o", color=color, fc=(0, 0, 0, 0), lw=1.25),
         s._zeros_rk)
-    prk =  p.merge({},
+    prk = p.merge(
+        {},
         dict(marker="x", color=color),
         s._poles_rk)
     hz = p._ax.scatter(s.zeros.real, s.zeros.imag, **zrk)

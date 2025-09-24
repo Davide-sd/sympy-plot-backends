@@ -1,9 +1,7 @@
 import param
 from spb.defaults import cfg
 from spb.utils import _get_free_symbols, _check_misspelled_kwargs
-from sympy import latex, Tuple, symbols, sympify, Expr, Symbol
-from sympy.external import import_module
-import warnings
+from sympy import Tuple, sympify, Expr, Symbol
 from param.parameterized import Undefined
 import typing
 
@@ -117,7 +115,7 @@ class _ParametersDict(param.Dict):
                     new_params[k] = v
             val = new_params
 
-        super().__set__( obj, val)
+        super().__set__(obj, val)
 
 
 class _CastToInteger(param.Integer):
@@ -150,8 +148,9 @@ class _RangeTuple(param.ClassSelector):
     def __init__(
         self,
         default=None, *, is_instance=True,
-        allow_None=False, doc=None, label=None, precedence=None, instantiate=True,
-        constant=False, readonly=False, pickle_default_value=True, per_instance=True,
+        allow_None=False, doc=None, label=None, precedence=None,
+        instantiate=True, constant=False, readonly=False,
+        pickle_default_value=True, per_instance=True,
         allow_refs=False, nested_refs=False
     ):
         ...
@@ -339,7 +338,9 @@ class BaseSeries(param.Parameterized):
             with param.edit_constant(self):
                 self._is_interactive = True
 
-            numbers_or_expressions = set().union(*[nv[1:] for nv in self.ranges])
+            numbers_or_expressions = set().union(
+                *[nv[1:] for nv in self.ranges]
+            )
             fs = set().union(*[e.free_symbols for e in numbers_or_expressions])
             if len(fs) > 0:
                 self._parametric_ranges = True
@@ -373,8 +374,8 @@ class BaseSeries(param.Parameterized):
 
     def _block_lambda_functions(self, *exprs):
         if any(callable(e) for e in exprs):
-            raise TypeError(type(self).__name__ + " requires a symbolic "
-                "expression.")
+            raise TypeError(
+                type(self).__name__ + " requires a symbolic expression.")
 
     def _check_fs(self):
         """ Checks if there are enogh parameters and free symbols.
@@ -418,9 +419,9 @@ class BaseSeries(param.Parameterized):
         for r in ranges:
             fs = set().union(*[e.free_symbols for e in r[1:]])
             if any(t in fs for t in range_symbols):
-                raise ValueError("Range symbols can't be included into "
-                    "minimum and maximum of a range. "
-                    "Received range: %s" % str(r))
+                raise ValueError(
+                    "Range symbols can't be included into minimum and maximum"
+                    " of a range. Received range: %s" % str(r))
             remaining_fs = fs.difference(params.keys())
             if len(remaining_fs) > 0:
                 raise ValueError(
@@ -446,7 +447,7 @@ class BaseSeries(param.Parameterized):
         # NOTE: color_func is set inside the init method of the series.
         # If line_color/surface_color is not a callable, then color_func will
         # be set to None.
-        prop = prop[1:] # remove underscore
+        prop = prop[1:]     # remove underscore
         if callable(val) or isinstance(val, Expr):
             prop_val = None
             cf_val = val
@@ -620,4 +621,3 @@ def _set_discretization_points(kwargs, Series):
     if n[2] is not None:
         kwargs.setdefault("n3", n[2])
     return kwargs
-

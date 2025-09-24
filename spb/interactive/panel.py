@@ -9,15 +9,12 @@ from spb.doc_utils.ipython import (
     modify_parameterized_doc,
     modify_graphics_series_doc
 )
-from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
-from spb.plotgrid import PlotGrid
-from spb.series import ComplexDomainColoringSeries, Parametric3DLineSeries
+from spb.series import Parametric3DLineSeries
 from spb.utils import _aggregate_parameters
 from sympy import latex
 from sympy.external import import_module
-import warnings
 from collections import defaultdict
 
 
@@ -202,11 +199,14 @@ class PanelCommon(IPlot):
             template = SymPyBootstrapTemplate(**kw)
         elif isinstance(self.template, pn.template.base.BasicTemplate):
             template = self.template
-        elif (isinstance(self.template, type) and
-            issubclass(self.template, pn.template.base.BasicTemplate)):
+        elif (
+            isinstance(self.template, type)
+            and issubclass(self.template, pn.template.base.BasicTemplate)
+        ):
             template = self.template(**default_template_kw)
         else:
-            raise TypeError("`template` not recognized. It can either be a "
+            raise TypeError(
+                "`template` not recognized. It can either be a "
                 "dictionary of keyword arguments to be passed to the default "
                 "template, an instance of pn.template.base.BasicTemplate "
                 "or a subclass of pn.template.base.BasicTemplate. Received: "

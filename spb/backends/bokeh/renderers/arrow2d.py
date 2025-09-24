@@ -12,7 +12,7 @@ def _draw_arrow_2d(renderer, data):
         "xs": [x1, x2],
         "ys": [y1, y2]
     }
-    tooltips=[("x", "@xs"), ("y", "@ys")]
+    tooltips = [("x", "@xs"), ("y", "@ys")]
     scatter = p._fig.scatter("xs", "ys", source=source, color=color, size=1)
     p._fig.add_tools(p.bokeh.models.HoverTool(
         tooltips=tooltips,

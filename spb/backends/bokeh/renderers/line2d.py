@@ -36,7 +36,7 @@ def _draw_line2d_helper(renderer, data):
                 "xs": x if not (hasattr(s, "is_polar") and s.is_polar) else y * np.cos(x),
                 "ys": y if not (hasattr(s, "is_polar") and s.is_polar) else y * np.sin(x)
             }
-            tooltips=[("x", "@xs"), ("y", "@ys")]
+            tooltips = [("x", "@xs"), ("y", "@ys")]
 
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color

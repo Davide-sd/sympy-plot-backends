@@ -1,17 +1,14 @@
 import param
-from numbers import Number
 from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.utils import (
     _correct_shape,
-    unwrap,
     extract_solution,
 )
-import sympy
 from sympy import (
     latex, Tuple, arity, symbols, sympify, solve, Expr, lambdify,
     Equality, Ne, GreaterThan, LessThan, StrictLessThan, StrictGreaterThan,
-    Plane, Polygon, Circle, Ellipse, Segment, Ray, Curve, Point2D, Point3D,
-    Symbol, im, re, Poly, Union, Interval, nsimplify, Set
+    Plane, Polygon, Circle, Ellipse, Segment, Ray, Point2D, Point3D,
+    im, Union, Interval, nsimplify, Set
 )
 from sympy.logic.boolalg import Boolean
 from sympy.core.relational import Relational
@@ -86,8 +83,10 @@ def _detect_poles_symbolic_helper(expr, symb, start, end):
     res = res.simplify()
     if res == interval:
         pass
-    elif (isinstance(res, Union) and
-        all(isinstance(t, Interval) for t in res.args)):
+    elif (
+        isinstance(res, Union)
+        and all(isinstance(t, Interval) for t in res.args)
+    ):
         poles = []
         for s in res.args:
             if s.left_open:
@@ -402,7 +401,6 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         j_indeces = sorted(set(range(n)).difference([k]))
         # compute difference between consecutive points
         diff = np.roll(points[k], -1) - points[k]
-        max_diff = diff[:-1].max()
         min_diff = diff[:-1].min()
 
         def _eval(func_idx, domain):
@@ -411,7 +409,7 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
                 r = functions[func_idx](domain)
             except (ValueError, TypeError):
                 # attempt to use numpy.vectorize
-                r = wrapper_func(f, domain)
+                r = wrapper_func(functions[func_idx](domain), domain)
             except Exception as err:
                 # fall back to sympy
                 _warning_eval_error(err, self.modules)
@@ -1222,13 +1220,10 @@ class Parametric3DLineSeries(ParametricLineBaseSeries):
 
     def __str__(self):
         return self._str_helper(
-            "3D parametric cartesian line: (%s, %s, %s) for %s over %s" % (
-            str(self.expr_x),
-            str(self.expr_y),
-            str(self.expr_z),
-            str(self.var),
-            str((self.start, self.end))
-        ))
+            "3D parametric cartesian line:"
+            f" ({self.expr_x}, {self.expr_y}, {self.expr_z})"
+            f" for {self.var} over ({self.start}, {self.end})"
+        )
 
 
 class SurfaceBaseSeries(
@@ -1273,7 +1268,8 @@ class SurfaceBaseSeries(
 
     def __init__(self, *args, **kwargs):
         # NOTE: "scalar" comes from plot_vector
-        _check_misspelled_series_kwargs(self, additional_keys=["scalar"], **kwargs)
+        _check_misspelled_series_kwargs(
+            self, additional_keys=["scalar"], **kwargs)
         kwargs.setdefault("color_func", lambda x, y, z: z)
         super().__init__(**kwargs)
         if callable(self.surface_color):
@@ -1287,8 +1283,10 @@ class SurfaceBaseSeries(
         # if the expressions is a lambda function and no label
         # has been provided, then its better to do the following to avoid
         # suprises on the backend
-        is_lambda = (callable(exprs) if not hasattr(exprs, "__iter__")
-            else any(callable(e) for e in exprs))
+        is_lambda = (
+            callable(exprs) if not hasattr(exprs, "__iter__")
+            else any(callable(e) for e in exprs)
+        )
         if is_lambda and (self._label_str == str(exprs)):
             self._label_str = ""
             self._label_latex = ""
@@ -1299,14 +1297,14 @@ class SurfaceBaseSeries(
 
     def _apply_transform(self, *args):
         t = self._get_transform_helper()
-        if len(args) == 3: # general surfaces
+        if len(args) == 3:      # general surfaces
             x, y, z = args
             return t(x, self.tx), t(y, self.ty), t(z, self.tz)
-        elif len(args) == 5: # parametric surfaces
+        elif len(args) == 5:    # parametric surfaces
             x, y, z, u, v = args
             return (
                 t(x, self.tx), t(y, self.ty), t(z, self.tz), u, v)
-        else: # complex domain coloring surfaces
+        else:   # complex domain coloring surfaces
             x, y, _abs, _arg, img, colors = args
             return (
                 t(x, self.tx), t(y, self.ty), t(_abs, self.tz),
@@ -1769,7 +1767,8 @@ class ImplicitSeries(
         Related parameters: ``adaptive, yscale``.""")
 
     def __init__(self, f, range_x, range_y, label="", **kwargs):
-        _check_misspelled_series_kwargs(self, additional_keys=["color"], **kwargs)
+        _check_misspelled_series_kwargs(
+            self, additional_keys=["color"], **kwargs)
         kwargs = kwargs.copy()
         kwargs["f"] = f
         kwargs["range_x"] = range_x
@@ -1786,8 +1785,8 @@ class ImplicitSeries(
         self._color = color
 
         if self.is_interactive and self.adaptive:
-            raise NotImplementedError("Interactive plot with `adaptive=True` "
-                "is not supported.")
+            raise NotImplementedError(
+                "Interactive plot with `adaptive=True` is not supported.")
 
         self._post_init()
         self.evaluator.set_expressions()
@@ -1827,7 +1826,8 @@ class ImplicitSeries(
             msg = "contains Boolean functions. "
             if isinstance(expr, Ne):
                 msg = "is an unequality. "
-            warnings.warn(f"The provided expression {msg}"
+            warnings.warn(
+                f"The provided expression {msg}"
                 "In order to plot the expression, the algorithm "
                 "automatically switched to an adaptive sampling.",
                 stacklevel=1)
@@ -1873,7 +1873,9 @@ class ImplicitSeries(
         if isinstance(expr, BooleanFunction):
             arg_expand(expr)
             # Check whether there is an equality in the expression provided.
-            if any(isinstance(e, (Equality, GreaterThan, LessThan)) for e in arg_list):
+            if any(isinstance(
+                e, (Equality, GreaterThan, LessThan)) for e in arg_list
+            ):
                 has_relational = True
         elif not isinstance(expr, Relational):
             expr = Equality(expr, 0)
@@ -2276,7 +2278,6 @@ class PlaneSeries(SurfaceBaseSeries):
         range along the z-direction. With _use_nan=True, every z-value outside
         of the provided range_z will be set to Nan.""")
 
-
     def __init__(
         self, plane, range_x, range_y, range_z=None, label="", **kwargs
     ):
@@ -2388,9 +2389,11 @@ class PlaneSeries(SurfaceBaseSeries):
                 ])
 
             theta = np.arctan2(nv[1], nv[0])
-            coords = np.stack([t.flatten() for t in [xx, yy, np.ones_like(xx)]]).T
+            coords = np.stack([
+                t.flatten() for t in [xx, yy, np.ones_like(xx)]]).T
             coords = np.matmul(coords, R(theta))
-            yy, xx = coords[:, 0].reshape(yy.shape), coords[:, 1].reshape(xx.shape)
+            yy = coords[:, 0].reshape(yy.shape)
+            xx = coords[:, 1].reshape(xx.shape)
         else:
             # any other plane
             eq = plane.equation(x, y, z)

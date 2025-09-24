@@ -4,7 +4,6 @@ from spb.backends.bokeh.renderers.nyquist import _compute_arrows_position
 
 def _draw_nichols_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    np = p.np
     handles = []
     omega, ol_phase, ol_mag, cl_phase, cl_mag = data
     tooltips = [
@@ -95,7 +94,6 @@ def _draw_nichols_helper(renderer, data):
 
 def _update_nichols_helper(renderer, data, handles):
     p, s = renderer.plot, renderer.series
-    np = p.np
     omega, ol_phase, ol_mag, cl_phase, cl_mag = data
 
     if s.use_cm:

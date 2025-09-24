@@ -25,7 +25,6 @@ def _draw_pole_zero_helper(renderer, data):
 
 
 def _update_pole_zero_helper(renderer, data, handles):
-    p, s = renderer.plot, renderer.series
     x, y = data
 
     # TODO: Point2D are updated but not visible.

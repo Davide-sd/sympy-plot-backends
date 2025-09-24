@@ -1,4 +1,3 @@
-import param
 import itertools
 from spb.defaults import cfg
 from spb.doc_utils.ipython import modify_parameterized_doc
@@ -132,7 +131,10 @@ class MatplotlibBackend(Plot):
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
             cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer])
         kwargs.setdefault("cyclic_colormaps", [cm.twilight, cm.hsv])
-        kwargs.setdefault("colorloop", self.plt.rcParams['axes.prop_cycle'].by_key()["color"])
+        kwargs.setdefault(
+            "colorloop",
+            self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
+        )
 
         # plotgrid() can provide its figure and axes to be populated with
         # the data from the series. These attributes will also be populated
@@ -237,8 +239,9 @@ class MatplotlibBackend(Plot):
                     raise ValueError(
                         "MatplotlibBackend can not mix 2D and 3D.")
 
-            if not any([isinstance(s, SGridLineSeries) and s.auto
-                for s in self.series]):
+            if not any([
+                isinstance(s, SGridLineSeries) and s.auto for s in self.series
+            ]):
                 kwargs = {}
                 if any(is_3D):
                     kwargs["projection"] = "3d"

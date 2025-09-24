@@ -1,8 +1,6 @@
 from spb.backends.base_renderer import Renderer
 from spb.series import MCirclesSeries
-from spb.utils import unwrap
 from sympy.external import import_module
-import warnings
 
 
 def _compute_arrows_position(

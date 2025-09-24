@@ -1,4 +1,3 @@
-from spb.defaults import TWO_D_B
 from spb.doc_utils.docstrings import (
     _SYSTEM,
     _PARAMS,
@@ -17,15 +16,12 @@ from spb.utils import (
     prange, is_number, tf_to_sympy, tf_to_control, _get_initial_params,
     is_discrete_time, tf_find_time_delay, is_siso
 )
-import numpy as np
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
-    I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt, cos, acos, sin,
-    floor, ceiling, frac, pi, fraction, Expr, Tuple, inverse_laplace_transform,
-    Integer, Float
+    I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt,
+    floor, ceiling, frac, pi, Expr, inverse_laplace_transform,
 )
 from sympy.external import import_module
-from mergedeep import merge
 import warnings
 
 # TODO: remove this and update setup.py
@@ -98,7 +94,7 @@ def _preprocess_system(system, **kwargs):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
 
     if isinstance(system, (
         sm.control.lti.Series,
@@ -131,7 +127,7 @@ def _check_system(system, bypass_delay_check=False):
         raise NotImplementedError(
             "Only SISO LTI systems are currently supported.")
 
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
 
     if isinstance(system, sm.control.lti.TransferFunction):
         sys = system.to_expr()
@@ -145,7 +141,7 @@ def _unpack_mimo_systems(system, label, input, output):
     """Unpack MIMO `system` into `[(sys1, label1), (sys2, label2), ...]`.
     """
     ct = import_module("control")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     systems = []
     pre = " - " if len(label) > 0 else ""
 
@@ -254,7 +250,7 @@ def _pole_zero_helper(
     system, pole_markersize, zero_markersize,
     **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     if not isinstance(system, sm.control.lti.TransferFunction):
         system = tf_to_sympy(system)
 
@@ -282,9 +278,11 @@ def _pole_zero_with_control_helper(
 ):
     prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(kwargs)
     return [
-        PoleZeroSeries(system, p_label, return_poles=True,
+        PoleZeroSeries(
+            system, p_label, return_poles=True,
             rendering_kw=prk, pole_markersize=pole_markersize, **kwargs),
-        PoleZeroSeries(system, z_label, return_poles=False,
+        PoleZeroSeries(
+            system, z_label, return_poles=False,
             rendering_kw=zrk, zero_markersize=zero_markersize, **kwargs),
     ]
 
@@ -492,7 +490,7 @@ def _set_lower_upper_limits(system, lower_limit, upper_limit,
 def _step_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -517,7 +515,7 @@ def _step_response_helper(
 def _step_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -731,7 +729,7 @@ def step_response(
 def _impulse_response_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -753,7 +751,7 @@ def _impulse_response_helper(
 def _impulse_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -937,7 +935,7 @@ def impulse_response(
 def _ramp_response_helper(
     system, label, lower_limit, upper_limit, prec, slope, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
 
@@ -959,7 +957,7 @@ def _ramp_response_helper(
 def _ramp_response_with_control_helper(
     system, label, lower_limit, upper_limit, prec, slope, **kwargs
 ):
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     system = _preprocess_system(system, **kwargs)
     _check_system(system)
     sp = import_module("scipy")
@@ -1139,7 +1137,7 @@ def ramp_response(
     .. [1] https://en.wikipedia.org/wiki/Ramp_function
 
     """
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     control = _check_if_control_is_installed(use_control=control)
     lower_limit, upper_limit = _set_lower_upper_limits(
         system, lower_limit, upper_limit, is_step=False, **kwargs)
@@ -1559,8 +1557,10 @@ def _compute_range_helper(system, **kwargs):
 
 
 @modify_graphics_series_doc(NyquistLineSeries, replace=_replace_params_docstring)
-def nyquist(system, omega_limits=None, input=None, output=None,
-    label=None, rendering_kw=None, m_circles=False, **kwargs):
+def nyquist(
+    system, omega_limits=None, input=None, output=None,
+    label=None, rendering_kw=None, m_circles=False, **kwargs
+):
     """
     Plots a Nyquist plot for the system over a (optional) frequency range.
     The curve is computed by evaluating the Nyquist segment along the positive
@@ -1841,8 +1841,9 @@ def nichols(system, label=None, rendering_kw=None, ngrid=True, arrows=True,
         s = _preprocess_system(s, **kwargs)
         _check_system(s)
         series.append(
-            _nichols_helper(s, l, rendering_kw=rendering_kw,
-                arrows=arrows,**kwargs.copy()))
+            _nichols_helper(
+                s, l, rendering_kw=rendering_kw,
+                arrows=arrows, **kwargs.copy()))
 
     grid = []
     if ngrid:
@@ -1955,8 +1956,10 @@ def root_locus(system, label=None, rendering_kw=None, rl_kw={},
 
 
 @modify_graphics_series_doc(SGridLineSeries, replace={"params": _PARAMS})
-def sgrid(xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
-    show_control_axis=True, rendering_kw=None, auto=False, **kwargs):
+def sgrid(
+    xi=None, wn=None, tp=None, ts=None, xlim=None, ylim=None,
+    show_control_axis=True, rendering_kw=None, auto=False, **kwargs
+):
     """
     Create the s-grid of constant damping ratios and natural frequencies.
 
@@ -2094,8 +2097,10 @@ sgrid_function = sgrid
 
 
 @modify_graphics_series_doc(ZGridLineSeries, replace={"params": _PARAMS})
-def zgrid(xi=None, wn=None, tp=None, ts=None, T=None,
-    show_control_axis=True, rendering_kw=None, **kwargs):
+def zgrid(
+    xi=None, wn=None, tp=None, ts=None, T=None,
+    show_control_axis=True, rendering_kw=None, **kwargs
+):
     """
     Create the s-grid of constant damping ratios and natural frequencies.
 

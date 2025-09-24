@@ -1,5 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.series import SGridLineSeries, RootLocusSeries
+from spb.series import RootLocusSeries
 from sympy.external import import_module
 
 
@@ -56,7 +56,8 @@ def _draw_sgrid_helper(renderer, data):
                 xtext_pos = xtext_pos_lim
             else:
                 ytext_pos = ytext_pos_lim
-            h3 = p._ax.annotate(v["label"], textcoords='data',
+            h3 = p._ax.annotate(
+                v["label"], textcoords='data',
                 xy=[xtext_pos, ytext_pos], fontsize=8)
         xi_handles.append([h1, h2, h3])
 
@@ -64,7 +65,8 @@ def _draw_sgrid_helper(renderer, data):
     wn_handles = []
     for k, v in wn_dict.items():
         h1, = p._ax.plot(v["x"], v["y"], **kw)
-        h2 = p._ax.annotate(v["label"], textcoords='data',
+        h2 = p._ax.annotate(
+            v["label"], textcoords='data',
             xy=[v["lx"], v["ly"]], fontsize=8, horizontalalignment="center")
         wn_handles.append([h1, h2])
 

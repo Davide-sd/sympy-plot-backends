@@ -1,5 +1,5 @@
 from sympy import (
-    sin, cos, Piecewise, Sum, Wild, sign, piecewise_fold, Interval, Union,
+    sin, cos, Piecewise, piecewise_fold, Interval, Union,
     FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D
 )
 from sympy.core.relational import Relational
@@ -9,7 +9,7 @@ from sympy.sets.sets import EmptySet
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, ContourSeries,
     ImplicitSeries, List2DSeries, Geometry2DSeries, Geometry3DSeries,
-    HLineSeries, VLineSeries
+    HLineSeries, VLineSeries, Parametric3DLineSeries
 )
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import modify_graphics_series_doc
@@ -18,7 +18,6 @@ from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges
 )
 import warnings
-import param
 
 
 def _process_piecewise(piecewise, _range, label, **kwargs):
@@ -142,7 +141,6 @@ def _build_line_series(expr, r, label, **kwargs):
     """
     series = []
     pp = kwargs.get("process_piecewise", False)
-    sum_bound = int(kwargs.get("sum_bound", 1000))
     if not callable(expr) and expr.has(Piecewise) and pp:
         series += _process_piecewise(expr, r, label, **kwargs)
     else:
@@ -818,7 +816,6 @@ def contour(
     range_x = kwargs.pop("range1", range_x)
     range_y = kwargs.pop("range2", range_y)
 
-
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
     if not (range_x and range_y):
@@ -1213,7 +1210,7 @@ def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
     if not hasattr(list_x, "__iter__"):
         list_x = [list_x]
     if not hasattr(list_y, "__iter__"):
-        coord_y = [list_y]
+        list_y = [list_y]
     s = List2DSeries(
         list_x, list_y, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
@@ -1370,8 +1367,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     if isinstance(geom, Curve):
         new_cls = (
             Parametric2DLineSeries
-            if len(geom.functions) == 2
-            else Parametric3DLineSeries
+            if len(geom.functions) == 2 else Parametric3DLineSeries
         )
         s = new_cls(
             *geom.functions, geom.limits,

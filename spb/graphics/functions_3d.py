@@ -1,5 +1,5 @@
 from sympy import (
-    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Expr
+    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane
 )
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import modify_graphics_series_doc
@@ -12,7 +12,6 @@ from spb.utils import (
     prange, spherical_to_cartesian
 )
 from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
-from numbers import Number
 import warnings
 
 

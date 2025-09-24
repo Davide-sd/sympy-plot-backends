@@ -1,7 +1,5 @@
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.utils import unwrap
 from sympy.external import import_module
-import warnings
 
 
 def _draw_arrows_helper(

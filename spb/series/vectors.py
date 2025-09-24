@@ -1,6 +1,6 @@
 import param
 from sympy import (
-    latex, Tuple, arity, symbols, sympify, Expr, Plane
+    latex, Tuple, arity, sympify, Expr, Plane
 )
 from sympy.external import import_module
 from spb.doc_utils.ipython import modify_parameterized_doc
@@ -14,7 +14,8 @@ from spb.series.base import (
     BaseSeries,
     _RangeTuple,
     _CastToInteger,
-    _check_misspelled_series_kwargs
+    _check_misspelled_series_kwargs,
+    _raise_color_func_error
 )
 from spb.series.series_2d_3d import PlaneSeries, SurfaceOver2DRangeSeries
 
@@ -457,7 +458,7 @@ class SliceVector3DSeries(Vector3DSeries):
     # TODO: in order to implement the behaviour of `app=True`, more thinking
     # needs to be done in order to account which parameter between
     # n1, n2, n3 goes to slice_surf_series
-    @param.depends("params",watch=True)
+    @param.depends("params", watch=True)
     def _update_discretized_domain(self):
         self.evaluator._update_discretized_domain()
 

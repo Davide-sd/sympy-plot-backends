@@ -1,7 +1,6 @@
 import io
 import os
 import shutil
-from spb.interactive import IPlot
 from spb.utils import _aggregate_parameters, get_environment
 from sympy import Symbol
 from sympy.external import import_module
@@ -16,7 +15,7 @@ class BaseAnimation:
         imageio = import_module(
             'imageio',
             import_kwargs={
-                'fromlist': [ 'v3' ]
+                'fromlist': ['v3']
             },
             warn_not_installed=True,
         )
@@ -40,8 +39,8 @@ class BaseAnimation:
                 params = _aggregate_parameters(params, self.backend.series)
             animation_data_kwargs = {"params": params}
             if isinstance(animation, dict):
-                animation_data_kwargs = merge({},
-                    animation_data_kwargs, animation)
+                animation_data_kwargs = merge(
+                    {}, animation_data_kwargs, animation)
             if animation:
                 self._animation_data = AnimationData(**animation_data_kwargs)
                 initial_params = self.animation_data[0]

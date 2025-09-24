@@ -235,8 +235,10 @@ class graphics(PlotAttributes, IPlotAttributes, param.ParameterizedFunction):
 
         series = []
         for a in args:
-            if (isinstance(a, (list, tuple)) and
-                all(isinstance(s, BaseSeries) for s in a)):
+            if (
+                isinstance(a, (list, tuple))
+                and all(isinstance(s, BaseSeries) for s in a)
+            ):
                 series.extend(a)
             elif isinstance(a, BaseSeries):
                 series.append(a)
@@ -301,7 +303,7 @@ class graphics(PlotAttributes, IPlotAttributes, param.ParameterizedFunction):
             (all(isinstance(s, (SurfaceOver2DRangeSeries, Parametric3DLineSeries))
                 for s in series) and any(s for s in series
                 if isinstance(s, Parametric3DLineSeries) and s._is_wireframe_line))
-            ):
+        ):
             free_x = set([
                 s.ranges[0][0] for s in series
                 if isinstance(s, (ContourSeries, SurfaceOver2DRangeSeries))])
@@ -347,4 +349,3 @@ class graphics(PlotAttributes, IPlotAttributes, param.ParameterizedFunction):
 
         Backend = params.pop("backend", TWO_D_B if is_3D else THREE_D_B)
         return _instantiate_backend(Backend, *series, **params)
-

@@ -1,7 +1,5 @@
 from spb.backends.base_renderer import Renderer
-from spb.backends.utils import _get_cmin_cmax, _returns_z_coord
-import inspect
-from sympy import Expr
+from spb.backends.utils import _get_cmin_cmax
 
 
 def _draw_surface_helper(renderer, data):

@@ -16,9 +16,9 @@ def _draw_geometry_helper(renderer, data):
 
     # need a scatter in order to show tooltips
     source = {"x": x, "y": y}
-    tooltips=[("x", "@x"), ("y", "@y")]
-    scatter = p._fig.scatter("x", "y", source=source, color=color,
-        size=4, alpha=alpha)
+    tooltips = [("x", "@x"), ("y", "@y")]
+    scatter = p._fig.scatter(
+        "x", "y", source=source, color=color, size=4, alpha=alpha)
     p._fig.add_tools(p.bokeh.models.HoverTool(
         tooltips=tooltips,
         renderers=[scatter]

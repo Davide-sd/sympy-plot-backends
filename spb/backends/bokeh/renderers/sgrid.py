@@ -1,5 +1,5 @@
 from spb.backends.base_renderer import Renderer
-from spb.series import SGridLineSeries, RootLocusSeries
+from spb.series import RootLocusSeries
 from sympy.external import import_module
 
 

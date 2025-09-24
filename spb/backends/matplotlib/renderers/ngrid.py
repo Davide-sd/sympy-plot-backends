@@ -2,7 +2,6 @@ from spb.backends.matplotlib.renderers.sgrid import (
     SGridLineRenderer, _text_position_limits, _find_data_axis_limits,
     _modify_axis_limits
 )
-from spb.series import NGridLineSeries, NicholsLineSeries
 from sympy.external import import_module
 
 

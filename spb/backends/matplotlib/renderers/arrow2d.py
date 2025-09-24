@@ -3,6 +3,7 @@ from spb.backends.matplotlib.renderers.vector2d import (
     _draw_vector2d_helper, _update_vector2d_helper
 )
 
+
 class Arrow2DRendererQuivers(MatplotlibRenderer):
     draw_update_map = {
         _draw_vector2d_helper: _update_vector2d_helper

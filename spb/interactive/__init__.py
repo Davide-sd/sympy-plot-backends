@@ -35,8 +35,8 @@ def _tuple_to_dict(k, v, use_latex_on_widgets=False, latex_wrapper="$%s$"):
                 Set N=-1 to have unit step increments.
             label : str
                 Label of the slider. Default to None. If None, the string or
-                latex representation will be used. See use_latex_on_widgets for more
-                information.
+                latex representation will be used. See use_latex_on_widgets for
+                more information.
             spacing : str
                 Discretization spacing. Can be "linear" or "log".
                 Default to "linear".
@@ -58,7 +58,8 @@ def _tuple_to_dict(k, v, use_latex_on_widgets=False, latex_wrapper="$%s$"):
 
     defaults_keys = [
         "value", "min", "max", "step", "formatter", "description", "type"]
-    defaults_values = [1, 0, 2, 0.1, None,
+    defaults_values = [
+        1, 0, 2, 0.1, None,
         latex_wrapper % latex(k) if use_latex_on_widgets else str(k),
         "linear",
     ]

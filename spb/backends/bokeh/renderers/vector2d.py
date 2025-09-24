@@ -45,7 +45,7 @@ def compute_streamlines(x, y, u, v, density=1.0):
         return int((xi / bx_spacing) + 0.5), int((yi / by_spacing) + 0.5)
 
     def value_at(a, xi, yi):
-        if type(xi) == np.ndarray:
+        if isinstance(xi, np.ndarray):
             x = xi.astype(int)
             y = yi.astype(int)
         else:

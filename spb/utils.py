@@ -1,7 +1,7 @@
 from spb.defaults import cfg
 from sympy import (
     Tuple, sympify, Expr, Dummy, sin, cos, Symbol, Indexed, ImageSet,
-    FiniteSet, Basic, Float, Integer, Rational, Poly, fraction, exp,
+    FiniteSet, Basic, Float, Integer, Rational, Poly, exp,
     NumberSymbol, IndexedBase
 )
 from sympy.vector import BaseScalar
@@ -11,7 +11,6 @@ from sympy.logic.boolalg import BooleanFunction
 from sympy.external import import_module
 import param
 import warnings
-import inspect
 
 
 def _create_missing_ranges(exprs, ranges, npar, params=None, imaginary=False):
@@ -509,7 +508,8 @@ def _instantiate_backend(Backend, *series, **kwargs):
 
 
 def _check_misspelled_kwargs(
-    obj, additional_keys=[], exclude_keys=[], **kwargs):
+    obj, additional_keys=[], exclude_keys=[], **kwargs
+):
     """Find the user-provided keywords arguments that might contain spelling
     errors and informs the user of possible alternatives.
 
@@ -714,8 +714,9 @@ def extract_solution(set_sol, n=10):
 
 def is_number(t, allow_complex=True):
     if allow_complex:
-        number_types = (NumberSymbol, Float, Integer, Rational,
-            float, int, complex)
+        number_types = (
+            NumberSymbol, Float, Integer, Rational, float, int, complex
+        )
     else:
         number_types = (NumberSymbol, Float, Integer, Rational, float, int)
     return isinstance(t, number_types) or (isinstance(t, Expr) and t.is_number)
@@ -742,7 +743,7 @@ def tf_to_control(tf):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
 
     def _from_sympy_to_ct(num, den):
         fs = num.free_symbols.union(den.free_symbols)
@@ -849,7 +850,7 @@ def tf_to_sympy(tf, var=None, skip_check_dt=False, params={}):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
 
     gen = Symbol("z") if is_discrete_time(tf) else Symbol("s")
     TransferFunction = sm.control.lti.TransferFunction
@@ -954,7 +955,7 @@ def is_discrete_time(system):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
 
     if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
         return False
@@ -990,7 +991,7 @@ def is_siso(system):
     """
     ct = import_module("control")
     sp = import_module("scipy")
-    sm = import_module("sympy.physics", import_kwargs={'fromlist':['control']})
+    sm = import_module("sympy.physics", import_kwargs={'fromlist': ['control']})
     if isinstance(system, sm.control.lti.SISOLinearTimeInvariant):
         return True
     if sp and isinstance(system, sp.signal.TransferFunction):
@@ -1003,7 +1004,6 @@ def is_siso(system):
     if isinstance(system, Expr):
         return True
     return False
-
 
 
 def _aggregate_parameters(params, series):

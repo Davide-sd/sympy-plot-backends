@@ -4,7 +4,6 @@ from spb.backends.matplotlib import MB
 from spb.backends.plotly import PB
 from spb.backends.bokeh import BB
 from spb.interactive import IPlot, create_interactive_plot
-from spb.utils import _aggregate_parameters
 from sympy.utilities.exceptions import sympy_deprecation_warning
 from sympy.external import import_module
 
@@ -335,7 +334,6 @@ def plotgrid(*args, **kwargs):
         all_parameters, new_args = _get_all_parameters(plots)
     else:
         plots_imodule = None
-
 
     plotgrid_imodule = kwargs.get("imodule", None)
     if (plotgrid_imodule is None) and plots_imodule:

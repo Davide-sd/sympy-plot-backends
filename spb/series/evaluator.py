@@ -1,20 +1,18 @@
 import param
-from inspect import signature, ismodule
-from spb.defaults import cfg
+from inspect import ismodule
 from spb.series.base import _CastToInteger
 from spb.utils import _get_free_symbols, _correct_shape
 import sympy
 from sympy import (
-    Tuple, symbols, sympify, Expr, lambdify,
-    atan2, floor, ceiling, Sum, Product, Symbol, frac, im, re, zeta, Poly,
-    Integral, hyper, arity, Wild, sign, Mul, Pow, Add
+    Tuple, sympify, Expr, lambdify,
+    atan2, floor, ceiling, Sum, Product, Symbol, frac, zeta,
+    Integral, hyper, Wild, sign, Mul, Pow, Add
 )
 from sympy.external import import_module
 from sympy.printing.pycode import PythonCodePrinter, SymPyPrinter
 from sympy.printing.precedence import precedence
 from sympy.core.sorting import default_sort_key
 import warnings
-from numbers import Number
 
 
 def format_warnings_on_one_line(
@@ -92,6 +90,7 @@ def _get_wrapper_func_for_eval():
     Create a 'vectorized' wrapper function for numerical evaluation.
     """
     np = import_module("numpy")
+
     def wrapper_func(func, *args):
         try:
             return complex(func(*args))
@@ -304,7 +303,10 @@ def _process_summations(sum_bound, expr):
     # select summations whose lower/upper bound is infinity
     w = Wild("w", properties=[
         lambda t: isinstance(t, Sum),
-        lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
+        lambda t: any(
+            (not a[1].is_finite) or (not a[2].is_finite)
+            for i, a in enumerate(t.args) if i > 0
+        )
     ])
 
     for t in list(expr.find(w)):
@@ -781,9 +783,10 @@ class SliceVectorGridEvaluator(GridEvaluator):
 
         from spb.series.series_2d_3d import SurfaceOver2DRangeSeries
         if not isinstance(self.series.slice_surf_series, SurfaceOver2DRangeSeries):
-            raise TypeError("This helper function is meant to be used only "
-                "with non-parametric slicing surfaces of 2 variables. "
-                "type(self.slice_surf_series) = {}".format(
+            raise TypeError(
+                "This helper function is meant to be used only with"
+                " non-parametric slicing surfaces of 2 variables."
+                " type(self.slice_surf_series) = {}".format(
                     type(self.series.slice_surf_series)))
 
         # slice surface free symbols

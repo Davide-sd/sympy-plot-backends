@@ -1,10 +1,7 @@
 from spb.animation import BaseAnimation
-from spb.defaults import TWO_D_B, THREE_D_B, cfg
+from spb.defaults import TWO_D_B, THREE_D_B
 from spb.interactive.panel import PanelCommon
-from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
-from spb.plotgrid import PlotGrid
 from sympy.external import import_module
-import warnings
 from mergedeep import merge
 
 param = import_module(
@@ -25,7 +22,7 @@ class Animation(BaseAnimation, PanelCommon):
             layout="bb",
             ncols=1,
             name=kwargs.pop("name", ""),
-            _original_params = kwargs.get("params", {})
+            _original_params=kwargs.get("params", {})
         )
         self.merge = merge
 
@@ -56,7 +53,7 @@ class Animation(BaseAnimation, PanelCommon):
     def _init_pane_for_plotgrid(self):
         # First, set the necessary data to create bindings for each subplot
         self.backend.pre_set_bindings(
-            [1], # anything but None
+            [1],  # anything but None
             [self._play_widget]
         )
         self.backend.pre_set_animation(self)
@@ -227,7 +224,7 @@ def animation(*series, show=True, **kwargs):
            wireframe=True, wf_n1=30, wf_n2=30,
            wf_rendering_kw={"width": 0.005},
            animation=True,
-           title=(r"theta={:.4f}; \, a={:.4f}", t, a),
+           title=("theta={:.4f}; \\, a={:.4f}", t, a),
            backend=KB, grid=False, show=False
        )
        p.show()
@@ -299,7 +296,7 @@ def animation(*series, show=True, **kwargs):
            animation=True, params={b: (10, 0), c: (20, max_r)},
            title=("b={:.2f}; c={:.2f}", b, c),
            show=False, xlim=(-max_r, max_r), ylim=(-max_r, max_r))
-       p3 = plot_complex(gamma(d*z), (z, -3-3*I, 3+3*I), title=r"$\gamma(d \, z)$",
+       p3 = plot_complex(gamma(d*z), (z, -3-3*I, 3+3*I), title="$\\gamma(d \\, z)$",
            animation=True, params={d: (-1, 1)}, coloring="b", grid=False, show=False)
        gs = GridSpec(3, 4)
        mapping = {

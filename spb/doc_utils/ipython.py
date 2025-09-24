@@ -44,14 +44,14 @@ import textwrap
 try:
     get_ipython()
     is_ipython = True
-except:
+except NameError:
     is_ipython = False
 
 # ANSI color codes for the IPython pager
 red   = '\x1b[1;31m%s\x1b[0m' if is_ipython else '%s'
 blue  = '\x1b[1;34m%s\x1b[0m' if is_ipython else '%s'
 green = '\x1b[1;32m%s\x1b[0m' if is_ipython else '%s'
-cyan = '\x1b[1;36m%s\x1b[0m' if is_ipython else '%s'
+cyan  = '\x1b[1;36m%s\x1b[0m' if is_ipython else '%s'
 colors = [red, blue, green, cyan]
 WARN_MISFORMATTED_DOCSTRINGS = False
 
@@ -114,8 +114,10 @@ class MyParamPager(ParamPager):
         title = None
         if not self.metaclass:
             parameterized_object = isinstance(param_obj, param.Parameterized)
-            parameterized_class = (isinstance(param_obj,type)
-                                   and  issubclass(param_obj,param.Parameterized))
+            parameterized_class = (
+                isinstance(param_obj,type)
+                and  issubclass(param_obj,param.Parameterized)
+            )
 
             if not (parameterized_object or parameterized_class):
                 print("Object is not a Parameterized class or object.")
@@ -192,7 +194,7 @@ def _assemble_parameters_docstring(parameters: dict, style: str) -> str:
         lines = unindented.splitlines()
         if style == "param":
             if len(lines) > 1:
-                tail = [f"{' '  * right_shift}{line}" for line in lines[1:]]
+                tail = [f"{' ' * right_shift}{line}" for line in lines[1:]]
                 all_lines = [heading.ljust(right_shift) + lines[0]] + tail
             elif len(lines) == 1:
                 all_lines = [heading.ljust(right_shift) + lines[0]]
@@ -267,10 +269,11 @@ def _get_param_info_helper(obj, include_super=True):
         self_class = obj.__class__
 
     if not include_super:
-        params = {k:v for (k,v) in params.items()
-                    if k in self_class.__dict__}
+        params = {
+            k: v for (k, v) in params.items() if k in self_class.__dict__
+        }
 
-    params.pop('name') # Already displayed in the title.
+    params.pop('name')  # Already displayed in the title.
     return (params, val_dict, changed)
 
 
@@ -374,10 +377,14 @@ def _get_parameters_dict(displayed_params: list) -> dict:
         except Exception as err:
             print(f"Error processing parameter '{name}':", err)
 
-        if (WARN_MISFORMATTED_DOCSTRINGS
-            and not unindented.startswith("\n")  and len(unindented.splitlines()) > 1):
-            param.main.warning("Multi-line docstring for %r is incorrectly formatted "
-                                " (should start with newline)", name)
+        if (
+            WARN_MISFORMATTED_DOCSTRINGS
+            and (not unindented.startswith("\n"))
+            and len(unindented.splitlines()) > 1
+        ):
+            param.main.warning(
+                "Multi-line docstring for %r is incorrectly formatted "
+                " (should start with newline)", name)
         # Strip any starting newlines
         while unindented.startswith("\n"):
             unindented = unindented[1:]

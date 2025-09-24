@@ -1,4 +1,3 @@
-import param
 import os
 from spb.defaults import cfg
 from spb.doc_utils.ipython import modify_parameterized_doc
@@ -574,4 +573,3 @@ class BokehBackend(Plot):
 
 
 BB = BokehBackend
-

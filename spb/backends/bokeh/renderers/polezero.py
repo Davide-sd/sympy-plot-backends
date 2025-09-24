@@ -84,7 +84,6 @@ def _get_source_tooltips(plot, x, y):
 
 def _draw_pole_zero_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-    np = p.np
     x, y = data
     color = next(p._cl) if s.line_color is None else s.line_color
     label = s.get_label(p.use_latex)
@@ -115,7 +114,6 @@ def _draw_pole_zero_helper(renderer, data):
 
 
 def _update_pole_zero_helper(renderer, data, handles):
-    p, s = renderer.plot, renderer.series
     x, y = data
     source = {"x": x, "y": y}
     handles[0].data_source.data.update(source)

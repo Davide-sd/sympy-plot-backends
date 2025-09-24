@@ -2,7 +2,6 @@ import param
 from spb.utils import unwrap, tf_to_control
 from sympy import latex, Tuple, symbols, Expr, Poly, I, Abs, arg
 from sympy.external import import_module
-import warnings
 from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.series.evaluator import (
     _discretize,
@@ -115,7 +114,8 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
        it computes new values of xi, wn in order to get grid lines "evenly"
        distributed on the available space.
     """
-    _exclude_params_from_doc = ["colorbar", "use_cm", "label", "show_in_legend"]
+    _exclude_params_from_doc = [
+        "colorbar", "use_cm", "label", "show_in_legend"]
 
     def __init__(self, xi, wn, tp, ts, **kwargs):
         super().__init__(xi=xi, wn=wn, tp=tp, ts=ts, **kwargs)
@@ -126,10 +126,11 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
     def _sgrid_default_xi(self, xlim, ylim):
         """Return default list of damping coefficients
 
-        This function computes a list of damping coefficients based on the limits
-        of the graph.  A set of 4 damping coefficients are computed for the x-axis
-        and a set of three damping coefficients are computed for the y-axis
-        (corresponding to the normal 4:3 plot aspect ratio in `matplotlib`?).
+        This function computes a list of damping coefficients based on the
+        limits of the graph. A set of 4 damping coefficients are computed for
+        the x-axis and a set of three damping coefficients are computed for
+        the y-axis (corresponding to the normal 4:3 plot aspect ratio in
+        `matplotlib`?).
 
         Parameters
         ----------
@@ -192,7 +193,6 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
         """
         lower_lim = xlim[0] if xlim else -10
         np = import_module("numpy")
-        available_width = 0 - lower_lim
         wn = np.linspace(0, abs(lower_lim), max_lines)[1:-1]
         return wn
 
@@ -216,8 +216,8 @@ class SGridLineSeries(_NaturalFrequencyDampingRatioGrid, GridBase, BaseSeries):
                 for t in self.xi], dtype=float)
             if any(xi > 1) or any(xi < 0):
                 # Enforce this condition
-                raise ValueError("It must be ``0 <= xi <= 1. "
-                    "Computed: %s" % xi)
+                raise ValueError(
+                    "It must be ``0 <= xi <= 1. Computed: %s" % xi)
             wn = np.array([
                 t.evalf(subs=self.params) if isinstance(t, Expr) else t
                 for t in self.wn], dtype=float)
@@ -552,9 +552,8 @@ class ControlBaseSeries(Line2DBaseSeries):
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
         sp = import_module(
-            "sympy.physics", import_kwargs={'fromlist':['control']})
+            "sympy.physics", import_kwargs={'fromlist': ['control']})
         TransferFunction = sp.control.lti.TransferFunction
-        np = import_module('numpy')
         sp = import_module('scipy')
         ct = import_module('control')
         system, symbolic_system = None, None
@@ -623,9 +622,9 @@ class ControlBaseSeries(Line2DBaseSeries):
         for r in ranges:
             fs = set().union(*[e.free_symbols for e in r[1:]])
             if any(t in fs for t in range_symbols):
-                raise ValueError("Range symbols can't be included into "
-                    "minimum and maximum of a range. "
-                    "Received range: %s" % str(r))
+                raise ValueError(
+                    "Range symbols can't be included into minimum and maximum"
+                    " of a range. Received range: %s" % str(r))
             remaining_fs = fs.difference(params.keys())
             if len(remaining_fs) > 0:
                 raise ValueError(
@@ -683,7 +682,8 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
 
     def __init__(self, system, range_omega, label="", **kwargs):
         kwargs["_range_names"] = ["range_omega"]
-        super().__init__(system, range_omega=range_omega, label=label, **kwargs)
+        super().__init__(
+            system, range_omega=range_omega, label=label, **kwargs)
         self._check_fs()
         self.ranges = [self.range_omega]
 
@@ -931,7 +931,6 @@ class RootLocusSeries(ControlBaseSeries):
         return data.loci, data.gains
 
 
-
 @modify_parameterized_doc()
 class SystemResponseSeries(ControlBaseSeries, _NMixin):
     """
@@ -992,7 +991,6 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
 
     def _get_data_helper(self):
         ct = import_module("control")
-        np = import_module("numpy")
         mergedeep = import_module('mergedeep')
 
         if self.is_interactive:
@@ -1191,8 +1189,9 @@ class NGridLineSeries(GridBase, BaseSeries):
         Toggle the visibility of the labels assciated to the closed-loop
         phase.""")
 
-    def __init__(self, cl_mags=None, cl_phases=None, label_cl_phases=False,
-        **kwargs):
+    def __init__(
+        self, cl_mags=None, cl_phases=None, label_cl_phases=False, **kwargs
+    ):
         kwargs.setdefault("show_in_legend", False)
         np = import_module("numpy")
         kwargs["cl_mags"] = cl_mags if cl_mags is None else np.array(cl_mags)

@@ -1,9 +1,6 @@
 from matplotlib.patches import FancyArrowPatch
 from sympy.external import import_module
 from spb.backends.matplotlib.renderers.renderer import MatplotlibRenderer
-from spb.backends.matplotlib.renderers.vector2d import (
-    _draw_vector2d_helper, _update_vector2d_helper
-)
 
 
 class Arrow3D(FancyArrowPatch):
