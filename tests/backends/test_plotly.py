@@ -1539,7 +1539,7 @@ def test_arrow_2d():
     p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, True)
     fig = p.fig
     assert len(fig.layout.annotations) == 1
-    assert fig.layout.annotations[0]["text"] == "$test$"
+    assert fig.layout.annotations[0]["text"] == "test"
     assert fig.layout.annotations[0]["arrowcolor"] == "red"
     p.backend.update_interactive({a: 4, b: 5})
 

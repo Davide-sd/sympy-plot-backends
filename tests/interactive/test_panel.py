@@ -73,7 +73,7 @@ def test_iplot(panel_options):
         },
         layout="tb",
         ncols=2,
-        use_latex=False,
+        use_latex_on_widgets=False,
         **panel_options
     )
 
@@ -113,7 +113,7 @@ def test_iplot(panel_options):
         },
         layout="tb",
         ncols=3,
-        use_latex=True,
+        use_latex_on_widgets=True,
         **panel_options
     )
 
@@ -208,7 +208,7 @@ def test_create_widgets():
             y: (200, 1, 1000, 10, None, "y", "log"),
             z: param.Integer(3, softbounds=(3, 10), label="n"),
         },
-        use_latex=True,
+        use_latex_on_widgets=True,
     )
 
     assert isinstance(w, dict)
@@ -227,7 +227,7 @@ def test_create_widgets():
             y: (200, 1, 1000, 10, "%.4f", "y", "log"),
             z: param.Integer(3, softbounds=(3, 10), label="n"),
         },
-        use_latex=False,
+        use_latex_on_widgets=False,
     )
 
     assert isinstance(w, dict)

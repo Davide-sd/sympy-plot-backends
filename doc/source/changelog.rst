@@ -17,7 +17,7 @@ v4.0.0
     The documentaion is shown when the user executes
     `help(plot_function)` or `plot_function?`. All available
     parameters will be shown.
-  * Adding widgets related to data series.
+  * Capability of adding widgets related to attributes of data series.
 
 * Improvements to the function ``graphics()`` and the backends:
 
@@ -41,6 +41,9 @@ v4.0.0
     will be shown, with widgets that allows to customize the numerical
     data generation process for each data series. Look at the documentation
     of ``domain_coloring`` to see an example.
+
+  * Added ``use_latex_on_widgets`` keyword argument, which clearly separates
+    the scope with respect to ``use_latex``.
 
 * Improvements to ``spb.series`` (numerical data generation):
 

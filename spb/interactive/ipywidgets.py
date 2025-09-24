@@ -18,11 +18,11 @@ import math
 from collections import defaultdict
 
 
-def _build_widgets(params, use_latex=True):
+def _build_widgets(params, use_latex_on_widgets=True):
     widgets = []
     for s, v in params.items():
         if hasattr(v, "__iter__") and (not isinstance(v, str)):
-            d = _tuple_to_dict(s, v, use_latex=use_latex)
+            d = _tuple_to_dict(s, v, use_latex_on_widgets=use_latex_on_widgets)
             formatter = d.pop("formatter")
             if formatter and not isinstance(formatter, str):
                 warnings.warn(
@@ -39,8 +39,8 @@ def _build_widgets(params, use_latex=True):
         elif isinstance(v, ipywidgets.Widget):
             if hasattr(v, "description") and len(v.description) == 0:
                 # show the symbol if no label was set to the widget
-                wrapper = "$%s$" if use_latex else "%s"
-                func = latex if use_latex else str
+                wrapper = "$%s$" if use_latex_on_widgets else "%s"
+                func = latex if use_latex_on_widgets else str
                 v.description = wrapper % func(s)
             widgets.append(v)
         else:
@@ -199,7 +199,6 @@ class InteractivePlot(IPlot):
         params = _aggregate_parameters(params, series)
 
         kwargs.setdefault("ncols", 2)
-        kwargs.setdefault("use_latex", cfg["interactive"]["use_latex"])
         kwargs.setdefault("layout", "tb")
         kwargs.setdefault("_original_params", params)
 
@@ -214,7 +213,7 @@ class InteractivePlot(IPlot):
         self._params_widgets = {
             k: v for k, v in zip(
                 params.keys(),
-                _build_widgets(params, self.use_latex)
+                _build_widgets(params, self.use_latex_on_widgets)
         )}
         # additional widgets coming from data series in order to customize
         # the data generation process
@@ -270,7 +269,6 @@ class InteractivePlot(IPlot):
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
             kwargs["_imodule"] = "ipywidgets"
-            kwargs["use_latex"] = self.use_latex
             self.backend = Backend(*series, **kwargs)
 
     def _get_iplot_kw(self):
@@ -436,8 +434,7 @@ def iplot(*series, show=True, **kwargs):
            xlabel = "x axis",
            ylabel = "y axis",
            zlabel = "z axis",
-           backend = PB,
-           use_latex=False
+           backend = PB
        )
 
     A line plot illustrating how to specify widgets. In particular:

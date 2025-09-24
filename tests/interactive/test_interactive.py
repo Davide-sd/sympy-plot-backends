@@ -47,7 +47,7 @@ def test_tuple_to_dict(
     tup, val, min, max, step, formatter, description, spacing
 ):
     x = symbols("x")
-    t = _tuple_to_dict(x, tup, use_latex=False)
+    t = _tuple_to_dict(x, tup, use_latex_on_widgets=False)
     assert math.isclose(t["value"], val)
     assert math.isclose(t["min"], min)
     assert math.isclose(t["max"], max)
@@ -70,7 +70,7 @@ def test_tuple_to_dict(
 def test_tuple_to_dict_errors(tup, err, msg):
     x = symbols("x")
     with raises(err, match=msg):
-        _tuple_to_dict(x, tup, use_latex=False)
+        _tuple_to_dict(x, tup, use_latex_on_widgets=False)
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_tuple_to_dict_errors(tup, err, msg):
 def test_tuple_to_dict_use_latex(use_latex, latex_wrapper, expected):
     x = symbols("x_2")
     t = _tuple_to_dict(x, (1, 0, 5),
-        use_latex=use_latex, latex_wrapper=latex_wrapper)
+        use_latex_on_widgets=use_latex, latex_wrapper=latex_wrapper)
     assert t["description"] == expected
 
 

@@ -280,7 +280,6 @@ class InteractivePlot(PanelCommon):
         kwargs.setdefault("ncols", 2)
         kwargs.setdefault("throttled", cfg["interactive"]["throttled"])
         kwargs.setdefault("servable", cfg["interactive"]["servable"])
-        kwargs.setdefault("use_latex", cfg["interactive"]["use_latex"])
 
         # remove keyword arguments that are not parameters of this backend
         kwargs_for_init = {k: v for k, v in kwargs.items() if k in list(self.param)}
@@ -294,7 +293,7 @@ class InteractivePlot(PanelCommon):
         # lambda function arguments:
         #    key: the provided symbol
         #    val: widget
-        self.mapping = create_widgets(params, self.use_latex)
+        self.mapping = create_widgets(params, self.use_latex_on_widgets)
         self._additional_widgets = {}
 
         plotgrid = kwargs.get("plotgrid", None)
@@ -730,7 +729,7 @@ def iplot(*series, show=True, **kwargs):
     return i
 
 
-def create_widgets(params, use_latex=True, **kwargs):
+def create_widgets(params, use_latex_on_widgets=True, **kwargs):
     """ Create panel's widgets starting from parameters.
 
     Parameters
@@ -767,7 +766,7 @@ def create_widgets(params, use_latex=True, **kwargs):
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
 
-    use_latex : bool, optional
+    use_latex_on_widgets : bool, optional
         Default to True.
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string representation
@@ -816,8 +815,8 @@ def create_widgets(params, use_latex=True, **kwargs):
         if isinstance(v, (pn.widgets.base.Widget)):
             if hasattr(v, "name") and len(v.name) == 0:
                 # show the symbol if no label was set to the widget
-                wrapper = "$$%s$$" if use_latex else "%s"
-                func = latex if use_latex else str
+                wrapper = "$$%s$$" if use_latex_on_widgets else "%s"
+                func = latex if use_latex_on_widgets else str
                 v.name = wrapper % func(symb)
             results[symb] = v
         elif isinstance(v, param.parameterized.Parameter):
@@ -825,7 +824,7 @@ def create_widgets(params, use_latex=True, **kwargs):
             tmp_panel = pn.Param(dyn_param)
             results[symb] = tmp_panel.widget("dyn_param_0")
         elif isinstance(v, (list, tuple)):
-            d = _tuple_to_dict(symb, v, use_latex, "$$%s$$")
+            d = _tuple_to_dict(symb, v, use_latex_on_widgets, "$$%s$$")
             results[symb] = _dict_to_slider(d)
         else:
             raise TypeError(

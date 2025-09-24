@@ -263,11 +263,15 @@ class graphics(PlotAttributes, IPlotAttributes, param.ParameterizedFunction):
             # this enables animations
             "animation",
             # these enable interactive widgets plotting
-            "imodule", "pane_kw", "ncols", "layout", "template", "servable",
+            "pane_kw", "template", "servable",
             "plot_function"
         ]
         # remove keyword arguments that are not parameters of this backend
-        keys_to_maintain = list(Plot.param) + keys_to_be_aware_of
+        keys_to_maintain = (
+            list(Plot.param)
+            + list(IPlotAttributes.param)
+            + keys_to_be_aware_of
+        )
 
         if not params.get("plot_function", False):
             _check_misspelled_kwargs(

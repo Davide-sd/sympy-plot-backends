@@ -7,7 +7,7 @@ from sympy import latex
 from sympy.external import import_module
 
 
-def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
+def _tuple_to_dict(k, v, use_latex_on_widgets=False, latex_wrapper="$%s$"):
     """Create a dictionary of keyword arguments to be later used to
     instantiate sliders.
 
@@ -35,7 +35,7 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
                 Set N=-1 to have unit step increments.
             label : str
                 Label of the slider. Default to None. If None, the string or
-                latex representation will be used. See use_latex for more
+                latex representation will be used. See use_latex_on_widgets for more
                 information.
             spacing : str
                 Discretization spacing. Can be "linear" or "log".
@@ -59,7 +59,7 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
     defaults_keys = [
         "value", "min", "max", "step", "formatter", "description", "type"]
     defaults_values = [1, 0, 2, 0.1, None,
-        latex_wrapper % latex(k) if use_latex else str(k),
+        latex_wrapper % latex(k) if use_latex_on_widgets else str(k),
         "linear",
     ]
 
@@ -152,7 +152,8 @@ class IPlotAttributes(param.Parameterized):
         If True, shows interactive widgets useful to customize the numerical
         data computation for each series.
         Related parameters: ``imodule``, ``ncols``, ``layout``.""")
-    use_latex = param.Boolean(default=True, doc="""
+    use_latex_on_widgets = param.Boolean(
+        default=cfg["interactive"]["use_latex"], doc="""
         Use latex on the labels of the widgets.""")
     ncols = param.Integer(default=2, bounds=(1, None), doc="""
         Number of columns used by the interactive widgets.
