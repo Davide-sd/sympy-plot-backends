@@ -62,6 +62,7 @@ setup(
     install_requires=[
         "packaging",
         "appdirs>=1.4.4",
+        "param",
         "numpy>=1.21.1",
         "sympy>=1.10.1",
         "matplotlib>3.4.2",

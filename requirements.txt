@@ -1,5 +1,6 @@
 packaging
 appdirs>=1.4.4
+param
 numpy
 scipy>=1.7.1
 sympy>=1.10.1
