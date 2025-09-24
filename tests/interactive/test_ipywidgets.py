@@ -1,11 +1,17 @@
 import pytest
 from pytest import raises
 ipywidgets = pytest.importorskip("ipywidgets")
-from spb import BB, PB, MB, plot, graphics, line, line_parametric_2d
-from spb.interactive.ipywidgets import _build_widgets, InteractivePlot
+from spb import (
+    BB, PB, MB, plot, graphics, line, line_parametric_2d, domain_coloring,
+    line_parametric_3d, surface
+)
+from spb.interactive.ipywidgets import (
+    _build_widgets, InteractivePlot, _get_widget_from_param_module
+)
 from spb.utils import prange
 from sympy import symbols, cos, sin, exp, pi, Float, Integer, Rational
 import numpy as np
+import param
 
 
 def test_slider():
@@ -133,7 +139,7 @@ def test_params_multi_value_widgets_1():
     w1 = ipywidgets.FloatRangeSlider(value=(-2, 2), min=-5, max=5)
     w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
     p = plot(
-        cos(c * x), prange(x, a, b), n=10, adaptive=False,
+        cos(c * x), prange(x, a, b), n=10,
         params={
             (a, b): w1,
             c: w2
@@ -155,14 +161,14 @@ def test_params_multi_value_widgets_2():
     w2 = ipywidgets.FloatSlider(value=1, min=0, max=5)
     w3 = ipywidgets.FloatSlider(value=2, min=0, max=6)
     p = graphics(
-        line(cos(x), range=(x, -5, 5), n=10, adaptive=False),
-        line(cos(c * x), range=(x, a, b), n=10, adaptive=False,
+        line(cos(x), range_x=(x, -5, 5), n=10),
+        line(cos(c * x), range_x=(x, a, b), n=10,
             params={
                 (a, b): w1,
                 c: w2
             }),
-        line_parametric_2d(cos(d*x), sin(d*x), range=(x, -4, 4),
-            n=10, adaptive=False,
+        line_parametric_2d(cos(d*x), sin(d*x), range_p=(x, -4, 4),
+            n=10,
             params={d: w3}),
         imodule="ipywidgets", show=False, backend=MB)
     fig = p.fig
@@ -180,3 +186,319 @@ def test_params_multi_value_widgets_2():
     assert np.allclose(d1, d4)
     assert not np.allclose(d2, d5)
     assert not np.allclose(d3, d6)
+
+
+class ParamInteger(param.Parameterized):
+    a = param.Integer(default=5)
+    b = param.Integer(default=4, bounds=(-10, 10), step=2)
+    c = param.Integer(default=5, bounds=(-10, 10), softbounds=(-70, 80))
+    d = param.Integer(default=5, bounds=(-10, 10), softbounds=(-7, 8))
+    e = param.Integer(default=5, bounds=(-10, 10), softbounds=(-7, None))
+    f = param.Integer(default=5, bounds=(-10, 10), softbounds=(None, 8))
+    g = param.Integer(default=5, inclusive_bounds=(True, True))
+    h = param.Integer(default=5, bounds=(-10, 10), inclusive_bounds=(True, True))
+    i = param.Integer(default=5, bounds=(-10, 10), inclusive_bounds=(False, True))
+    j = param.Integer(default=5, bounds=(-10, 10), inclusive_bounds=(True, False))
+    k = param.Integer(default=5, bounds=(-10, 10), inclusive_bounds=(False, False))
+    l = param.Integer(default=5, bounds=(2, None))
+    m = param.Integer(default=6, bounds=(None, 8), label="test", step=2)
+
+
+class ParamNumber(param.Parameterized):
+    a = param.Number(default=5)
+    b = param.Number(default=4, bounds=(-10, 10), step=0.5)
+    c = param.Number(default=5, bounds=(-10, 10), softbounds=(-70, 80))
+    d = param.Number(default=5, bounds=(-10, 10), softbounds=(-7, 8))
+    e = param.Number(default=5, bounds=(-10, 10), softbounds=(-7, None))
+    f = param.Number(default=5, bounds=(-10, 10), softbounds=(None, 8))
+    g = param.Number(default=5, inclusive_bounds=(True, True))
+    h = param.Number(default=5, bounds=(-10, 10), inclusive_bounds=(True, True))
+    i = param.Number(default=5, bounds=(-10, 10), inclusive_bounds=(False, True))
+    j = param.Number(default=5, bounds=(-10, 10), inclusive_bounds=(True, False))
+    k = param.Number(default=5, bounds=(-10, 10), inclusive_bounds=(False, False), step=0.1)
+    l = param.Number(default=5, bounds=(2, None))
+    m = param.Number(default=6, bounds=(None, 8), label="test", step=0.1)
+
+
+class ParamSelector(param.Parameterized):
+    a = param.Selector(default="a", objects=["a", "b", "c"])
+    b = param.Selector(default="a", objects={"label 1": "a", "label 2": "b", "label 3": "c"})
+    c = param.Selector(default="a", objects=["a", 2, True], label="test")
+
+
+class ParamBoolean(param.Parameterized):
+    a = param.Boolean(default=True)
+    b = param.Boolean(default=False)
+
+
+class ParamRange(param.Parameterized):
+    a = param.Range(default=(1, 3))
+    b = param.Range(default=(1, 3), bounds=(-5, 5))
+    c = param.Range(default=(1, 3), bounds=(-5, 5), softbounds=(-3, 4))
+    d = param.Range(default=(1, 3), bounds=(None, 5), softbounds=(-3, 4))
+    e = param.Range(default=(1, 3), bounds=(-5, 5), softbounds=(None, 4))
+    f = param.Range(default=(1, 3), bounds=(-5, None), softbounds=(-3, 4))
+    g = param.Range(default=(1, 3), bounds=(-5, 5), softbounds=(-3, None))
+    h = param.Range(default=(1, 3), bounds=(-5, None), softbounds=(-3, None))
+    i = param.Range(default=(1, 3), inclusive_bounds=(True, True))
+    j = param.Range(default=(1, 3), inclusive_bounds=(False, True))
+    k = param.Range(default=(1, 3), inclusive_bounds=(True, False))
+    l = param.Range(default=(1, 3), inclusive_bounds=(False, False))
+    m = param.Range(default=(3, 3), label="test")
+    n = param.Range(default=(3, 3), step=0.1)
+    o = param.Range(default=(2.5, 3))
+
+
+@pytest.mark.parametrize("p_name, label, val, min_, max_, step, w_type", [
+    ("a", "A", 5, None, None, 1, ipywidgets.IntText),
+    ("b", "B", 4, -10, 10, 2, ipywidgets.IntSlider),
+    ("c", "C", 5, -10, 10, 1, ipywidgets.IntSlider),
+    ("d", "D", 5, -7, 8, 1, ipywidgets.IntSlider),
+    ("e", "E", 5, -7, 10, 1, ipywidgets.IntSlider),
+    ("f", "F", 5, -10, 8, 1, ipywidgets.IntSlider),
+    ("g", "G", 5, None, None, 1, ipywidgets.IntText),
+    ("h", "H", 5, -10, 10, 1, ipywidgets.IntSlider),
+    ("i", "I", 5, -9, 10, 1, ipywidgets.IntSlider),
+    ("j", "J", 5, -10, 9, 1, ipywidgets.IntSlider),
+    ("k", "K", 5, -9, 9, 1, ipywidgets.IntSlider),
+    ("l", "L", 5, 2, 2000, 1, ipywidgets.BoundedIntText),
+    ("m", "test", 6, -8000, 8, 2, ipywidgets.BoundedIntText),
+])
+def test_get_widget_from_param_module_integer(
+    p_name, label, val, min_, max_, step, w_type
+):
+    obj = ParamInteger()
+    widget = _get_widget_from_param_module(obj, p_name)
+    assert isinstance(widget, w_type)
+    assert widget.description == label
+    assert widget.value == val
+    assert widget.step == step
+    if min_ is None:
+        assert not hasattr(widget, "min")
+    else:
+        assert widget.min == min_
+    if max_ is None:
+        assert not hasattr(widget, "max")
+    else:
+        assert widget.max == max_
+
+
+@pytest.mark.parametrize("p_name, label, val, min_, max_, step, w_type", [
+    ("a", "A", 5, None, None, 1, ipywidgets.FloatText),
+    ("b", "B", 4, -10, 10, 0.5, ipywidgets.FloatSlider),
+    ("c", "C", 5, -10, 10, 1, ipywidgets.FloatSlider),
+    ("d", "D", 5, -7, 8, 1, ipywidgets.FloatSlider),
+    ("e", "E", 5, -7, 10, 1, ipywidgets.FloatSlider),
+    ("f", "F", 5, -10, 8, 1, ipywidgets.FloatSlider),
+    ("g", "G", 5, None, None, 1, ipywidgets.FloatText),
+    ("h", "H", 5, -10, 10, 1, ipywidgets.FloatSlider),
+    ("i", "I", 5, -9, 10, 1, ipywidgets.FloatSlider),
+    ("j", "J", 5, -10, 9, 1, ipywidgets.FloatSlider),
+    ("k", "K", 5, -9.9, 9.9, 0.1, ipywidgets.FloatSlider),
+    ("l", "L", 5, 2, 2000, 1, ipywidgets.BoundedFloatText),
+    ("m", "test", 6, -8000, 8, 0.1, ipywidgets.BoundedFloatText),
+])
+def test_get_widget_from_param_module_number(
+    p_name, label, val, min_, max_, step, w_type
+):
+    obj = ParamNumber()
+    widget = _get_widget_from_param_module(obj, p_name)
+    assert isinstance(widget, w_type)
+    assert widget.description == label
+    assert widget.value == val
+    assert widget.step == step
+    if min_ is None:
+        assert not hasattr(widget, "min")
+    else:
+        assert widget.min == min_
+    if max_ is None:
+        assert not hasattr(widget, "max")
+    else:
+        assert widget.max == max_
+
+
+@pytest.mark.parametrize("p_name, label, val, options, w_type", [
+    ("a", "A", "a", ("a", "b", "c"), ipywidgets.Dropdown),
+    ("b", "B", "a", ("a", "b", "c"), ipywidgets.Dropdown),
+    ("c", "test", "a", ("a", 2, True), ipywidgets.Dropdown),
+])
+def test_get_widget_from_param_module_selector(
+    p_name, label, val, options, w_type
+):
+    obj = ParamSelector()
+    widget = _get_widget_from_param_module(obj, p_name)
+    assert isinstance(widget, w_type)
+    assert widget.description == label
+    assert widget.value == val
+    assert widget.options == options
+
+
+@pytest.mark.parametrize("p_name, label, val, w_type", [
+    ("a", "A", True, ipywidgets.Checkbox),
+    ("b", "B", False, ipywidgets.Checkbox),
+])
+def test_get_widget_from_param_module_boolean(p_name, label, val, w_type):
+    obj = ParamBoolean()
+    widget = _get_widget_from_param_module(obj, p_name)
+    assert isinstance(widget, w_type)
+    assert widget.description == label
+    assert widget.value == val
+
+
+@pytest.mark.parametrize("p_name, label, val, start, end, step, w_type", [
+    ("a", "A", (1, 3), 1, 3, 1, ipywidgets.IntRangeSlider),
+    ("b", "B", (1, 3), -5, 5, 1, ipywidgets.IntRangeSlider),
+    ("c", "C", (1, 3), -3, 4, 1, ipywidgets.IntRangeSlider),
+    ("d", "D", (1, 3), -3, 4, 1, ipywidgets.IntRangeSlider),
+    ("e", "E", (1, 3), -5, 4, 1, ipywidgets.IntRangeSlider),
+    ("f", "F", (1, 3), -3, 4, 1, ipywidgets.IntRangeSlider),
+    ("g", "G", (1, 3), -3, 5, 1, ipywidgets.IntRangeSlider),
+    ("h", "H", (1, 3), -3, 3, 1, ipywidgets.IntRangeSlider),
+    ("i", "I", (1, 3), 1, 3, 1, ipywidgets.IntRangeSlider),
+    ("j", "J", (2, 3), 2, 3, 1, ipywidgets.IntRangeSlider),
+    ("k", "K", (1, 2), 1, 2, 1, ipywidgets.IntRangeSlider),
+    ("l", "L", (2, 2), 2, 2, 1, ipywidgets.IntRangeSlider),
+    ("m", "test", (3, 3), -7, 13, 1, ipywidgets.IntRangeSlider),
+    ("n", "N", (3, 3), 2, 4, 0.1, ipywidgets.FloatRangeSlider),
+    ("o", "O", (2.5, 3), 2.5, 3, 0.05, ipywidgets.FloatRangeSlider),
+])
+def test_get_widget_from_param_module_range(
+    p_name, label, val, start, end, step, w_type
+):
+    obj = ParamRange()
+    widget = _get_widget_from_param_module(obj, p_name)
+    assert isinstance(widget, w_type)
+    assert widget.description == label
+    assert widget.value == val
+    assert np.isclose(widget.step, step)
+    assert np.isclose(widget.min, start)
+    assert np.isclose(widget.max, end)
+
+
+@pytest.mark.parametrize("backend, interactive_series, app", [
+    (MB, True, False),
+    (MB, True, True),
+    (MB, False, True),
+    (MB, True, True),
+    (BB, True, False),
+    (BB, True, True),
+    (BB, False, True),
+    (BB, True, True),
+])
+def test_domain_coloring_series_ui_controls(backend, interactive_series, app):
+    # verify that UI controls related to ComplexDomainColoringSeries
+    # are added to the interactive application
+
+    x, u = symbols("x, u")
+    s1 = domain_coloring(
+            sin(x), (x, -2-2j, 2+2j), n=10)
+    s2 = domain_coloring(
+            sin(u*x), (x, -2-2j, 2+2j), params={u: (1, 0, 2)}, n=10)
+
+    p = graphics(
+        s2 if interactive_series else s1,
+        backend=backend,
+        grid=False,
+        imodule="ipywidgets",
+        layout="sbl",
+        ncols=1,
+        show=False,
+        app=app
+    )
+
+    if (not interactive_series) and (not app):
+        assert isinstance(p, backend)
+        return
+
+    assert isinstance(p, InteractivePlot)
+    fig = p.fig
+    s = p.backend[0]
+    assert s.coloring == "a"
+    _, _, _, _, img1, _ = s.get_data()
+
+    if app:
+        assert len(p._additional_widgets) == 1
+        # verify that no errors are raise when an update event is triggered
+        widgets = list(p._additional_widgets.values())[0]
+        widgets[2].value = "b"
+        _, _, _, _, img2, _ = s.get_data()
+        assert not np.allclose(img1, img2)
+
+        widgets[0].value = 20
+        _, _, _, _, img3, _ = s.get_data()
+        assert img2.shape != img3.shape
+    else:
+        assert len(p._additional_widgets) == 0
+
+
+def test_ui_controls_parametric3d_lines_non_wireframe():
+    # non-wireframe 3d parametric lines should show UI-controls
+    t = symbols("t")
+
+    p = graphics(
+        line_parametric_3d(cos(t), sin(t), t, (t, -5, 5)),
+        line_parametric_3d(sin(t), cos(t), t, (t, -5, 5)),
+        show=False, app=True, imodule="ipywidgets"
+    )
+    assert len(p.backend.series) == 2
+    assert len(p._additional_widgets) == 2
+
+
+def test_ui_controls_parametric3d_lines_wireframe():
+    # wireframe 3d parametric lines should NOT show UI-controls
+    x, y, u = symbols("x, y, u")
+
+    p = graphics(
+        surface(
+            u * cos(x**2 + y**2),
+            (x, -pi, pi), (y, -pi, pi),
+            use_cm=True,
+            params={u: (1, 0, 2)}, n=10,
+            wireframe=True
+        ),
+        show=False, app=True, imodule="ipywidgets"
+    )
+    assert len(p.backend.series) > 1
+    # only ui controls for surface should be visible
+    assert len(p._additional_widgets) == 1
+
+
+def test_ui_controls_surface_and_wireframe_line():
+    # changing the number of discretization points on the surface series
+    # should update the number of discretization points on the wireframe lines
+    x, y = symbols("x, y")
+    expr = (cos(x) + sin(x) * sin(y) - sin(x) * cos(y))**2
+    p = graphics(
+        surface(
+            expr, (x, 0, pi), (y, 0, 2 * pi),
+            use_cm=True, n=10,
+            tx=np.rad2deg, ty=np.rad2deg,
+            wireframe=True, wf_n1=8, wf_n2=8
+        ),
+        backend=PB, xlabel="x [deg]", ylabel="y [deg]",
+        aspect=dict(x=1.5, y=1.5, z=0.5),
+        app=True,
+        use_latex=False,
+        show=False,
+        imodule="ipywidgets"
+    )
+    assert len(p.backend.series) == 17
+    surface_series = p.backend[0]
+    assert len(surface_series._wireframe_lines) == 16
+    wf_parallel_to_x_axis = [
+        s for s in surface_series._wireframe_lines if s.var == x]
+    wf_parallel_to_y_axis = [
+        s for s in surface_series._wireframe_lines if s.var == y]
+    assert len(wf_parallel_to_x_axis) == 8
+    assert len(wf_parallel_to_y_axis) == 8
+    assert all(l.n[0] == 10 for l in surface_series._wireframe_lines)
+    # only ui controls for surface should be visible
+    assert len(p._additional_widgets) == 1
+
+    wn1, wn2, _, _, _ = list(p._additional_widgets.values())[0]
+
+    wn1.value = 12
+    wn2.value = 14
+    assert surface_series.n[:2] == [12, 14]
+    assert all(l.n[0] == 12 for l in wf_parallel_to_x_axis)
+    assert all(l.n[0] == 14 for l in wf_parallel_to_y_axis)

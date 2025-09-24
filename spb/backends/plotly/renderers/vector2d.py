@@ -22,7 +22,7 @@ def _draw_vector2d_helper(renderer, data):
     if s.is_streamlines:
         skw = dict(
             line_color=col, arrow_scale=0.15,
-            name=s.get_label(p._use_latex)
+            name=s.get_label(p.use_latex)
         )
         kw = p.merge({}, skw, s.rendering_kw)
         stream = p.create_streamline(
@@ -31,7 +31,7 @@ def _draw_vector2d_helper(renderer, data):
     else:
         qkw = dict(
             line_color=col, scale=0.075,
-            name=s.get_label(p._use_latex)
+            name=s.get_label(p.use_latex)
         )
         kw = p.merge({}, qkw, s.rendering_kw)
         quiver = p.create_quiver(xx, yy, uu, vv, **kw)
@@ -56,7 +56,7 @@ def _update_vector2d_helper(renderer, data, handle):
     else:
         qkw = dict(
             line_color=quivers_col, scale=0.075,
-            name=s.get_label(p._use_latex)
+            name=s.get_label(p.use_latex)
         )
         kw = p.merge({}, qkw, s.rendering_kw)
         new_quivers = p.create_quiver(x, y, u, v, **kw)

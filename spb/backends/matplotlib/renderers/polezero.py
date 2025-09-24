@@ -5,7 +5,7 @@ def _draw_pole_zero_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     x, y = data
     color = next(p._cl) if s.line_color is None else s.line_color
-    label = s.get_label(p._use_latex)
+    label = s.get_label(p.use_latex)
     is_pole = s.return_poles
     user_color = s.pole_color if is_pole else s.zero_color
 

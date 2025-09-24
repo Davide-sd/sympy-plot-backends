@@ -12,8 +12,8 @@ from spb import (
     PB, plot, plot_riemann_sphere, plot_real_imag, plot_complex,
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
-    plot_parametric, plot_geometry,
-    plot_polar
+    plot_parametric, plot_geometry, graphics, surface,
+    plot_polar, multiples_of_pi_over_4, tick_formatter_multiples_of
 )
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 from sympy import (
@@ -84,7 +84,13 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_2d,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_grid_minor_grid,
+    make_test_tick_formatters_2d,
+    make_test_tick_formatters_3d,
+    make_test_tick_formatter_polar_axis,
+    make_test_hooks_2d,
+    make_test_surface_use_cm_cmin_cmax_zlim
 )
 
 
@@ -255,9 +261,9 @@ def test_plot3d_wireframe():
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
@@ -275,9 +281,9 @@ def test_plot3d_wireframe():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:])
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
         [t.x[0] for t in p4.fig.data[1:21]], np.linspace(0, 3.25, 20))
@@ -298,9 +304,9 @@ def test_plot3d_wireframe_lambda_function():
     assert isinstance(p1[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:11])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[11:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert np.allclose(
@@ -313,10 +319,10 @@ def test_plot3d_wireframe_lambda_function():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
     )
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
     )
     assert all(t["line"]["color"] == "red" for t in p4.fig.data[1:])
     assert np.allclose(
@@ -337,9 +343,9 @@ def test_plot3d_parametric_surface_wireframe():
     assert isinstance(p[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p[0].n[1]) for s in p.series[1:6])
+        (s.n[0] == p[0].n[1]) for s in p.series[1:6])
     assert all(
-        (not s.adaptive) and (s.n[0] == p[0].n[0]) for s in p.series[6:])
+        (s.n[0] == p[0].n[0]) for s in p.series[6:])
     assert all(t["line"]["color"] == "red" for t in p.fig.data[1:])
     assert all(
         [
@@ -367,9 +373,9 @@ def test_plot3d_parametric_surface_wireframe_lambda_function():
     assert isinstance(p1[0], ParametricSurfaceSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p1.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[1]) for s in p1.series[1:6])
+        (s.n[0] == p1[0].n[1]) for s in p1.series[1:6])
     assert all(
-        (not s.adaptive) and (s.n[0] == p1[0].n[0]) for s in p1.series[6:])
+        (s.n[0] == p1[0].n[0]) for s in p1.series[6:])
     assert all(
         p1.fig.data[1]["line"]["color"] == "#000000" for s in p1.series[1:])
     assert all(
@@ -548,7 +554,7 @@ def test_plot_vector_3d_streamlines(use_latex, label_func):
 
     # other keywords: it should not raise errors
     p = make_test_plot_vector_3d_quiver_streamlines(
-        PB, True, stream_kw=dict(), kwargs=dict(use_cm=False)
+        PB, True, stream_kw=dict(), use_cm=False
     )
 
 
@@ -647,7 +653,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert f.data[1]["line"]["color"] == "red"
     assert f.layout["showlegend"] is True
     assert f.layout["xaxis"]["title"]["text"] == label_func(use_latex, x)
-    assert f.layout["yaxis"]["title"]["text"] == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert f.layout["yaxis"]["title"]["text"] == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
 
 @pytest.mark.parametrize(
@@ -686,7 +692,7 @@ def test_plot_complex_2d(use_latex, label_func):
     assert len(f.data) == 2
     assert isinstance(f.data[0], go.Image)
     # TODO: there must be some bugs here with the wrapper $$
-    assert f.data[0]["name"] == "$sqrt(x)$" if use_latex else "sqrt(x)"
+    assert f.data[0]["name"] == ("$sqrt(x)$" if use_latex else "sqrt(x)")
     assert isinstance(f.data[1], go.Scatter)
     assert f.data[1]["marker"]["colorbar"]["title"]["text"] == "Argument"
     assert f.layout["xaxis"]["title"]["text"] == "Re"
@@ -793,7 +799,7 @@ def test_save():
     # NOTE: xfail because locally I need to have kaleido installed.
 
     x, y, z = symbols("x:z")
-    options = dict(backend=PB, show=False, adaptive=False, n=5)
+    options = dict(backend=PB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # Plotly requires additional libraries to save static pictures.
@@ -1069,7 +1075,6 @@ def test_generic_data_series():
         x,
         backend=PB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"x": [0, 1], "y": [0, 1], "mode": "markers"}],
         annotations=[{"x": [0, 1], "y": [0, 1], "text": ["a", "b"]}],
@@ -1085,12 +1090,11 @@ def test_scatter_gl():
 
     n = PB.scattergl_threshold
     x = symbols("x")
-    p1 = plot(cos(x), adaptive=False, n=n - 100, backend=PB, show=False)
-    p2 = plot(cos(x), adaptive=False, n=n + 100, backend=PB, show=False)
+    p1 = plot(cos(x), n=n - 100, backend=PB, show=False)
+    p2 = plot(cos(x), n=n + 100, backend=PB, show=False)
     p3 = plot_polar(
         1 + sin(10 * x) / 10,
         (x, 0, 2 * pi),
-        adaptive=False,
         n=n - 100,
         backend=PB,
         show=False,
@@ -1099,7 +1103,6 @@ def test_scatter_gl():
     p4 = plot_polar(
         1 + sin(10 * x) / 10,
         (x, 0, 2 * pi),
-        adaptive=False,
         n=n + 100,
         backend=PB,
         show=False,
@@ -1111,7 +1114,6 @@ def test_scatter_gl():
         (x, 0, 2 * pi),
         backend=PB,
         show=False,
-        adaptive=False,
         n=n - 100,
     )
     p6 = plot_parametric(
@@ -1120,7 +1122,6 @@ def test_scatter_gl():
         (x, 0, 2 * pi),
         backend=PB,
         show=False,
-        adaptive=False,
         n=n + 100,
     )
     f1, f2, f3, f4, f5, f6 = [t.fig for t in [p1, p2, p3, p4, p5, p6]]
@@ -1235,7 +1236,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=PB, show=False)
+    options = dict(use_cm=True, n=5, backend=PB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi), colorbar=c, **options
@@ -1395,13 +1396,13 @@ def test_show_legend():
     x = symbols("x")
     p = plot(
         sin(x), (x, -pi, pi),
-        backend=PB, adaptive=False, n=5, show=False
+        backend=PB, n=5, show=False
     )
     assert not p.fig.layout.showlegend
 
     p = plot(
         sin(x), cos(x), (x, -pi, pi),
-        backend=PB, adaptive=False, n=5, show=False
+        backend=PB, n=5, show=False
     )
     assert p.fig.layout.showlegend
 
@@ -1538,7 +1539,7 @@ def test_arrow_2d():
     p = make_test_arrow_2d(PB, "test", {"arrowcolor": "red"}, True)
     fig = p.fig
     assert len(fig.layout.annotations) == 1
-    assert fig.layout.annotations[0]["text"] == "$test$"
+    assert fig.layout.annotations[0]["text"] == "test"
     assert fig.layout.annotations[0]["arrowcolor"] == "red"
     p.backend.update_interactive({a: 4, b: 5})
 
@@ -1647,3 +1648,267 @@ def test_matplotlib_colormap_with_PlotlyBackend():
         n = 20, backend=NewPB, use_cm=True, show=False
     )
     fig = p.fig
+
+
+def test_plotly_theme():
+    p1 = plot(sin(x), backend=PB, show=False)
+    p2 = plot(cos(x), backend=PB, show=False, theme="plotly_dark")
+
+    p3 = p1 + p2
+    p4 = p2 + p1
+    assert p1.theme == "seaborn"
+    assert p2.theme == "plotly_dark"
+    assert p3.theme == "seaborn"
+    assert p4.theme == "plotly_dark"
+
+    assert p1.fig.layout.template != p2.fig.layout.template
+    assert p3.fig.layout.template == p1.fig.layout.template
+    assert p4.fig.layout.template == p2.fig.layout.template
+
+
+def test_grid_minor_grid():
+    p = make_test_grid_minor_grid(PB, False, False)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, True, False)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, False, True)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is True
+
+    grid = {"gridcolor": "#ff0000", "zerolinecolor": "#ff0000"}
+    minor_grid = {"gridcolor": "#00ff00"}
+    p = make_test_grid_minor_grid(PB, grid, False)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.gridcolor == "#ff0000"
+    assert p.fig.layout.xaxis.zerolinecolor == "#ff0000"
+    assert p.fig.layout.xaxis.minor.showgrid is False
+
+    p = make_test_grid_minor_grid(PB, False, minor_grid)
+    assert p.fig.layout.xaxis.showgrid is False
+    assert p.fig.layout.xaxis.minor.showgrid is True
+    assert p.fig.layout.xaxis.minor.gridcolor == "#00ff00"
+
+    p = make_test_grid_minor_grid(PB, grid, minor_grid)
+    assert p.fig.layout.xaxis.showgrid is True
+    assert p.fig.layout.xaxis.gridcolor == "#ff0000"
+    assert p.fig.layout.xaxis.zerolinecolor == "#ff0000"
+    assert p.fig.layout.xaxis.minor.showgrid is True
+    assert p.fig.layout.xaxis.minor.gridcolor == "#00ff00"
+
+
+def test_tick_formatter_multiples_of_2d():
+    expected_x = [
+        -3.141592653589793, -1.5707963267948966, 0.0,
+        1.5707963267948966, 3.141592653589793]
+    expected_x_vals = ("-π", "-π/2", "0", "π/2", "π")
+    expected_y = [
+        -6.283185307179586, -3.141592653589793, 0.0,
+        3.141592653589793, 6.283185307179586]
+    expected_y_vals = ("-2π", "-π", "0", "π", "2π")
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_2d(PB, None, None)
+    assert p.fig.layout.xaxis.ticktext is None
+    assert p.fig.layout.xaxis.tickvals is None
+    assert p.fig.layout.yaxis.ticktext is None
+    assert p.fig.layout.yaxis.tickvals is None
+
+    p = make_test_tick_formatters_2d(PB, tf_x, None)
+    assert p.fig.layout.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.xaxis.tickvals, expected_x)
+    assert p.fig.layout.yaxis.ticktext is None
+    assert p.fig.layout.yaxis.tickvals is None
+
+    p = make_test_tick_formatters_2d(PB, None, tf_y)
+    assert p.fig.layout.xaxis.ticktext is None
+    assert p.fig.layout.xaxis.tickvals is None
+    assert p.fig.layout.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.yaxis.tickvals, expected_y)
+
+    p = make_test_tick_formatters_2d(PB, tf_x, tf_y)
+    assert p.fig.layout.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.xaxis.tickvals, expected_x)
+    assert p.fig.layout.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.yaxis.tickvals, expected_y)
+
+
+def test_tick_formatter_multiples_of_number_of_minor_gridlines():
+    tf_x1 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=4)
+    tf_x2 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=3, n_minor=8)
+
+    p = make_test_tick_formatters_2d(PB, tf_x1, None)
+    assert np.isclose(
+        p.fig.layout.xaxis.minor.dtick,
+        (np.pi / 2) / 5
+    )
+
+    p = make_test_tick_formatters_2d(PB, tf_x2, None)
+    assert np.isclose(
+        p.fig.layout.xaxis.minor.dtick,
+        (np.pi / 3) / 9
+    )
+
+
+def test_tick_formatter_multiples_of_3d():
+    expected_x = [
+        -3.141592653589793, -1.5707963267948966, 0.0,
+        1.5707963267948966, 3.141592653589793]
+    expected_x_vals = ("-π", "-π/2", "0", "π/2", "π")
+    expected_y = [
+        -6.283185307179586, -3.141592653589793, 0.0,
+        3.141592653589793, 6.283185307179586]
+    expected_y_vals = ("-2π", "-π", "0", "π", "2π")
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_3d(PB, tf_x, tf_y)
+    assert p.fig.layout.scene.xaxis.ticktext == expected_x_vals
+    assert np.allclose(p.fig.layout.scene.xaxis.tickvals, expected_x)
+    assert p.fig.layout.scene.yaxis.ticktext == expected_y_vals
+    assert np.allclose(p.fig.layout.scene.yaxis.tickvals, expected_y)
+
+
+@pytest.mark.parametrize("x_ticks_formatter, expected_dtick, expected_thetaunit", [
+    (None, 30, None),
+    (multiples_of_pi_over_4(), np.pi / 4, "radians")
+])
+def test_tick_formatter_multiples_of_polar_plot(
+    x_ticks_formatter, expected_dtick, expected_thetaunit
+):
+    p = make_test_tick_formatter_polar_axis(PB, x_ticks_formatter)
+
+    assert np.isclose(
+        p.fig.layout.polar.angularaxis.dtick,
+        expected_dtick
+    )
+    assert p.fig.layout.polar.angularaxis.thetaunit == expected_thetaunit
+
+
+def test_hooks():
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
+        param = p.fig.data[0].marker.color
+        formatter = multiples_of_pi_over_4("π")
+        vals, labels = formatter.PB_ticks(min(param), max(param))
+        p.fig.data[0].marker.colorbar.tickvals = vals
+        p.fig.data[0].marker.colorbar.ticktext = labels
+
+    p = make_test_hooks_2d(PB, [])
+    assert p.fig.data[0].marker.colorbar.tickvals is None
+    assert p.fig.data[0].marker.colorbar.ticktext is None
+
+    p = make_test_hooks_2d(PB, [colorbar_ticks_formatter])
+    assert np.allclose(
+        p.fig.data[0].marker.colorbar.tickvals,
+        [0.0, 0.7853981633974483, 1.5707963267948966, 2.356194490192345,
+        3.141592653589793, 3.9269908169872414, 4.71238898038469])
+    assert p.fig.data[0].marker.colorbar.ticktext == (
+        '0', 'π/4', 'π/2', '3π/4', 'π', '5π/4', '3π/2')
+
+
+def test_hooks_update_interactive():
+    # verify that hooks are execute both after numerical data has been added
+    # to the figure, as well as after new numerical data has been given to
+    # the renderers
+
+    x, y, a, b = symbols("x, y, a, b")
+    expr = x**4 + y**4 + y**3 - (4 * x**2 * y) + y**2 - (a * x) + (b * y)
+    x_range = (x, -3, 3)
+    y_range = (y, -3, 3)
+    params = {a: (0, -2, 2), b: (0, -2, 2)}
+    zmax = 1.5
+
+    def update_colorbar(plot_object):
+        fig = plot_object.fig
+        fig.data[0].cmax = zmax
+
+    p1 = graphics(
+        surface(expr, x_range, y_range, n=5, params=params),
+        backend=PB,
+        zlim=(-1.5, 3),
+        show=False
+    )
+    p2 = graphics(
+        surface(expr, x_range, y_range, n=5, params=params),
+        hooks=[
+            update_colorbar
+        ],
+        backend=PB,
+        zlim=(-1.5, 3),
+        show=False
+    )
+    fig1 = p1.fig
+    fig2 = p2.fig
+    assert np.allclose(fig1.layout.scene.zaxis.range, (-1.5, 3))
+    assert np.allclose(fig2.layout.scene.zaxis.range, (-1.5, 3))
+    assert np.isclose(fig1.data[0].cmin, 0)
+    assert np.isclose(fig1.data[0].cmax, 3)
+    assert np.isclose(fig2.data[0].cmin, 0)
+    assert np.isclose(fig2.data[0].cmax, 1.5)
+    # update event
+    p1.backend.update_interactive({a: 1, b: 0})
+    p2.backend.update_interactive({a: 1, b: 0})
+    assert np.allclose(fig1.layout.scene.zaxis.range, (-1.5, 3))
+    assert np.allclose(fig2.layout.scene.zaxis.range, (-1.5, 3))
+    assert np.isclose(fig1.data[0].cmin, 0)
+    assert np.isclose(fig1.data[0].cmax, 3)
+    assert np.isclose(fig2.data[0].cmin, 0)
+    assert np.isclose(fig2.data[0].cmax, 1.5)
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_1():
+    # verify that if zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. Hence, the minimum and maximum
+    # color values visible on the colorbar should not be greater (in absolute
+    # value) than the zlim values.
+
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(PB, None)
+    fig1 = p1.fig
+    assert np.isclose(fig1.data[0].cmin, -0.395061731338501)
+    assert np.isclose(fig1.data[0].cmax, 252)
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.isclose(fig1.data[0].cmin, -0.8765432238578796)
+    assert np.isclose(fig1.data[0].cmax, 249)
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(PB, (-0.5, 3))
+    fig2 = p2.fig
+    assert np.isclose(fig2.data[0].cmin, -0.395061731338501)
+    assert np.isclose(fig2.data[0].cmax, 3)
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.isclose(fig2.data[0].cmin, -0.5)
+    assert np.isclose(fig2.data[0].cmax, 3)
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_2():
+    # verify that if the user provides a custom color_func and
+    # zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. But the minimum and maximum
+    # color values visible on the colorbar are not influenced by
+    # zlim, because it is assumed that the color_func doesn't return
+    # a z-value
+
+    color_func = lambda x, y, z: x*y*z
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(PB, None, color_func)
+    fig1 = p1.fig
+    assert np.isclose(fig1.data[0].cmin, -2268)
+    assert np.isclose(fig1.data[0].cmax, 2268)
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.isclose(fig1.data[0].cmin, -2187)
+    assert np.isclose(fig1.data[0].cmax, 2241)
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(PB, (-0.5, 3), color_func)
+    fig2 = p2.fig
+    assert np.isclose(fig2.data[0].cmin, -2268)
+    assert np.isclose(fig2.data[0].cmax, 2268)
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.isclose(fig2.data[0].cmin, -2187)
+    assert np.isclose(fig2.data[0].cmax, 2241)

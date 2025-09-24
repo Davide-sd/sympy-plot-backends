@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from spb import (
     KB, plot_complex, plot_vector,
     plot3d_parametric_surface, plot3d, plot3d_parametric_line,
+    graphics, surface_parametric, surface
 )
 from spb.series import SurfaceOver2DRangeSeries
 from sympy import (
@@ -56,6 +57,8 @@ from .make_tests import (
     make_test_plot_list_color_func,
     make_test_real_imag,
     make_test_arrow_3d,
+    make_test_hooks_3d,
+    make_test_surface_use_cm_cmin_cmax_zlim
 )
 
 
@@ -186,10 +189,10 @@ def test_plot3d_wireframe():
     assert isinstance(p4[0], SurfaceOver2DRangeSeries)
     assert all(isinstance(s, Parametric3DLineSeries) for s in p4.series[1:])
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
+        (s.n[0] == p4[0].n[1]) for s in p4.series[1:21]
     )
     assert all(
-        (not s.adaptive) and (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
+        (s.n[0] == p4[0].n[0]) for s in p4.series[21:]
     )
     assert all(obj.width == 0.01 for obj in p4.fig.objects[1:])
 
@@ -289,7 +292,7 @@ def test_plot_vector_3d_streamlines():
 
     # other keywords: it should not raise errors
     p = make_test_plot_vector_3d_quiver_streamlines(
-        KB, True, stream_kw=dict(), kwargs=dict(use_cm=False)
+        KB, True, stream_kw=dict(), use_cm=False
     )
     raises(NotImplementedError, lambda: p.backend.update_interactive({a: 2}))
 
@@ -478,7 +481,7 @@ def test_save():
     # proceeds smoothtly or it raises errors when wrong options are given
 
     x, y, z = symbols("x:z")
-    options = dict(backend=KB, adaptive=False, n=5, show=False)
+    options = dict(backend=KB, n=5, show=False)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p = plot3d(cos(x**2 + y**2), (x, -3, 3), (y, -3, 3), **options)
@@ -654,7 +657,6 @@ def test_update_interactive():
         backend=KB,
         is_point=True,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -667,7 +669,6 @@ def test_update_interactive():
         backend=KB,
         is_point=False,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -678,7 +679,6 @@ def test_update_interactive():
         cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
         backend=KB,
         show=False,
-        adaptive=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -856,3 +856,109 @@ def test_arrow_3d():
     assert fig.objects[0].origin_color == 0xff0000
     assert fig.objects[0].head_color == 0xff0000
     p.backend.update_interactive({a: 4, b: 5, c: 6})
+
+
+def test_hooks():
+    def change_title(plot_object):
+        fig = plot_object.fig
+        fig.objects[-1].text = "changed"
+
+    p = make_test_hooks_3d(KB, [])
+    assert p.fig.objects[-1].text == "title"
+
+    p = make_test_hooks_3d(KB, [change_title])
+    assert p.fig.objects[-1].text == "changed"
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_1():
+    # verify that if zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. Hence, the minimum and maximum
+    # color values visible on the colorbar should not be greater (in absolute
+    # value) than the zlim values.
+
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(KB, None)
+    fig1 = p1.fig
+    assert np.allclose(fig1.objects[0].color_range, (-0.395061731338501, 252))
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig1.objects[0].color_range, (-0.8765432238578796, 249))
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(KB, (-0.5, 3))
+    fig2 = p2.fig
+    assert np.allclose(fig2.objects[0].color_range, (-0.395061731338501, 3))
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig2.objects[0].color_range, (-0.5, 3))
+
+
+def test_update_interactive_surface_use_cm_cmin_cmax_zlim_2():
+    # verify that if the user provides a custom color_func and
+    # zlim is set on the `graphics` call, then clipping
+    # planes are present in the plot. But the minimum and maximum
+    # color values visible on the colorbar are not influenced by
+    # zlim, because it is assumed that the color_func doesn't return
+    # a z-value
+
+    color_func = lambda x, y, z: x*y*z
+    p1 = make_test_surface_use_cm_cmin_cmax_zlim(KB, None, color_func)
+    fig1 = p1.fig
+    assert np.allclose(fig1.objects[0].color_range, (-2268, 2268))
+    p1.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig1.objects[0].color_range, (-2187, 2241))
+
+    p2 = make_test_surface_use_cm_cmin_cmax_zlim(KB, (-0.5, 3), color_func)
+    fig2 = p2.fig
+    assert np.allclose(fig2.objects[0].color_range, (-2268, 2268))
+    p2.backend.update_interactive({a: 1, b: 2})
+    assert np.allclose(fig2.objects[0].color_range, (-2187, 2241))
+
+
+def test_surface_shape():
+    # verify that the renderers post-process the surface data using the
+    # appropriate shape
+    x, y, u, v = symbols("x, y, u, v")
+
+    p = graphics(
+        surface_parametric(
+            x * u * cos(v), u * sin(v), u * cos(4 * v) / 2,
+            (u, 0, pi), (v, 0, 2*pi),
+            use_cm=True, color_func=lambda u, v: v,
+            params={x: (1, 0, 2)}, n=10
+        ),
+        show=False, backend=KB
+    )
+    surf = p.backend.fig.objects[0]
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend.update_interactive({x: 1.5})
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend[0].n1 = 20
+    p.backend.update_interactive({x: 1.5})
+    assert surf.vertices.shape == (200, 3)
+    assert surf.indices.shape == (342, 3)
+    assert surf.attribute.shape == (200, )
+
+    p = graphics(
+        surface(
+            u * cos(x**2 + y**2),
+            (x, -pi, pi), (y, -pi, pi),
+            use_cm=True,
+            params={u: (1, 0, 2)}, n=10
+        ),
+        show=False, backend=KB
+    )
+    surf = p.backend.fig.objects[0]
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend.update_interactive({u: 1.5})
+    assert surf.vertices.shape == (100, 3)
+    assert surf.indices.shape == (162, 3)
+    assert surf.attribute.shape == (100, )
+    p.backend[0].n1 = 20
+    p.backend.update_interactive({u: 1.5})
+    assert surf.vertices.shape == (200, 3)
+    assert surf.indices.shape == (342, 3)
+    assert surf.attribute.shape == (200, )
+

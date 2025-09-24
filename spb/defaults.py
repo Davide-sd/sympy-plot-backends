@@ -27,6 +27,8 @@ def _hardcoded_defaults():
             "use_latex": False,
             # automatically compute new data when zoom/pan are used
             "update_event": False,
+            # Show/hide minor grid
+            "show_minor_grid": False,
         },
         bokeh={
             # More themes at:
@@ -82,15 +84,7 @@ def _hardcoded_defaults():
             # automatically compute new data when zoom/pan are used
             "update_event": False,
         },
-        mayavi={
-            "size": (800, 500),
-            "bg_color": None,
-            "fg_color": None,
-            # Show/hide main grid
-            "grid": True,
-            # Render latex with Mayavi
-            "use_latex": True,
-        },
+        use_repr=False,
         # Possible values: "matplotlib", "plotly", "bokeh"
         backend_2D="matplotlib",
         # Possible values: "matplotlib", "plotly", "k3d"
@@ -129,16 +123,6 @@ def _hardcoded_defaults():
         bode={
             "phase_unit": "rad",
             "freq_unit": "rad/sec"
-        },
-
-        # settings that will be passed to the adaptive library:
-        # https://github.com/python-adaptive/adaptive/
-        adaptive={
-            # set True for adaptive algorithm, or False for  uniform meshing
-            # algorithm for line plots
-            "used_by_default": False,
-            # higher number produces coarser results
-            "goal": 0.01
         },
 
         plot_range={

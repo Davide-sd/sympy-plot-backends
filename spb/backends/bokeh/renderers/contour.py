@@ -32,7 +32,7 @@ def _draw_contour_helper(renderer, data):
     ))
 
     if s.colorbar:
-        colorbar = h.construct_color_bar(title=s.get_label(p._use_latex))
+        colorbar = h.construct_color_bar(title=s.get_label(p.use_latex))
         p._fig.add_layout(colorbar, "right")
         handle.append(colorbar)
 

@@ -11,6 +11,7 @@ def test_cfg_keys():
     must_have_keys = [
         "backend_2D",
         "backend_3D",
+        "use_repr",
         "matplotlib",
         "plotly",
         "k3d",
@@ -18,13 +19,15 @@ def test_cfg_keys():
         "complex",
         "interactive",
         "plot3d",
-        "adaptive",
         "plot_range",
-        "mayavi",
         "bode",
     ]
     for k in must_have_keys:
         assert k in cfg.keys()
+
+
+def test_use_repr():
+    assert cfg["use_repr"] is False
 
 
 def test_plot_range_keys():
@@ -41,14 +44,6 @@ def test_plot3d_keys():
     )
 
 
-def test_adaptive_keys():
-    must_have_keys = ["goal", "used_by_default"]
-    for k in must_have_keys:
-        assert k in cfg["adaptive"].keys()
-    assert cfg["adaptive"]["used_by_default"] is False
-    assert cfg["adaptive"]["goal"] == 0.01
-
-
 def test_cfg_matplotlib_keys():
     matplotlib_keys = [
         "axis_center", "grid", "show_minor_grid", "use_latex", "update_event"]
@@ -60,11 +55,13 @@ def test_cfg_matplotlib_keys():
 
 
 def test_cfg_plotly_keys():
-    must_have_keys = ["theme", "grid", "use_latex", "update_event"]
+    must_have_keys = [
+        "theme", "grid", "use_latex", "update_event", "show_minor_grid"]
     for k in must_have_keys:
         assert k in cfg["plotly"].keys()
     assert isinstance(cfg["plotly"]["theme"], str)
     assert isinstance(cfg["plotly"]["grid"], bool)
+    assert isinstance(cfg["plotly"]["show_minor_grid"], bool)
     assert isinstance(cfg["plotly"]["update_event"], bool)
 
 
@@ -108,14 +105,6 @@ def test_cfg_k3d_keys():
     assert "grid" in cfg["k3d"].keys()
     assert isinstance(cfg["k3d"]["grid"], bool)
     assert "camera_mode" in cfg["k3d"].keys()
-
-
-def test_cfg_mayavi_keys():
-    k3d_keys = ["size", "bg_color", "fg_color", "use_latex", "grid"]
-    for k in k3d_keys:
-        assert k in cfg["mayavi"].keys()
-
-    assert isinstance(cfg["k3d"]["grid"], bool)
 
 
 def test_cfg_interactive_keys():

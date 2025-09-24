@@ -1,23 +1,29 @@
 from sympy import (
     sin, cos, Piecewise, Sum, Wild, sign, piecewise_fold, Interval, Union,
-    FiniteSet, Eq, Ne, Expr
+    FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D
 )
 from sympy.core.relational import Relational
+from sympy.geometry.line import LinearEntity3D
 # NOTE: from sympy import EmptySet is a different thing!!!
 from sympy.sets.sets import EmptySet
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, ContourSeries,
-    ImplicitSeries, List2DSeries, GeometrySeries, HVLineSeries
+    ImplicitSeries, List2DSeries, Geometry2DSeries, Geometry3DSeries,
+    HLineSeries, VLineSeries
 )
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.graphics.utils import _plot_sympify
 from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges
 )
 import warnings
+import param
 
 
 def _process_piecewise(piecewise, _range, label, **kwargs):
-    """Extract the pieces of an univariate Piecewise function and create the
+    """
+    Extract the pieces of an univariate Piecewise function and create the
     necessary series for an univariate plot.
 
     Notes
@@ -129,52 +135,9 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     return series
 
 
-def _process_summations(sum_bound, expr):
-    """Substitute oo (infinity) lower/upper bounds of a summation with an
-    arbitrary big integer number.
-
-    Parameters
-    ==========
-
-    NOTE:
-    Let's consider the following summation: ``Sum(1 / x**2, (x, 1, oo))``.
-    The current implementation of lambdify (SymPy 1.9 at the time of
-    writing this) will create something of this form:
-    ``sum(1 / x**2 for x in range(1, INF))``
-    The problem is that ``type(INF)`` is float, while ``range`` requires
-    integers, thus the evaluation will fails.
-    Instead of modifying ``lambdify`` (which requires a deep knowledge),
-    let's apply this quick dirty hack: substitute symbolic ``oo`` with an
-    arbitrary large number.
-    """
-    def new_bound(t, bound):
-        if (not t.is_number) or t.is_finite:
-            return t
-        if sign(t) >= 0:
-            return bound
-        return -bound
-
-    # select summations whose lower/upper bound is infinity
-    w = Wild("w", properties=[
-        lambda t: isinstance(t, Sum),
-        lambda t: any((not a[1].is_finite) or (not a[2].is_finite) for i, a in enumerate(t.args) if i > 0)
-    ])
-
-    for t in list(expr.find(w)):
-        sums_args = list(t.args)
-        for i, a in enumerate(sums_args):
-            if i > 0:
-                sums_args[i] = (
-                    a[0], new_bound(a[1], sum_bound),
-                    new_bound(a[2], sum_bound)
-                )
-        s = Sum(*sums_args)
-        expr = expr.subs(t, s)
-    return expr
-
-
 def _build_line_series(expr, r, label, **kwargs):
-    """Loop over the provided arguments. If a piecewise function is found,
+    """
+    Loop over the provided arguments. If a piecewise function is found,
     decompose it in such a way that each argument gets its own series.
     """
     series = []
@@ -183,139 +146,14 @@ def _build_line_series(expr, r, label, **kwargs):
     if not callable(expr) and expr.has(Piecewise) and pp:
         series += _process_piecewise(expr, r, label, **kwargs)
     else:
-        if not callable(expr):
-            expr = _process_summations(sum_bound, expr)
         series.append(LineOver1DRangeSeries(expr, r, label, **kwargs))
     return series
 
 
-def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
-    """Plot a function of one variable over a 2D space.
-
-    Parameters
-    ==========
-
-    expr : Expr or callable
-        It can either be a symbolic expression representing the function of
-        one variable to be plotted, or a numerical function of one variable,
-        supporting vectorization. In the latter case the following keyword
-        arguments are not supported: ``params``, ``sum_bound``.
-    range : (symbol, min, max)
-        A 3-tuple denoting the range of the x variable. Default values:
-        `min=-10` and `max=10`.
-    label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for
-          more information.
-    color_func : callable or Expr, optional
-        Define the line color mapping. It can either be:
-
-        * A numerical function of 2 variables, x, y (the points computed by
-          the internal algorithm) supporting vectorization.
-        * A symbolic expression having at most as many free symbols as
-          ``expr``.
-        * None: the default value (no color mapping).
-    detect_poles : boolean or str, optional
-        Chose whether to detect and correctly plot poles. There are two
-        algorithms at work:
-
-        1. based on the gradient of the numerical data, it introduces NaN
-           values at locations where the steepness is greater than some
-           threshold. This splits the line into multiple segments. To improve
-           detection, increase the number of discretization points ``n``
-           and/or change the value of ``eps``.
-        2. a symbolic approach based on the ``continuous_domain`` function
-           from the ``sympy.calculus.util`` module, which computes the
-           locations of discontinuities. If any is found, vertical lines
-           will be shown.
-
-        Possible options:
-
-        * ``True``: activate poles detection computed with the numerical
-          gradient.
-        * ``False``: no poles detection.
-        * ``"symbolic"``: use both numerical and symbolic algorithms.
-
-        Default to ``False``.
-    eps : float, optional
-        An arbitrary small value used by the ``detect_poles`` algorithm.
-        Default value to 0.1. Before changing this value, it is recommended to
-        increase the number of discretization points.
-    exclude : list, optional
-        A list of numerical values in the horizontal coordinate which are
-        going to be excluded from the plot. In practice, it introduces
-        discontinuities in the resulting line.
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-    scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-    fill : boolean, optional
-        Default to True, which will render empty circular markers. It only
-        works if ``scatter=True``.
-        If False, filled circular markers will be rendered.
-    loss_fn : callable or None
-        The loss function to be used by the ``adaptive`` learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : Refer to [python-adaptive]_ for more information.
-          Specifically, look at ``adaptive.learner.learner1D`` to find
-          more loss functions.
-    n : int, optional
-        Used when the ``adaptive=False``: the function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-    only_integers : boolean, optional
-        Default to ``False``. If ``True``, discretize the domain with integer
-        numbers. It only works when ``adaptive=False``.
-        When ``only_integers=True``, the number of discretization points is
-        choosen by the algorithm.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-    steps : {'pre', 'post', 'mid', False}, default: False, optional
-        If set, it connects consecutive points with steps rather than
-        straight segments.
-    sum_bound : int, optional
-        When plotting sums, the expression will be pre-processed in order
-        to replace lower/upper bounds set to +/- infinity with this +/-
-        numerical value. Default value to 1000. Note: the higher this number,
-        the slower the evaluation.
-    tx, ty : callable, optional
-        Apply a numerical function to the discretized x-direction or to the
-        output of the numerical evaluation, the y-direction.
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the discretized range. Default to ``'linear'``.
+@modify_graphics_series_doc(LineOver1DRangeSeries, replace={"params": _PARAMS})
+def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
+    """
+    Plot a function of one variable over a 2D space.
 
     Returns
     =======
@@ -344,7 +182,7 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
        >>> graphics(line(x**2, (x, -5, 5)))
        Plot object containing:
-       [0]: cartesian line: x**2 for x over (-5.0, 5.0)
+       [0]: cartesian line: x**2 for x over (-5, 5)
 
     Multiple functions over the same range with custom rendering options:
 
@@ -360,9 +198,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     aspect="equal", ylim=(-3, 3)
        ... )
        Plot object containing:
-       [0]: cartesian line: x for x over (-3.0, 3.0)
-       [1]: cartesian line: log(x) for x over (-3.0, 3.0)
-       [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
+       [0]: cartesian line: x for x over (-3, 3)
+       [1]: cartesian line: log(x) for x over (-3, 3)
+       [2]: cartesian line: exp(x) for x over (-3, 3)
 
     Plotting a summation in which the free symbol of the expression is not
     used in the lower/upper bounds:
@@ -379,7 +217,7 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(x**(-y), (x, 1, oo)) for y over (2, 10)
 
     Plotting a summation in which the free symbol of the expression is
     used in the lower/upper bounds. Here, the discretization variable must
@@ -396,11 +234,11 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2, 10)
 
-    Using an adaptive algorithm, detect and plot vertical lines at
-    singularities. Also, apply a transformation function to the discretized
-    domain in order to convert radians to degrees:
+    Detect essential singularities and visualize them with vertical lines.
+    Also, apply a tick formatter on the x-axis is order to show ticks at
+    multiples of pi/2:
 
     .. plot::
        :context: close-figs
@@ -409,15 +247,12 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
 
        >>> import numpy as np
        >>> graphics(
-       ...     line(
-       ...         tan(x), (x, -1.5*pi, 1.5*pi),
-       ...         adaptive=True, adaptive_goal=0.001,
-       ...         detect_poles="symbolic", tx=np.rad2deg
-       ...     ),
+       ...     line(tan(x), (x, -1.5*pi, 1.5*pi), detect_poles="symbolic"),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
        ...     ylim=(-7, 7), xlabel="x [deg]", grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
+       [0]: cartesian line: tan(x) for x over (-1.5*pi, 1.5*pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -431,7 +266,7 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     ylim=(-1, 5)
        ... )
        Plot object containing:
-       [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
+       [0]: cartesian line: floor(x)/x for x over (-3.25000000000000, 3.25000000000000)
 
     Creating a step plot:
 
@@ -446,9 +281,9 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     line(x+2, (x, 0, 10), only_integers=True, steps="post", label="post"),
        ... )
        Plot object containing:
-       [0]: cartesian line: x - 2 for x over (0.0, 10.0)
-       [1]: cartesian line: x for x over (0.0, 10.0)
-       [2]: cartesian line: x + 2 for x over (0.0, 10.0)
+       [0]: cartesian line: x - 2 for x over (0, 10)
+       [1]: cartesian line: x for x over (0, 10)
+       [2]: cartesian line: x + 2 for x over (0, 10)
 
     Advanced example showing:
 
@@ -486,8 +321,8 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     ylim=(-10, 10), title="$%s$" % latex(expr)
        ... )
        Plot object containing:
-       [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5.0, 5.0)
-       [1]: cartesian line: 5*sin(x) for x over (-5.0, 5.0)
+       [0]: cartesian line: 5*sin(x) + 1/cos(10*x) for x over (-5, 5)
+       [1]: cartesian line: 5*sin(x) for x over (-5, 5)
 
     Interactive-widget plot of an oscillator. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -544,110 +379,19 @@ def line(expr, range=None, label=None, rendering_kw=None, **kwargs):
     """
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
-    range = _create_missing_ranges(
-        [expr], [range] if range else [], 1, params)[0]
+    range_x = _create_missing_ranges(
+        [expr], [range_x] if range_x else [], 1, params)[0]
     return _build_line_series(
-        expr, range, label, rendering_kw=rendering_kw, **kwargs)
+        expr, range_x, label, rendering_kw=rendering_kw, **kwargs)
 
 
+@modify_graphics_series_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
 def line_parametric_2d(
-    expr1, expr2, range=None, label=None, rendering_kw=None,
+    expr_x, expr_y, range_p=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=True, **kwargs
 ):
-    """Plots a 2D parametric curve.
-
-    Parameters
-    ==========
-
-    expr1, expr2 : Expr or callable
-        The expression representing the horizontal and vertical components
-        of the parametric function.
-        It can either be a symbolic expression representing the function of
-        one variable to be plotted, or a numerical function of one variable,
-        supporting vectorization. In the latter case the following keyword
-        arguments are not supported: ``params``, ``sum_bound``.
-    range : (symbol, min, max)
-        A 3-tuple denoting the parameter symbol, start value and stop value.
-        For example, ``(u, 0, 5)``. If the range is not specified, then a
-        default range of (-10, 10) is used.
-    label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr1`` and ``expr1`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for
-          more information.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-    color_func : callable, optional
-        Define the line color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 2 arguments: ``f(x, y)`` where ``x, y`` are the coordinates of
-            the points.
-          * 3 arguments: ``f(x, y, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr1`` or ``expr2``.
-        * None: the default value (color mapping applied to the parameter).
-    exclude : list, optional
-        A list of numerical values along the parameter which are going to
-        be excluded from the plot. In practice, it introduces discontinuities
-        in the resulting line.
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          adaptive module.
-        * callable : Refer to [python-adaptive]_ for more information.
-          Specifically, look at ``adaptive.learner.learner1D`` to find
-          more loss functions.
-    n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly sampled
-        at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-    tx, ty, tp : callable, optional
-        Apply a numerical function to the x-direction, y-direction and
-        parameter, respectively.
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the parameter.
+    """
+    Plots a 2D parametric curve.
 
     Returns
     =======
@@ -684,7 +428,7 @@ def line_parametric_2d(
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0.0, 18.84955592153876)
+       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 
     A parametric plot with multiple expressions with the same range with solid
     line colors:
@@ -699,8 +443,8 @@ def line_parametric_2d(
        ...     line_parametric_2d(cos(t), 2 * sin(t), (t, 0, 2*pi), use_cm=False),
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0, 2*pi)
+       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0, 2*pi)
 
     A parametric plot with multiple expressions with different ranges,
     custom labels, custom rendering options and a transformation function
@@ -723,8 +467,8 @@ def line_parametric_2d(
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0.0, 3.141592653589793)
+       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0, 2*pi)
+       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0, pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -741,7 +485,7 @@ def line_parametric_2d(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1.0, 12.566370614359172)
+       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1, 4*pi)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -790,22 +534,21 @@ def line_parametric_2d(
     spb.graphics.functions_3d.line_parametric_3d, line_polar, line
 
     """
-    expr1, expr2 = map(_plot_sympify, [expr1, expr2])
+    expr_x, expr_y = map(_plot_sympify, [expr_x, expr_y])
     params = kwargs.get("params", {})
-    range = _create_missing_ranges(
-        [expr1, expr2], [range] if range else [], 1, params)[0]
+    range_p = _create_missing_ranges(
+        [expr_x, expr_y], [range_p] if range_p else [], 1, params)[0]
     s = Parametric2DLineSeries(
-        expr1, expr2, range, label,
+        expr_x, expr_y, range_p, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
 
 
-def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
-    """Creates a 2D polar plot of a function of one variable.
-
-    This function executes ``line_parametric_2d``. Refer to its documentation
-    for a full list of keyword arguments.
+@modify_graphics_series_doc(Parametric2DLineSeries, replace={"params": _PARAMS})
+def line_polar(expr, range_p=None, label=None, rendering_kw=None, **kwargs):
+    """
+    Creates a 2D polar plot of a function of one variable.
 
     Examples
     ========
@@ -831,7 +574,7 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0, 2*pi)
 
     Plot with polar axis:
 
@@ -845,7 +588,7 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
        ...     polar_axis=True, aspect="equal"
        ... )
        Plot object containing:
-       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0, 2*pi)
 
     Interactive-widget plot of Guilloché Pattern. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -901,37 +644,21 @@ def line_polar(expr, range=None, label=None, rendering_kw=None, **kwargs):
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
     kwargs.setdefault("use_cm", False)
-    range = _create_missing_ranges(
-        [expr], [range] if range else [], 1, params)[0]
-    theta = range[0]
+    range_p = _create_missing_ranges(
+        [expr], [range_p] if range_p else [], 1, params)[0]
+    theta = range_p[0]
     return line_parametric_2d(
-        expr * cos(theta), expr * sin(theta), range,
+        expr * cos(theta), expr * sin(theta), range_p,
         label, rendering_kw, **kwargs)
 
 
+@modify_graphics_series_doc(ContourSeries, replace={"params": _PARAMS})
 def contour(
-    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    expr, range_x=None, range_y=None, label=None, rendering_kw=None,
     colorbar=True, clabels=True, fill=True, **kwargs
 ):
-    """Plots contour lines or filled contours of a function of two variables.
-
-    Parameters
-    ==========
-
-    clabels : bool, optional
-        Visualize labels of contour lines. Only works when ``fill=False``.
-        Default to True. Note that some backend might not implement this
-        feature.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-    fill : bool, optional
-        Choose between filled contours or line contours. Default to True
-        (filled contours).
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface`.
-        Refer to its documentation for a for a full list of keyword arguments.
+    """
+    Plots contour lines or filled contours of a function of two variables.
 
     Returns
     =======
@@ -965,9 +692,10 @@ def contour(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5, 5) and y over (-5, 5)
 
-    Line contours of a function of two variables.
+    Line contours of a function of two variables, with ticks formatted as
+    multiples of `pi/n`.
 
     .. plot::
        :context: close-figs
@@ -976,10 +704,13 @@ def contour(
 
        >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
        >>> graphics(
-       ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), fill=False)
+       ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), fill=False),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     aspect="equal"
        ... )
        Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Combining together filled and line contours. Use a custom label on the
     colorbar of the filled contour.
@@ -996,11 +727,13 @@ def contour(
        ...     contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"colors": "k", "cmap": None, "linewidths": 0.75},
        ...         fill=False),
-       ...     grid=False
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-       [1]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
+       [1]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Visually inspect the solutions of a system of 2 non-linear equations.
     The intersections between the contour lines represent the solutions.
@@ -1014,17 +747,17 @@ def contour(
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
        >>> graphics(
        ...     contour(
-       ...         eq1.rewrite(Add), (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...         eq1.lhs - eq1.rhs, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"levels": [0]},
        ...         fill=False, clabels=False),
        ...     contour(
-       ...         eq2.rewrite(Add), (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...         eq2.lhs - eq2.rhs, (x, 0, 2 * pi), (y, 0, 2 * pi),
        ...         rendering_kw={"levels": [0]},
        ...         fill=False, clabels=False),
        ... )
        Plot object containing:
-       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0, 2*pi) and y over (0, 2*pi)
+       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Contour plot with polar axis:
 
@@ -1042,7 +775,7 @@ def contour(
        ...     polar_axis=True, aspect="equal"
        ... )
        Plot object containing:
-       [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
+       [0]: contour: sin(2*r)*cos(theta) for theta over (0, 2*pi) and r over (0, 7)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -1081,23 +814,29 @@ def contour(
     spb.graphics.functions_3d.surface
 
     """
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+
+
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
-    if not (range1 and range2):
+    if not (range_x and range_y):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
-    ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
+    ranges = _preprocess_multiple_ranges([expr], [range_x, range_y], 2, params)
     s = ContourSeries(
         expr, *ranges, label, rendering_kw=rendering_kw,
         colorbar=colorbar, fill=fill, clabels=clabels, **kwargs)
     return [s]
 
 
+@modify_graphics_series_doc(ImplicitSeries, replace={"params": _PARAMS})
 def implicit_2d(
-    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    f, range_x=None, range_y=None, label=None, rendering_kw=None,
     color=None, border_color=None, border_kw=None, **kwargs
 ):
     """
@@ -1115,19 +854,6 @@ def implicit_2d(
     Parameters
     ==========
 
-    expr : Expr, Relational, BooleanFunction
-        The equation / inequality that is to be plotted.
-    range1, range2 : tuples or Symbol
-        Tuple denoting the discretization domain, for example:
-        ``(x, -10, 10)``.
-    label : str, optional
-        The label to be shown when multiple expressions are plotted.
-        If not provided, the string representation of the expression
-        will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of contours. Refer to the
-        plotting library (backend) manual for more informations.
     color : str, optional
         Specify the color of lines/regions. Default to None (automatic
         coloring by the backend).
@@ -1141,31 +867,6 @@ def implicit_2d(
         passed to the backend's function to customize the appearance of the
         limiting border. Refer to the plotting library (backend) manual for
         more informations.
-    adaptive : bool, optional
-        The default value is set to ``False``, meaning that the internal
-        algorithm uses a mesh grid approach. In such case, Boolean
-        combinations of expressions cannot be plotted.
-        If set to ``True``, the internal algorithm uses interval arithmetic.
-        If the expression cannot be plotted with interval arithmetic, it
-        switches to the meshgrid approach.
-    depth : integer
-        The depth of recursion for adaptive grid. Default value is 0.
-        Takes value in the range (0, 4).
-        Think of the resulting plot as a picture composed by pixels. By
-        increasing ``depth`` we are increasing the number of pixels, thus
-        obtaining a more accurate plot.
-    n, n1, n2 : int
-        Number of discretization points in the horizontal and vertical
-        directions when ``adaptive=False``. Default to 100. ``n`` is a shortcut
-        to set the same number of discretization points on both directions.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
 
     Returns
     =======
@@ -1196,7 +897,7 @@ def implicit_2d(
 
        >>> graphics(implicit_2d(x - 1, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: Implicit expression: Eq(x - 1, 0) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: Implicit expression: Eq(x - 1, 0) for x over (-5, 5) and y over (-5, 5)
 
     Plot a region:
 
@@ -1209,7 +910,7 @@ def implicit_2d(
        ...     implicit_2d(y > x**2, (x, -5, 5), (y, -10, 10), n=150),
        ...     grid=False)
        Plot object containing:
-       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
+       [0]: Implicit expression: y > x**2 for x over (-5, 5) and y over (-10, 10)
 
     Plot a region using a custom color, highlights the limiting border and
     customize its appearance.
@@ -1229,8 +930,8 @@ def implicit_2d(
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
-       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
+       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-pi, pi) and y over (-pi, pi)
+       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-pi, pi) and y over (-pi, pi)
 
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
@@ -1248,8 +949,8 @@ def implicit_2d(
        ...     ylim=(-2, 2)
        ... )
        Plot object containing:
-       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
-       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
+       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
+       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
 
     Plotting multiple implicit expressions and setting labels:
 
@@ -1269,11 +970,11 @@ def implicit_2d(
        ...         label="L = %s" % L_val)
        >>> graphics(*series)
        Plot object containing:
-       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0, 3) and V over (0, 1000)
+       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0, 3) and V over (0, 1000)
+       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0, 3) and V over (0, 1000)
+       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0, 3) and V over (0, 1000)
+       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0, 3) and V over (0, 1000)
 
     Comparison of similar expressions plotted with different algorithms. Note:
 
@@ -1305,9 +1006,9 @@ def implicit_2d(
        ...    grid=False
        ... )
        Plot object containing:
-       [0]: Implicit expression: Eq(x*y - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
-       [1]: Implicit expression: Eq(y*(x - 3) - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
-       [2]: Implicit expression: Eq(y*(x - 6) - 20, 15*y) for x over (15.0, 30.0) and y over (0.0, 50.0)
+       [0]: Implicit expression: Eq(x*y - 20, 15*y) for x over (15, 30) and y over (0, 50)
+       [1]: Implicit expression: Eq(y*(x - 3) - 20, 15*y) for x over (15, 30) and y over (0, 50)
+       [2]: Implicit expression: Eq(y*(x - 6) - 20, 15*y) for x over (15, 30) and y over (0, 50)
 
     If the expression is plotted with the adaptive algorithm and it produces
     "low-quality" results, maybe it's possible to rewrite it in order to use
@@ -1369,10 +1070,14 @@ def implicit_2d(
     line, spb.graphics.functions_3d.implicit_3d
 
     """
-    expr = _plot_sympify(expr)
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+
+    expr = _plot_sympify(f)
     params = kwargs.get("params", {})
 
-    if not (range1 and range2):
+    if not (range_x and range_y):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
@@ -1380,7 +1085,7 @@ def implicit_2d(
         )
 
     series = []
-    ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
+    ranges = _preprocess_multiple_ranges([expr], [range_x, range_y], 2, params)
     series.append(ImplicitSeries(
         expr, *ranges, label, color=color,
         rendering_kw=rendering_kw, **kwargs))
@@ -1397,30 +1102,10 @@ def implicit_2d(
     return series
 
 
-def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
-    """Plots lists of coordinates.
-
-    Parameters
-    ==========
-
-    coord_x, coord_y : list or tuple
-        List of coordinates.
-    label : str, optional
-        The label to be shown in the legend.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-    scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-    fill : boolean, optional
-        Default to False, which will render empty circular markers. It only
-        works if ``scatter=True``.
-        If True, filled circular markers will be rendered.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+@modify_graphics_series_doc(List2DSeries, replace={"params": _PARAMS})
+def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
+    """
+    Plots lists of coordinates.
 
     Returns
     =======
@@ -1525,36 +1210,19 @@ def list_2d(coord_x, coord_y, label=None, rendering_kw=None, **kwargs):
     line, spb.graphics.functions_3d.list_3d
 
     """
-    if not hasattr(coord_x, "__iter__"):
-        coord_x = [coord_x]
-    if not hasattr(coord_y, "__iter__"):
-        coord_y = [coord_y]
+    if not hasattr(list_x, "__iter__"):
+        list_x = [list_x]
+    if not hasattr(list_y, "__iter__"):
+        coord_y = [list_y]
     s = List2DSeries(
-        coord_x, coord_y, label, rendering_kw=rendering_kw, **kwargs)
+        list_x, list_y, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
+@modify_graphics_series_doc(Geometry2DSeries, replace={"params": _PARAMS})
 def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
-    """Plot entities from the sympy.geometry module.
-
-    Parameters
-    ==========
-
-    geom : GeometryEntity
-        Represent the geometric entity to be plotted.
-    label : str, optional
-        The name of the geometry entity to be eventually shown on the
-        legend. If not provided, the string representation of ``geom``
-        will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines or fills. Refer to
-        the plotting library (backend) manual for more informations.
-    fill : boolean
-        Default to True. Fill the polygon/circle/ellipse.
-    A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+    """
+    Plot entities from the sympy.geometry module.
 
     Returns
     =======
@@ -1590,7 +1258,7 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     grid=False, aspect="equal"
        ... )
        Plot object containing:
-       [0]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [0]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and
     polygons are going to be filled. Plotting Curve objects is the same as
@@ -1611,12 +1279,12 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot several numeric geometric entities defined by numbers only, turn off
     fill. Every entity is represented as a line.
@@ -1638,12 +1306,12 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
        ...     aspect="equal", grid=False
        ... )
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot 3D geometric entities. Instances of ``Plane`` must be plotted with
     ``implicit_3d`` or with ``plane`` (with the necessary ranges).
@@ -1694,26 +1362,34 @@ def geometry(geom, label=None, rendering_kw=None, fill=True, **kwargs):
     line, spb.graphics.functions_3d.plane
 
     """
-    s = GeometrySeries(
-        geom, label=label, rendering_kw=rendering_kw, fill=fill, **kwargs)
+    if isinstance(geom, Plane):
+        raise TypeError("")
+
+    kwargs.setdefault("is_filled", fill)
+
+    if isinstance(geom, Curve):
+        new_cls = (
+            Parametric2DLineSeries
+            if len(geom.functions) == 2
+            else Parametric3DLineSeries
+        )
+        s = new_cls(
+            *geom.functions, geom.limits,
+            label=label, rendering_kw=rendering_kw, **kwargs)
+    else:
+        if isinstance(geom, (LinearEntity3D, Point3D)):
+            new_cls = Geometry3DSeries
+        else:
+            new_cls = Geometry2DSeries
+        s = new_cls(
+            geom, label=label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
-def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
-    """Create an horizontal line at a given location in a 2D space.
-
-    Parameters
-    ==========
-    v : float or Expr
-        The y-coordinate where to draw the horizontal line.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    show_in_legend : bool, optional
-        Show/hide the line from the legend. Default to True (line is visible).
+@modify_graphics_series_doc(HLineSeries, replace={"params": _PARAMS})
+def hline(y, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
+    """
+    Create an horizontal line at a given location in a 2D space.
 
     Returns
     =======
@@ -1739,7 +1415,7 @@ def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+       [0]: cartesian line: cos(x) for x over (-pi, pi)
        [1]: horizontal line at y = 0.500000000000000
 
     Interactive widget plot:
@@ -1770,28 +1446,17 @@ def hline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
 
     """
     return [
-        HVLineSeries(
-            v, True, label,
+        HLineSeries(
+            y, label,
             rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]
 
 
-def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
-    """Create an horizontal line at a given location in a 2D space.
-
-    Parameters
-    ==========
-    v : float or Expr
-        The x-coordinate where to draw the horizontal line.
-    label : str, optional
-        The label to be shown on the legend.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    show_in_legend : bool, optional
-        Show/hide the line from the legend. Default to True (line is visible).
+@modify_graphics_series_doc(VLineSeries, replace={"params": _PARAMS})
+def vline(x, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
+    """
+    Create an vertical line at a given location in a 2D space.
 
     Returns
     =======
@@ -1816,8 +1481,9 @@ def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
        ...     grid=False
        ... )
        Plot object containing:
-       [0]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
-       [1]: horizontal line at y = 0.500000000000000
+       [0]: cartesian line: cos(x) for x over (-pi, pi)
+       [1]: vertical line at x = 1
+       [2]: vertical line at x = -1
 
     Interactive widget plot:
 
@@ -1847,8 +1513,8 @@ def vline(v, label=None, rendering_kw=None, show_in_legend=True, **kwargs):
 
     """
     return [
-        HVLineSeries(
-            v, False, label,
+        VLineSeries(
+            x, label,
             rendering_kw=rendering_kw,
             show_in_legend=show_in_legend, **kwargs)
     ]

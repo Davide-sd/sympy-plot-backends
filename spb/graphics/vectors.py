@@ -3,6 +3,8 @@ from sympy import (
 )
 from sympy.matrices.dense import DenseMatrix
 from sympy.external import import_module
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Vector2DSeries, Vector3DSeries, SliceVector3DSeries, BaseSeries,
     ContourSeries, Arrow2DSeries, Arrow3DSeries
@@ -53,68 +55,47 @@ def _split_vector(expr):
     return xexpr, yexpr, zexpr
 
 
+@modify_graphics_series_doc(Vector2DSeries, replace={"params": _PARAMS})
 def vector_field_2d(
-    expr1, expr2=None, range1=None, range2=None, label=None,
+    u, v=None, range_x=None, range_y=None, label=None, is_streamlines=False,
     quiver_kw=None, stream_kw=None, contour_kw=None, **kwargs
 ):
-    """Plot a 2D vector field.
+    """
+    Plot a 2D vector field.
 
     Parameters
     ==========
 
-    expr1, expr2 : Vector, Expr or callable
-        The components of the vector field. It can be a:
+    u : Vector, Expr or callable
+        The first component of the vector field. It can be:
 
+        * A symbolic expression.
+        * A numerical functions of 2 variables supporting vectorization.
         * A vector from the `sympy.vector` module or from the
-          `sympy.physics.mechanics` module. In this case, only ``expr1``
-          is set.
-        * Two symbolic expressions, one for each component.
-        * Two numerical functions of 2 variables.
-    range1, range2 : 3-element tuples
-        Denotes the range of the variables. For example ``(x, -5, 5)``.
-    label : str, optional
-        The name of the vector field to be eventually shown on the legend
-        or colorbar. If none is provided, the string representation of
-        the vector will be used.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-    color_func : callable, optional
-        Define the quiver/streamlines color mapping when ``use_cm=True``.
-        It can either be:
+          `sympy.physics.mechanics` module. In this case, ``v`` can be None
+          and the algorithm will extract the components.
+    v : Expr or callable
+        The second component of the vector field. It can be:
 
-        * A numerical function supporting vectorization. The arity must be:
-          ``f(x, y, u, v)``. Further, ``scalar=False`` must be set in order
-          to hide the contour plot so that a colormap is applied to
-          quivers/streamlines.
-        * A symbolic expression having at most as many free symbols as
-          ``expr1/expr2``. This only works for quivers plot.
-        * None: the default value, which will map colors according to the
-          magnitude of the vector field.
+        * A symbolic expression.
+        * A numerical functions of 2 variables supporting vectorization.
     contour_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend
         contour function to customize the appearance. Refer to the plotting
         library (backend) manual for more informations.
-    n, n1, n2 : int, optional
-        Number of discretization points for the quivers or streamlines in the
-        x/y-direction, respectively. Default to 25. ``n`` is a shortcut to
-        set the same number of discretization points on both directions.
     nc : int, optional
         Number of discretization points for the scalar contour plot.
         Default to 100.
-    normalize : bool, optional
-        Default to False. If True, the vector field will be normalized,
-        resulting in quivers having the same length. If ``use_cm=True``, the
-        backend will color the quivers by the (pre-normalized) vector field's
-        magnitude. Note: only quivers will be affected by this option.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
     quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-    scalar : boolean, Expr, None or list/tuple of 2 elements, optional
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+        * Plotly:
+          https://plotly.com/python/quiver-plots/
+    scalar : boolean, Expr, None or list or tuple of 2 elements, optional
         Represents the scalar field to be plotted in the background of a 2D
         vector field plot. It can be:
 
@@ -128,17 +109,15 @@ def vector_field_2d(
           or a numerical function of 2 variables supporting vectorization.
 
         Default to True.
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
-    streamlines : boolean, optional
-        Whether to plot the vector field using streamlines (True) or quivers
-        (False). Default to False.
     stream_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend
-        streamlines-plotting function to customize the appearance. Refer to
-        the Notes section to learn more.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the streamlines.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        * Plotly:
+          https://plotly.com/python/streamline-plots/
 
     Returns
     =======
@@ -173,7 +152,7 @@ def vector_field_2d(
        ...         contour_kw={"cmap": "Blues_r", "levels": 15}),
        ...     grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: contour: sqrt(sin(x - y)**2 + cos(x + y)**2) for x over (-3, 3) and y over (-3, 3)
        [1]: 2D vector series: [sin(x - y), cos(x + y)] over (x, -3.0, 3.0), (y, -3.0, 3.0)
 
     Quivers plot of a 2D vector field with no background scalar field,
@@ -232,7 +211,7 @@ def vector_field_2d(
        ...         scalar=False, quiver_kw={"color": "r"}, use_cm=False),
        ...     aspect="equal", grid=False, xlabel="x", ylabel="y")
        Plot object containing:
-       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5.0, 5.0) and y over (-3.0, 3.0)
+       [0]: contour: sqrt(sin(y)**2 + cos(x)**2) for x over (-5, 5) and y over (-3, 3)
        [1]: 2D vector series: [-sin(y), cos(x)] over (x, -5.0, 5.0), (y, -3.0, 3.0)
        [2]: 2D vector series: [2*y, x] over (x, -5.0, 5.0), (y, -3.0, 3.0)
 
@@ -293,37 +272,45 @@ def vector_field_2d(
     vector_field_3d
 
     """
-    if expr2 is None:
-        expr1, expr2, _ = _split_vector(expr1)
-    is_vec_lambda_function = any(callable(e) for e in [expr1, expr2])
-    if not is_vec_lambda_function:
-        expr1, expr2 = map(sympify, [expr1, expr2])
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
 
-    if not (range1 or range2):
+
+    if v is None:
+        u, v, _ = _split_vector(u)
+    is_vec_lambda_function = any(callable(e) for e in [u, v])
+    if not is_vec_lambda_function:
+        u, v = map(sympify, [u, v])
+
+    if not (range_x or range_y):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
 
+    nc = kwargs.pop("nc", 100) # number of discr points for contours
+    scalar = kwargs.get("scalar", True)
+    kwargs.setdefault("use_cm", False if scalar else True)
+    is_streamlines = kwargs.pop("streamlines", False)
     params = kwargs.get("params", {})
     ranges = _preprocess_multiple_ranges(
-        [expr1, expr2], [range1, range2], 2, params)
-    is_streamlines = kwargs.get("streamlines", False)
+        [u, v], [range_x, range_y], 2, params)
     s = Vector2DSeries(
-        expr1, expr2, *ranges, label,
+        u, v, *ranges, label,
+        is_streamlines=is_streamlines,
         rendering_kw=quiver_kw if not is_streamlines else stream_kw,
         **kwargs
     )
 
-    scalar = kwargs.get("scalar", True)
     if scalar is True:
         if not is_vec_lambda_function:
-            scalar_field = sqrt(expr1**2 + expr2**2)
+            scalar_field = sqrt(u**2 + v**2)
         else:
             np = import_module("numpy")
             scalar_field = lambda x, y: (
-                np.sqrt(expr1(x, y)**2 + expr2(x, y)**2))
+                np.sqrt(u(x, y)**2 + v(x, y)**2))
         scalar_label = "Magnitude"
     elif isinstance(scalar, Expr):
         scalar_field = scalar
@@ -350,7 +337,6 @@ def vector_field_2d(
 
     series = [s]
     if scalar_field:
-        nc = kwargs.pop("nc", 100)
         cs_kwargs = kwargs.copy()
         for kw in ["n", "n1", "n2"]:
             if kw in cs_kwargs.keys():
@@ -364,62 +350,45 @@ def vector_field_2d(
     return series
 
 
+@modify_graphics_series_doc(Vector3DSeries, replace={"params": _PARAMS})
 def vector_field_3d(
-    expr1, expr2=None, expr3=None, range1=None, range2=None,
-    range3=None, label=None, quiver_kw=None, stream_kw=None, **kwargs
+    u, v=None, w=None, range_x=None, range_y=None,
+    range_z=None, label=None, is_streamlines=False, quiver_kw=None,
+    stream_kw=None, **kwargs
 ):
-    """Plot a 3D vector field.
+    """
+    Plot a 3D vector field.
 
     Parameters
     ==========
 
-    expr1, expr2, expr3 : Vector, Expr or callable
-        The components of the vector field. It can be a:
+    u : Vector, Expr or callable
+        The first component of the vector field. It can be:
 
+        * A symbolic expression.
+        * A numerical functions of 2 variables supporting vectorization.
         * A vector from the `sympy.vector` module or from the
-          `sympy.physics.mechanics` module. In this case, only ``expr1``
-          is set.
-        * Three symbolic expressions, one for each component.
-        * Three numerical functions of 3 variables.
-    range1, range2, range3 : 3-element tuples
-        Denotes the range of the variables. For example ``(x, -5, 5)``.
-    label : str, optional
-        The name of the vector field to be eventually shown on the legend
-        or colorbar. If none is provided, the string representation of
-        the vector will be used.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-    color_func : callable, optional
-        Define the quiver/streamlines color mapping when ``use_cm=True``.
-        It can either be:
+          `sympy.physics.mechanics` module. In this case, ``v, w`` can be None
+          and the algorithm will extract the components.
+    v : Expr or callable
+        The second component of the vector field. It can be:
 
-        * A numerical function supporting vectorization. The arity must be
-          ``f(x, y, z, u, v, w)``.
-        * A symbolic expression having at most as many free symbols as
-          ``expr1/expr2/expr3``. This only works for quivers plot.
-        * None: the default value, which will map colors according to the
-          magnitude of the vector.
-    contour_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend
-        contour function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
-    n, n1, n2 : int, optional
-        Number of discretization points for the quivers or streamlines in the
-        x/y/z-direction, respectively. Default to 25. ``n`` is a shortcut to
-        set the same number of discretization points on all directions.
-    normalize : bool, optional
-        Default to False. If True, the vector field will be normalized,
-        resulting in quivers having the same length. If ``use_cm=True``, the
-        backend will color the quivers by the (pre-normalized) vector field's
-        magnitude. Note: only quivers will be affected by this option.
-    params : dict, optional
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
+        * A symbolic expression.
+        * A numerical functions of 2 variables supporting vectorization.
+    w : Expr or callable
+        The second component of the vector field. It can be:
+
+        * A symbolic expression.
+        * A numerical functions of 2 variables supporting vectorization.
     quiver_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend quivers-
-        plotting function to customize the appearance. Refer to the plotting
-        library (backend) manual for more informations.
+        A dictionary of keyword arguments to be passed to the renderers
+        in order to further customize the appearance of the quivers.
+        Here are some useful links for the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
+        * Plotly:
+          https://plotly.com/python/cone-plot/
     slice : Plane, list, Expr, optional
         Plot the 3D vector field over the provided slice. It can be:
 
@@ -437,9 +406,6 @@ def vector_field_3d(
         - `n3` will only be used with planes parallel to xz or yz.
         - `n1`, `n2`, `n3` doesn't affect the slice if it is an instance of
           ``SurfaceOver2DRangeSeries`` or ``ParametricSurfaceSeries``.
-    streamlines : boolean, optional
-        Whether to plot the vector field using streamlines (True) or quivers
-        (False). Default to False.
     stream_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend
         streamlines-plotting function to customize the appearance.
@@ -459,6 +425,15 @@ def vector_field_3d(
 
         If 3D streamlines appears to be cut short inside the specified domain,
         try to increase ``max_prop`` (default value to 5000).
+
+        To further customize the appearance, here are some useful links for
+        the supported plotting libraries:
+
+        * Matplotlib:
+          https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
+        * Plotly:
+          https://plotly.com/python/streamtube-plot/
+        * K3D-Jupyter: refers to k3d.line documentation.
 
     Returns
     =======
@@ -552,7 +527,7 @@ def vector_field_3d(
                    width=0.025,
                    color_map=k3d.colormaps.matplotlib_color_maps.plasma
                )),
-           title=r"Rössler \, attractor", xlabel="x", ylabel="y", zlabel="z",
+           title="Rössler \\, attractor", xlabel="x", ylabel="y", zlabel="z",
            backend=KB, grid=False)
 
     Visually verify the normal vector to a circular cone surface.
@@ -597,7 +572,7 @@ def vector_field_3d(
                rendering_kw={"opacity": 1}, wireframe=True,
                wf_n1=n1, wf_n2=n2, wf_rendering_kw={"width": 0.004}),
            vector_field_3d(
-               n, range1=(xn, -5, 5), range2=(yn, -5, 5), range3=(zn, -5, 5),
+               n, range_x=(xn, -5, 5), range_y=(yn, -5, 5), range_z=(zn, -5, 5),
                use_cm=False, slice=cone_discr,
                quiver_kw={"scale": 0.5, "pivot": "tail"}
            ),
@@ -609,19 +584,25 @@ def vector_field_3d(
     vector_field_2d
 
     """
-    if ((expr2 is None) and expr3) or ((expr3 is None) and expr2):
-        raise ValueError(
-            "`expr2` or `expr3` is None. This is not supported. "
-            "Please, provide all components of the vector field.")
-    if (expr2 is None) and (expr3 is None):
-        expr1, expr2, expr3 = _split_vector(expr1)
-    is_vec_lambda_function = any(callable(e) for e in [expr1, expr2, expr3])
-    if not is_vec_lambda_function:
-        expr1, expr2, expr3 = map(sympify, [expr1, expr2, expr3])
-    if any(not isinstance(e, Expr) for e in [expr1, expr2, expr3]):
-        raise ValueError("`expr1` and `expr2` must be symbolic expressions.")
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+    range_z = kwargs.pop("range3", range_z)
 
-    check = [range1 is None, range2 is None, range3 is None]
+
+    if ((v is None) and w) or ((w is None) and v):
+        raise ValueError(
+            "`v` or `w` is None. This is not supported. "
+            "Please, provide all components of the vector field.")
+    if (v is None) and (w is None):
+        u, v, w = _split_vector(u)
+    is_vec_lambda_function = any(callable(e) for e in [u, v, w])
+    if not is_vec_lambda_function:
+        u, v, w = map(sympify, [u, v, w])
+    if any(not isinstance(e, Expr) for e in [u, v, w]):
+        raise ValueError("`u` and `v` must be symbolic expressions.")
+
+    check = [range_x is None, range_y is None, range_z is None]
     if sum(check) >= 2:
         pre = "Not enough ranges were provided. "
         if sum(check) == 3:
@@ -633,18 +614,18 @@ def vector_field_3d(
         )
 
     params = kwargs.get("params", {})
-    ranges = _preprocess_multiple_ranges(
-        [expr1, expr2, expr3], [range1, range2, range3], 3, params)
     is_streamlines = kwargs.get("streamlines", False)
+    _slice = kwargs.pop("slice", None)
+    ranges = _preprocess_multiple_ranges(
+        [u, v, w], [range_x, range_y, range_z], 3, params)
     series = [
         Vector3DSeries(
-            expr1, expr2, expr3, *ranges, label,
+            u, v, w, *ranges, label,
             rendering_kw=quiver_kw if not is_streamlines else stream_kw,
             **kwargs
         )
     ]
 
-    _slice = kwargs.pop("slice", None)
     if _slice is None:
         return series
 
@@ -668,34 +649,18 @@ def vector_field_3d(
     for s in _slice:
         slice_series.append(
             SliceVector3DSeries(
-                s, expr1, expr2, expr3, *ranges, label,
+                s, u, v, w, *ranges, label,
                 rendering_kw=quiver_kw, **kwargs))
     return slice_series
 
 
+@modify_graphics_series_doc(Arrow2DSeries, replace={"params": _PARAMS})
 def arrow_2d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
 ):
-    """Draw an arrow in a 2D space.
-
-    Parameters
-    ==========
-    start : (x, y)
-        Coordinates of the start position.
-    direction : (u, v)
-        Componenents of the direction vector.
-    label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
+    """
+    Draw an arrow in a 2D space.
 
     Returns
     =======
@@ -763,29 +728,13 @@ def arrow_2d(
     ]
 
 
+@modify_graphics_series_doc(Arrow3DSeries, replace={"params": _PARAMS})
 def arrow_3d(
     start, direction, label=None, rendering_kw=None, show_in_legend=True,
     **kwargs
 ):
-    """Draw an arrow in a 2D space.
-
-    Parameters
-    ==========
-    start : (x, y, z)
-        Coordinates of the start position.
-    direction : (u, v, w)
-        Componenents of the direction vector.
-    label : str, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    show_in_legend : bool
-        If True, add a legend entry for the expression being plotted.
-        This option is useful to hide a particular expression when combining
-        together multiple plots. Default to True.
+    """
+    Draw an arrow in a 2D space.
 
     Returns
     =======

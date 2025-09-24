@@ -5,7 +5,7 @@ def _draw_zgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     xi_dict, wn_dict, tp_dict, ts_dict = data
 
-    lkw = p.grid_line_kw
+    lkw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     # damping ratio lines
@@ -25,7 +25,7 @@ def _draw_zgrid_helper(renderer, data):
     for k, v in wn_dict.items():
         h1, = p._ax.plot(v["x"], v["y"], **kw)
         h2 = p._ax.annotate(
-            v["label"](p._use_latex), xy=(v["lx"], v["ly"]),
+            v["label"](p.use_latex), xy=(v["lx"], v["ly"]),
             xytext=(v["lx"], v["ly"]), size=9,
             horizontalalignment="center",
             verticalalignment="center")
@@ -76,7 +76,7 @@ def _update_zgrid_helper(renderer, data, handles):
         h1, h2 = handles
         h1.set_data(v["x"], v["y"])
         h2.set_position([v["lx"], v["ly"]])
-        h2.set_text(v["label"](p._use_latex))
+        h2.set_text(v["label"](p.use_latex))
 
     for v, handles in zip(tp_dict.values(), tp_handles):
         h1, h2 = handles

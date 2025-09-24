@@ -75,7 +75,10 @@ def sgrid_auto(fig=None):
 
     # PolarAxes.PolarTransform takes radian. However, we want our coordinate
     # system in degrees
-    tr = Affine2D().scale(np.pi/180., 1.) + PolarAxes.PolarTransform()
+    tr = Affine2D().scale(np.pi/180., 1.) + PolarAxes.PolarTransform(
+        # NOTE: https://matplotlib.org/stable/api/prev_api_changes/api_changes_3.9.0.html#applying-theta-transforms-in-polartransform
+        apply_theta_transforms=False
+    )
 
     # polar projection, which involves cycle, and also has limits in
     # its coordinates, needs a special method to find the extremes

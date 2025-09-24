@@ -17,6 +17,8 @@ it if you care at all about performance.
 """
 
 from spb.defaults import TWO_D_B
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.graphics import (
     graphics, line, line_parametric_2d, line_parametric_3d,
     surface, surface_parametric, surface_revolution, surface_spherical,
@@ -24,7 +26,8 @@ from spb.graphics import (
 )
 from spb.series import (
     Parametric2DLineSeries, PlaneSeries, GenericDataSeries,
-    LineOver1DRangeSeries
+    LineOver1DRangeSeries, List2DSeries, ImplicitSeries, ContourSeries,
+    Geometry2DSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments, _unpack_args, _instantiate_backend,
@@ -33,9 +36,11 @@ from sympy import latex, Tuple, Symbol, oo, cos, sin
 from sympy.external import import_module
 
 
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
+
+
 def _set_labels(series, labels, rendering_kw):
-    """Apply the label keyword argument to the series.
-    """
+    """Apply the label keyword argument to the series."""
     if not isinstance(labels, (list, tuple)):
         labels = [labels]
     if len(labels) > 0:
@@ -73,6 +78,50 @@ def _create_series(series_type, plot_expr, **kwargs):
 
 
 def _create_generic_data_series(**kwargs):
+    """
+    Parameters
+    ==========
+
+    annotations : list, optional
+        A list of dictionaries specifying the type of annotation
+        required. The keys in the dictionary should be equivalent
+        to the arguments:
+
+        * `matplotlib.axes.Axes.annotate` method.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.LabelSet` class.
+
+    markers : list, optional
+        A list of dictionaries specifying the type the markers required.
+        The keys in the dictionary should be equivalent to the arguments
+        of:
+
+        * `matplotlib.pyplot.plot()` function along with the marker
+          related keyworded arguments.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.Scatter` class.
+
+    rectangles : list, optional
+        A list of dictionaries specifying the dimensions of the
+        rectangles to be plotted. The keys in the dictionary should be
+        equivalent to the arguments of:
+
+        * `matplotlib.patches.Rectangle` class.
+        * Plotly's `graph_objects.Figure.add_shape` function.
+        * The ``"args"`` key must contain the
+          `bokeh.models.ColumnDataSource` object containing the data.
+          All other keyword arguments will be passed to the
+          `bokeh.models.Rect` class.
+
+    fill : dict, optional
+        A dictionary specifying the type of color filling required in
+        the plot. The keys in the dictionary should be equivalent to the
+        arguments of:
+
+        * `matplotlib.axes.Axes.fill_between` method.
+        * Plotly's `graph_objects.Scatter` class.
+        * `bokeh.models.VArea` class.
+    """
     keywords = ["annotations", "markers", "fill", "rectangles"]
     series = []
     for kw in keywords:
@@ -85,8 +134,10 @@ def _create_generic_data_series(**kwargs):
     return series
 
 
+@modify_plot_functions_doc(LineOver1DRangeSeries, replace=_repl)
 def plot(*args, **kwargs):
-    """Plots a function of a single variable as a curve.
+    """
+    Plots a function of a single variable as a curve.
 
     Typical usage examples are in the followings:
 
@@ -126,21 +177,6 @@ def plot(*args, **kwargs):
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
 
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
-
     Examples
     ========
 
@@ -162,7 +198,7 @@ def plot(*args, **kwargs):
 
        >>> plot(x**2, (x, -5, 5))
        Plot object containing:
-       [0]: cartesian line: x**2 for x over (-5.0, 5.0)
+       [0]: cartesian line: x**2 for x over (-5, 5)
 
     Multiple functions over the same range with custom rendering options:
 
@@ -174,9 +210,9 @@ def plot(*args, **kwargs):
        >>> plot(x, log(x), exp(x), (x, -3, 3), aspect="equal", ylim=(-3, 3),
        ...    rendering_kw=[{}, {"linestyle": "--"}, {"linestyle": ":"}])
        Plot object containing:
-       [0]: cartesian line: x for x over (-3.0, 3.0)
-       [1]: cartesian line: log(x) for x over (-3.0, 3.0)
-       [2]: cartesian line: exp(x) for x over (-3.0, 3.0)
+       [0]: cartesian line: x for x over (-3, 3)
+       [1]: cartesian line: log(x) for x over (-3, 3)
+       [2]: cartesian line: exp(x) for x over (-3, 3)
 
     Plotting a summation in which the free symbol of the expression is not
     used in the lower/upper bounds:
@@ -190,7 +226,7 @@ def plot(*args, **kwargs):
        >>> expr = Sum(1 / x ** y, (x, 1, oo))
        >>> plot(expr, (y, 2, 10), sum_bound=1e03, title="$%s$" % latex(expr))
        Plot object containing:
-       [0]: cartesian line: Sum(x**(-y), (x, 1, 1000)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(x**(-y), (x, 1, oo)) for y over (2, 10)
 
     Plotting a summation in which the free symbol of the expression is
     used in the lower/upper bounds. Here, the discretization variable must
@@ -202,14 +238,14 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> expr = Sum(1 / x, (x, 1, y))
-       >>> plot(expr, (y, 2, 10), adaptive=False,
+       >>> plot(expr, (y, 2, 10),
        ...     scatter=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
-       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2.0, 10.0)
+       [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2, 10)
 
-    Using an adaptive algorithm, detect and plot vertical lines at
-    singularities. Also, apply a transformation function to the discretized
-    domain in order to convert radians to degrees:
+    Detect essential singularities and visualize them with vertical lines.
+    Also, apply a tick formatter on the x-axis is order to show ticks at
+    multiples of pi/2:
 
     .. plot::
        :context: close-figs
@@ -217,12 +253,13 @@ def plot(*args, **kwargs):
        :include-source: True
 
        >>> import numpy as np
+       >>> from spb import multiples_of_pi_over_2
        >>> plot(tan(x), (x, -1.5*pi, 1.5*pi),
-       ...      adaptive=True, adaptive_goal=0.001,
-       ...      detect_poles="symbolic", tx=np.rad2deg, ylim=(-7, 7),
-       ...      xlabel="x [deg]", grid=False)
+       ...      detect_poles="symbolic", ylim=(-7, 7),
+       ...      xlabel="x [deg]", grid=False,
+       ...      x_ticks_formatter=multiples_of_pi_over_2())
        Plot object containing:
-       [0]: cartesian line: tan(x) for x over (-4.71238898038469, 4.71238898038469)
+       [0]: cartesian line: tan(x) for x over (-1.5*pi, 1.5*pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -234,14 +271,13 @@ def plot(*args, **kwargs):
        >>> plot(floor(x) / x, (x, -3.25, 3.25), ylim=(-1, 5),
        ...     exclude=list(range(-4, 5)))
        Plot object containing:
-       [0]: cartesian line: floor(x)/x for x over (-3.25, 3.25)
+       [0]: cartesian line: floor(x)/x for x over (-3.25000000000000, 3.25000000000000)
 
     Advanced example showing:
 
-    * detect singularities by setting ``adaptive=False`` (better performance),
-      increasing the number of discretization points (in order to have
-      'vertical' segments on the lines) and reducing the threshold for the
-      singularity-detection algorithm.
+    * detect singularities by setting increasing the number of discretization
+      points (in order to have 'vertical' segments on the lines) and reducing
+      the threshold for the singularity-detection algorithm.
     * application of color function.
 
     .. plot::
@@ -263,7 +299,7 @@ def plot(*args, **kwargs):
        ...     return d
        >>> p1 = plot(expr, (x, -5, 5),
        ...         "distance from (0, 0)", {"cmap": "plasma"},
-       ...         ylim=(-10, 10), adaptive=False, detect_poles=True, n=3e04,
+       ...         ylim=(-10, 10), detect_poles=True, n=3e04,
        ...         eps=1e-04, color_func=cf, title="$%s$" % latex(expr))
 
     Combining multiple plots together:
@@ -336,20 +372,28 @@ def plot(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 1, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
     lines = []
 
     for pe in plot_expr:
         expr, r, label, rendering_kw = pe
         lines.extend(line(expr, r, label, rendering_kw, **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_parametric(*args, **kwargs):
     """
     Plots a 2D parametric curve.
@@ -378,13 +422,6 @@ def plot_parametric(*args, **kwargs):
             (expr_x1, expr_y1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr_x2, expr_y2, range2, label2 [opt], rendering_kw2 [opt]), ...)
 
-    Refer to :func:`~spb.graphics.functions_2d.line_parametric_2d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Examples
     ========
 
@@ -410,7 +447,7 @@ def plot_parametric(*args, **kwargs):
        ...      2 * sin(u) - 5 * sin(2 * u / 3),
        ...      (u, 0, 6 * pi), aspect="equal")
        Plot object containing:
-       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0.0, 18.84955592153876)
+       [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 
     A parametric plot with multiple expressions with the same range with solid
     line colors:
@@ -423,8 +460,8 @@ def plot_parametric(*args, **kwargs):
        >>> plot_parametric((2 * cos(t), sin(t)), (cos(t), 2 * sin(t)),
        ...    (t, 0, 2*pi), use_cm=False)
        Plot object containing:
-       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (2*cos(t), sin(t)) for t over (0, 2*pi)
+       [1]: parametric cartesian line: (cos(t), 2*sin(t)) for t over (0, 2*pi)
 
     A parametric plot with multiple expressions with different ranges,
     custom labels, custom rendering options and a transformation function
@@ -441,8 +478,8 @@ def plot_parametric(*args, **kwargs):
        ...      (3 * cos(2 * v), 5 * sin(4 * v), (v, 0, pi), "v [deg]"),
        ...      aspect="equal", tp=np.rad2deg)
        Plot object containing:
-       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0.0, 6.283185307179586)
-       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0.0, 3.141592653589793)
+       [0]: parametric cartesian line: (3*cos(u), 3*sin(u)) for u over (0, 2*pi)
+       [1]: parametric cartesian line: (3*cos(2*v), 5*sin(4*v)) for v over (0, pi)
 
     Introducing discontinuities by excluding specified points:
 
@@ -456,7 +493,7 @@ def plot_parametric(*args, **kwargs):
        >>> plot_parametric(e1, e2, (t, 1, 4*pi),
        ...     exclude=list(range(1, 13)), grid=False)
        Plot object containing:
-       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1.0, 12.566370614359172)
+       [0]: parametric cartesian line: (log(floor(t))*cos(t), log(floor(t))*sin(t)) for t over (1, 4*pi)
 
     Plotting a numerical function instead of a symbolic expression:
 
@@ -502,10 +539,14 @@ def plot_parametric(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 2, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
     lines = []
 
     for pe in plot_expr:
@@ -513,10 +554,14 @@ def plot_parametric(*args, **kwargs):
         lines.extend(
             line_parametric_2d(e1, e2, r, label, rendering_kw, **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_parametric_region(*args, **kwargs):
     """
     Plots a 2D parametric region.
@@ -669,6 +714,7 @@ def plot_parametric_region(*args, **kwargs):
        ...     xlabel="Re", ylabel="Im", title="$f(z)=%s$" % latex(f))
 
     """
+    kwargs["plot_function"] = True
     np = import_module('numpy')
     n1 = kwargs.pop("n1", 10)
     n2 = kwargs.pop("n2", 10)
@@ -677,7 +723,6 @@ def plot_parametric_region(*args, **kwargs):
     labels = kwargs.pop("label", [])
     rendering_kw = kwargs.pop("rendering_kw", None)
     args = _plot_sympify(args)
-    kwargs["adaptive"] = False
     kwargs["use_cm"] = False
     kwargs["legend"] = False
     plot_expr = _check_arguments(args, 2, 2, **kwargs)
@@ -724,6 +769,7 @@ def _plot3d_plot_contour_helper(threed, *args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(ContourSeries, replace=_repl)
 def plot_contour(*args, **kwargs):
     """
     Draws contour plot of a function of two variables.
@@ -738,22 +784,6 @@ def plot_contour(*args, **kwargs):
     Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
     keyword arguments to customize the appearances of the figure (title,
     axis labels, ...).
-
-    Parameters
-    ==========
-
-    clabels : bool, optional
-        Visualize labels of contour lines. Only works when ``is_filled=False``.
-        Default to True. Note that some backend might not implement this
-        feature.
-
-    is_filled : bool, optional
-        Choose between filled contours or line contours. Default to True
-        (filled contours).
-
-    polar_axis : boolean, optional
-        If True, attempt to create a plot with polar axis. Default to False,
-        which creates a plot with cartesian axis.
 
     Examples
     ========
@@ -777,19 +807,26 @@ def plot_contour(*args, **kwargs):
        >>> plot_contour(cos((x**2 + y**2)) * exp(-(x**2 + y**2) / 10),
        ...      (x, -5, 5), (y, -5, 5))
        Plot object containing:
-       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: contour: exp(-x**2/10 - y**2/10)*cos(x**2 + y**2) for x over (-5, 5) and y over (-5, 5)
 
-    Line contours of a function of two variables.
+    Line contours of a function of two variables, with ticks formatted as
+    multiples of `pi/n`.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
+       >>> from spb import multiples_of_pi_over_2, multiples_of_pi_over_3
        >>> expr = 5 * (cos(x) - 0.2 * sin(y))**2 + 5 * (-0.2 * cos(x) + sin(y))**2
-       >>> plot_contour(expr, (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False)
+       >>> plot_contour(
+       ...     expr, (x, 0, 2 * pi), (y, 0, 2 * pi),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_3(),
+       ...     is_filled=False
+       ... )
        Plot object containing:
-       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 5*(-0.2*sin(y) + cos(x))**2 + 5*(sin(y) - 0.2*cos(x))**2 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Combining together filled and line contours. Use a custom label on the
     colorbar of the filled contour.
@@ -817,11 +854,11 @@ def plot_contour(*args, **kwargs):
 
        >>> eq1 = Eq((cos(x) - sin(y) / 2)**2 + 3 * (-sin(x) + cos(y) / 2)**2, 2)
        >>> eq2 = Eq((cos(x) - 2 * sin(y))**2 - (sin(x) + 2 * cos(y))**2, 3)
-       >>> plot_contour(eq1.rewrite(Add), eq2.rewrite(Add), {"levels": [0]},
+       >>> plot_contour(eq1.lhs - eq1.rhs, eq2.lhs - eq2.rhs, {"levels": [0]},
        ...      (x, 0, 2 * pi), (y, 0, 2 * pi), is_filled=False, clabels=False)
        Plot object containing:
-       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
-       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0.0, 6.283185307179586) and y over (0.0, 6.283185307179586)
+       [0]: contour: 3*(-sin(x) + cos(y)/2)**2 + (-sin(y)/2 + cos(x))**2 - 2 for x over (0, 2*pi) and y over (0, 2*pi)
+       [1]: contour: -(sin(x) + 2*cos(y))**2 + (-2*sin(y) + cos(x))**2 - 3 for x over (0, 2*pi) and y over (0, 2*pi)
 
     Contour plot with polar axis:
 
@@ -834,7 +871,7 @@ def plot_contour(*args, **kwargs):
        >>> plot_contour(sin(2 * r) * cos(theta), (theta, 0, 2*pi), (r, 0, 7),
        ...     {"levels": 100}, polar_axis=True, aspect="equal")
        Plot object containing:
-       [0]: contour: sin(2*r)*cos(theta) for theta over (0.0, 6.283185307179586) and r over (0.0, 7.0)
+       [0]: contour: sin(2*r)*cos(theta) for theta over (0, 2*pi) and r over (0, 7)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -873,11 +910,14 @@ def plot_contour(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     return _plot3d_plot_contour_helper(False, *args, **kwargs)
 
 
+@modify_plot_functions_doc(ImplicitSeries, replace=_repl)
 def plot_implicit(*args, **kwargs):
-    """Plot implicit equations / inequalities.
+    """
+    Plot implicit equations / inequalities.
 
     ``plot_implicit``, by default, generates a contour using a mesh grid of
     fixednumber of points. The greater the number of points, the better the
@@ -909,22 +949,6 @@ def plot_implicit(*args, **kwargs):
          plot_implicit(
             (expr1, range_x1, range_y1, label1 [opt]),
             (expr2, range_x2, range_y2, label2 [opt]))
-
-    Refer to :func:`~spb.graphics.functions_2d.implicit_2d` for a full
-    list of keyword arguments to customize the appearances of lines and
-    regions.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
 
     Examples
     ========
@@ -959,7 +983,7 @@ def plot_implicit(*args, **kwargs):
 
        >>> plot_implicit(y > x**2, (x, -5, 5), (y, -10, 10), n=150, grid=False)
        Plot object containing:
-       [0]: Implicit expression: y > x**2 for x over (-5.0, 5.0) and y over (-10.0, 10.0)
+       [0]: Implicit expression: y > x**2 for x over (-5, 5) and y over (-10, 10)
 
     Plot a region using a custom color, highlights the limiting border and
     customize its appearance. In this particular case, the content of
@@ -976,8 +1000,8 @@ def plot_implicit(*args, **kwargs):
        ...     grid=False, color="gold", border_color="k",
        ...     rendering_kw={"linestyles": "-.", "linewidths": 1})
        Plot object containing:
-       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
-       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-3.141592653589793, 3.141592653589793) and y over (-3.141592653589793, 3.141592653589793)
+       [0]: Implicit expression: 4*(-sin(y)/5 + cos(x))**2 + 4*(sin(y) - cos(x)/5)**2 <= pi for x over (-pi, pi) and y over (-pi, pi)
+       [1]: Implicit expression: Eq(-4*(-sin(y)/5 + cos(x))**2 - 4*(sin(y) - cos(x)/5)**2 + pi, 0) for x over (-pi, pi) and y over (-pi, pi)
 
     Boolean expressions will be plotted with the adaptive algorithm. Note the
     thin width of lines:
@@ -992,8 +1016,8 @@ def plot_implicit(*args, **kwargs):
        ...     Eq(y, sin(x)) & (y < 0),
        ...     (x, -2 * pi, 2 * pi), (y, -4, 4))
        Plot object containing:
-       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
-       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-6.283185307179586, 6.283185307179586) and y over (-4.0, 4.0)
+       [0]: Implicit expression: (y > 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
+       [1]: Implicit expression: (y < 0) & Eq(y, sin(x)) for x over (-2*pi, 2*pi) and y over (-4, 4)
 
     Plotting multiple implicit expressions and setting labels:
 
@@ -1010,11 +1034,11 @@ def plot_implicit(*args, **kwargs):
        >>> labels = ["L = %s" % L_val for L_val in L_array]
        >>> plot_implicit(*expr_list, (t, 0, 3), (V, 0, 1000), label=labels)
        Plot object containing:
-       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
-       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0.0, 3.0) and V over (0.0, 1000.0)
+       [0]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.016, 0) for t over (0, 3) and V over (0, 1000)
+       [1]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.032, 0) for t over (0, 3) and V over (0, 1000)
+       [2]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.048, 0) for t over (0, 3) and V over (0, 1000)
+       [3]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.064, 0) for t over (0, 3) and V over (0, 1000)
+       [4]: Implicit expression: Eq(0.0008864*V*t - log(0.0008864*V*t + 1) - 0.08, 0) for t over (0, 3) and V over (0, 1000)
 
     Comparison of similar expressions plotted with different algorithms. Note:
 
@@ -1119,10 +1143,14 @@ def plot_implicit(*args, **kwargs):
 
     args = _plot_sympify(args)
     args = _check_arguments(args, 1, 2, **kwargs)
+    kwargs["plot_function"] = True
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     color = kwargs.pop("color", None)
     border_color = kwargs.pop("border_color", None)
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
 
     series = []
     # attempt to compute the area that should be visible on the plot.
@@ -1143,6 +1171,9 @@ def plot_implicit(*args, **kwargs):
             ymax = s.end_y
 
     _set_labels(series, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     series += _create_generic_data_series(**kwargs)
     if (xmin != oo) and (xmax != -oo):
         kwargs.setdefault("xlim", (xmin, xmax))
@@ -1151,8 +1182,10 @@ def plot_implicit(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(Parametric2DLineSeries, replace=_repl)
 def plot_polar(*args, **kwargs):
-    """The following function creates a 2D polar plot.
+    """
+    The following function creates a 2D polar plot.
 
     By default, it uses an equal aspect ratio and doesn't apply a colormap.
 
@@ -1179,22 +1212,6 @@ def plot_polar(*args, **kwargs):
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
 
-    This function is going to execute
-    :func:`~spb.graphics.functions_2d.line_parametric_2d`. Refer to its
-    documentation for a full list of keyword arguments to customize the
-    appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    polar_axis : boolean, optional
-        If True, attempt to create a plot with polar axis. Default to False,
-        which creates a plot with cartesian axis.
-
     Examples
     ========
 
@@ -1216,7 +1233,7 @@ def plot_polar(*args, **kwargs):
 
        >>> plot_polar(3 * sin(2 * theta), (theta, 0, 2*pi))
        Plot object containing:
-       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: (3*sin(2*theta)*cos(theta), 3*sin(theta)*sin(2*theta)) for theta over (0, 2*pi)
 
     Plot with polar axis:
 
@@ -1229,7 +1246,7 @@ def plot_polar(*args, **kwargs):
        ...     exp(sin(theta)) - 2 * cos(4 * theta), (theta, 0, 2 * pi),
        ...     polar_axis=True)
        Plot object containing:
-       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0.0, 6.283185307179586)
+       [0]: parametric cartesian line: ((exp(sin(theta)) - 2*cos(4*theta))*cos(theta), (exp(sin(theta)) - 2*cos(4*theta))*sin(theta)) for theta over (0, 2*pi)
 
     Interactive-widget plot of Guilloché Pattern. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -1279,12 +1296,16 @@ def plot_polar(*args, **kwargs):
     plot_geometry, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
     kwargs.setdefault("polar_axis", False)
     kwargs.setdefault("aspect", "equal")
     kwargs.setdefault("xlabel", "")
     kwargs.setdefault("ylabel", "")
+    fill_for_generic_series = kwargs.get("fill", None)
+    if isinstance(fill_for_generic_series, (dict, list)):
+        kwargs.pop("fill")
 
     polar_axis = kwargs.get("polar_axis", False)
     if polar_axis:
@@ -1301,12 +1322,17 @@ def plot_polar(*args, **kwargs):
         e1, e2 = (r * cos(theta), r * sin(theta))
         lines.extend(line_parametric_2d(e1, e2, *pe[1:], **kwargs))
     _set_labels(lines, global_labels, global_rendering_kw)
+
+    if fill_for_generic_series:
+        kwargs["fill"] = fill_for_generic_series
     gs = _create_generic_data_series(**kwargs)
     return graphics(*lines, gs, **kwargs)
 
 
+@modify_plot_functions_doc(Geometry2DSeries, replace=_repl)
 def plot_geometry(*args, **kwargs):
-    """Plot entities from the sympy.geometry module.
+    """
+    Plot entities from the sympy.geometry module.
 
     Typical usage examples are in the following:
 
@@ -1331,15 +1357,6 @@ def plot_geometry(*args, **kwargs):
             (geom1, label1 [opt], rendering_kw1 [opt]),
             (geom2, label2 [opt], rendering_kw2 [opt]),
             **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_2d.geometry` for a full
-    list of keyword arguments to customize the appearances of lines and
-    regions.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
 
     Examples
     ========
@@ -1366,7 +1383,7 @@ def plot_geometry(*args, **kwargs):
        ...     Ellipse(Point(-3, 2), hradius=3, eccentricity=Rational(4, 5)),
        ...     {"color": "tab:orange"}, grid=False)
        Plot object containing:
-       [0]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [0]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
 
     Plot several numeric geometric entitiesy. By default, circles, ellipses and
     polygons are going to be filled. Plotting Curve objects is the same as
@@ -1385,12 +1402,12 @@ def plot_geometry(*args, **kwargs):
        ...      Segment((-4, -6), (6, 6)),
        ...      Point2D(0, 0))
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot several numeric geometric entities defined by numbers only, turn off
     fill. Every entity is represented as a line.
@@ -1408,12 +1425,12 @@ def plot_geometry(*args, **kwargs):
        ...      Segment((-4, -6), (6, 6)),
        ...      Point2D(0, 0), is_filled=False)
        Plot object containing:
-       [0]: geometry entity: Circle(Point2D(0, 0), 5)
-       [1]: geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
-       [2]: geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
-       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0.0, 6.283185307179586)
-       [4]: geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
-       [5]: geometry entity: Point2D(0, 0)
+       [0]: 2D geometry entity: Circle(Point2D(0, 0), 5)
+       [1]: 2D geometry entity: Ellipse(Point2D(-3, 2), 3, 9/5)
+       [2]: 2D geometry entity: RegularPolygon(Point2D(4, 0), 4, 5, 0)
+       [3]: parametric cartesian line: (cos(x), sin(x)) for x over (0, 2*pi)
+       [4]: 2D geometry entity: Segment2D(Point2D(-4, -6), Point2D(6, 6))
+       [5]: 2D geometry entity: Point2D(0, 0)
 
     Plot several symbolic geometric entities. We need to pass in the `params`
     dictionary, which will be used to substitute symbols before numerical
@@ -1430,8 +1447,8 @@ def plot_geometry(*args, **kwargs):
        ...      (Polygon((a + 2, b + 3), c, n=d + 1), "square"),
        ...      params = {a: 0, b: 1, c: 2, d: 3})
        Plot object containing:
-       [0]: geometry entity: RegularPolygon(Point2D(0, 1), 2, 3, 0)
-       [1]: geometry entity: RegularPolygon(Point2D(2, 4), 2, 4, 0)
+       [0]: 2D geometry entity: RegularPolygon(Point2D(0, 1), 2, 3, 0)
+       [1]: 2D geometry entity: RegularPolygon(Point2D(2, 4), 2, 4, 0)
 
     Plot 3D geometric entities. Note: when plotting a Plane, we must always
     provide the x/y/z ranges:
@@ -1447,8 +1464,8 @@ def plot_geometry(*args, **kwargs):
        ...      (Plane((0, 0, 0), (1, 1, 1)),
        ...          (x, -5, 5), (y, -4, 4), (z, -10, 10)))
        Plot object containing:
-       [0]: geometry entity: Point3D(5, 5, 5)
-       [1]: geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
+       [0]: 3D geometry entity: Point3D(5, 5, 5)
+       [1]: 3D geometry entity: Line3D(Point3D(-2, -3, -4), Point3D(2, 3, 4))
        [2]: plane series: Plane(Point3D(0, 0, 0), (1, 1, 1)) over (x, -5, 5), (y, -4, 4), (z, -10, 10)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
@@ -1480,6 +1497,7 @@ def plot_geometry(*args, **kwargs):
     plot_contour, plot_piecewise
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
@@ -1531,8 +1549,10 @@ def plot_geometry(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(List2DSeries, replace=_repl)
 def plot_list(*args, **kwargs):
-    """Plots lists of coordinates (ie, lists of numbers).
+    """
+    Plots lists of coordinates (ie, lists of numbers).
 
     Typical usage examples are in the followings:
 
@@ -1551,14 +1571,6 @@ def plot_list(*args, **kwargs):
             (x1, y1, label1 [opt], rendering_kw1 [opt]),
             (x2, y2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_2d.list_2d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
 
     Examples
     ========
@@ -1650,6 +1662,7 @@ def plot_list(*args, **kwargs):
     plot_geometry, plot_piecewise, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     g_labels = kwargs.pop("label", [])
     g_rendering_kw = kwargs.pop("rendering_kw", None)
     series = []
@@ -1687,8 +1700,10 @@ def plot_list(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+@modify_plot_functions_doc(LineOver1DRangeSeries, replace=_repl)
 def plot_piecewise(*args, **kwargs):
-    """Plots univariate piecewise functions.
+    """
+    Plots univariate piecewise functions.
 
     Typical usage examples are in the followings:
 
@@ -1713,13 +1728,6 @@ def plot_piecewise(*args, **kwargs):
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)`
-
-    Refer to :func:`~spb.graphics.functions_2d.line` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Parameters
     ==========
@@ -1749,9 +1757,9 @@ def plot_piecewise(*args, **kwargs):
        >>> f = Piecewise((x**2, x < 2), (5, Eq(x, 2)), (10 - x, True))
        >>> plot_piecewise(f, (x, -2, 5))
        Plot object containing:
-       [0]: cartesian line: x**2 for x over (-2.0, 1.999999)
+       [0]: cartesian line: x**2 for x over (-2, 1.99999900000000)
        [1]: 2D list plot
-       [2]: cartesian line: 10 - x for x over (2.000001, 5.0)
+       [2]: cartesian line: 10 - x for x over (2.00000100000000, 5)
        [3]: 2D list plot
        [4]: 2D list plot
 
@@ -1765,8 +1773,8 @@ def plot_piecewise(*args, **kwargs):
        >>> plot_piecewise(Heaviside(x, 0).rewrite(Piecewise),
        ...     (x, -10, 10), dots=False)
        Plot object containing:
-       [0]: cartesian line: 0 for x over (-10.0, 0.0)
-       [1]: cartesian line: 1 for x over (1e-06, 10.0)
+       [0]: cartesian line: 0 for x over (-10, 0)
+       [1]: cartesian line: 1 for x over (1.00000000000000e-6, 10)
 
     Plot multiple expressions in which the second piecewise expression has
     a dotted line style. Use the ``label`` keyword argument to set the
@@ -1785,15 +1793,15 @@ def plot_piecewise(*args, **kwargs):
        ...      (1 / x, True)), (x, -8, 8), {"linestyle": ":"}),
        ...   ylim=(-2, 2), detect_poles=True, legend=True, label=["A", "B"])
        Plot object containing:
-       [0]: cartesian line: 0 for x over (-10.0, 0.0)
-       [1]: cartesian line: 1 for x over (1e-06, 10.0)
+       [0]: cartesian line: 0 for x over (-10, 0)
+       [1]: cartesian line: 1 for x over (1.00000000000000e-6, 10)
        [2]: 2D list plot
        [3]: 2D list plot
-       [4]: cartesian line: sin(x) for x over (-8.0, -5.000001)
+       [4]: cartesian line: sin(x) for x over (-8, -5.00000100000000)
        [5]: 2D list plot
-       [6]: cartesian line: cos(x) for x over (5.000001, 8.0)
+       [6]: cartesian line: cos(x) for x over (5.00000100000000, 8)
        [7]: 2D list plot
-       [8]: cartesian line: 1/x for x over (-5.0, 5.0)
+       [8]: cartesian line: 1/x for x over (-5, 5)
        [9]: 2D list plot
        [10]: 2D list plot
 
@@ -1804,6 +1812,7 @@ def plot_piecewise(*args, **kwargs):
     plot_contour, plot_geometry
 
     """
+    kwargs["plot_function"] = True
     if kwargs.pop("params", None) is not None:
         raise NotImplementedError(
             "plot_piecewise doesn't support interactive widgets.")
@@ -1847,7 +1856,7 @@ def plot_piecewise(*args, **kwargs):
                     s.label = labels[i]
                     already_set = True
                 else:
-                    s.label = None
+                    s.label = ""
         color_series_dict[i] = series
 
     # NOTE: let's overwrite this keyword argument: the dictionary will be used

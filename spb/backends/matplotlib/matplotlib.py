@@ -1,6 +1,9 @@
+import param
 import itertools
 from spb.defaults import cfg
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.matplotlib.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     Implicit2DRenderer, ComplexRenderer, ContourRenderer, SurfaceRenderer,
@@ -18,12 +21,12 @@ from spb.series import (
     ImplicitSeries, RiemannSphereSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries, GenericDataSeries,
+    PlaneSeries, Geometry2DSeries, Geometry3DSeries, GenericDataSeries,
     HVLineSeries, NyquistLineSeries, NicholsLineSeries,
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
     ZGridLineSeries, SystemResponseSeries, ColoredSystemResponseSeries,
     PoleZeroSeries, NGridLineSeries, PoleZeroWithSympySeries,
-    MCirclesSeries
+    MCirclesSeries, HLineSeries, VLineSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -42,100 +45,10 @@ def unset_show():
     _show = False
 
 
+@modify_parameterized_doc()
 class MatplotlibBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Matplotlib.
-
-    Parameters
-    ==========
-
-    aspect : (float, float) or str, optional
-        Set the aspect ratio of a 2D plot. Possible values:
-
-        * ``"auto"``: Matplotlib will fit the plot in the vibile area.
-        * ``"equal"``: sets equal spacing.
-        * tuple containing 2 float numbers, from which the aspect ratio is
-          computed. This only works for 2D plots.
-
-    axis_center : (float, float) or str or None, optional
-        Set the location of the intersection between the horizontal and
-        vertical axis in a 2D plot. It can be:
-
-        * ``None``: traditional layout, with the horizontal axis fixed on the
-          bottom and the vertical axis fixed on the left. This is the default
-          value.
-        * a tuple ``(x, y)`` specifying the exact intersection point.
-        * ``'center'``: center of the current plot area.
-        * ``'auto'``: the intersection point is automatically computed.
-
-    camera : dict, optional
-        A dictionary of keyword arguments that will be passed to the
-        ``Axes3D.view_init`` method. Refer to [#fn9]_ for more information.
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Refer to [#fn1]_ to customize contour plots.
-        * Refer to [#fn2]_ to customize image plots.
-        * Refer to [#fn3]_ to customize solid line plots.
-        * Refer to [#fn4]_ to customize colormap-based line plots.
-        * Refer to [#fn5]_ to customize quiver plots.
-        * Refer to [#fn6]_ to customize surface plots.
-        * Refer to [#fn7]_ to customize stramline plots.
-        * Refer to [#fn8]_ to customize 3D scatter plots.
-        * Refer to [#fn11]_ to customize 2D arrows.
-
-    axis : boolean, optional
-        Turns on/off the axis visibility (and associated tick labels).
-        Default to True (axis are visible).
-
-    update_event : bool, optional
-        If True, it binds pan/zoom events in order to automatically compute
-        new data as the user interact with the plot.
-        Default to False.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type of annotation
-        required. The keys in the dictionary should be equivalent
-        to the arguments of the `matplotlib.axes.Axes.annotate` method.
-        This feature is experimental. It might get removed in the future.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the `matplotlib.pyplot.plot()` function along with the marker
-        related keyworded arguments.
-        This feature is experimental. It might get removed in the future.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The keys in the dictionary should be
-        equivalent to the arguments of the `matplotlib.patches.Rectangle`
-        class.
-        This feature is experimental. It might get removed in the future.
-
-    fill : dict, optional
-        A dictionary specifying the type of color filling required in
-        the plot. The keys in the dictionary should be equivalent to the
-        arguments of the `matplotlib.axes.Axes.fill_between` method.
-        This feature is experimental. It might get removed in the future.
-
-
-    References
-    ==========
-    .. [#fn1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html
-    .. [#fn2] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
-    .. [#fn3] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
-    .. [#fn4] https://matplotlib.org/stable/api/collections_api.html#matplotlib.collections.LineCollection
-    .. [#fn5] https://matplotlib.org/stable/api/quiver_api.html#module-matplotlib.quiver
-    .. [#fn6] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.plot_surface
-    .. [#fn7] https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.streamplot.html#matplotlib.axes.Axes.streamplot
-    .. [#fn8] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html
-    .. [#fn9] https://matplotlib.org/stable/api/_as_gen/mpl_toolkits.mplot3d.axes3d.Axes3D.html#mpl_toolkits.mplot3d.axes3d.Axes3D.view_init
-    .. [#fn11] https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html
 
     See also
     ========
@@ -143,13 +56,7 @@ class MatplotlibBackend(Plot):
     Plot, PlotlyBackend, BokehBackend, K3DBackend
     """
 
-    _library = "matplotlib"
-    _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles", "camera"]
-
     wireframe_color = "k"
-    colormaps = []
-    cyclic_colormaps = []
 
     renderers_map = {
         LineOver1DRangeSeries: Line2DRenderer,
@@ -172,9 +79,12 @@ class MatplotlibBackend(Plot):
         SurfaceOver2DRangeSeries: SurfaceRenderer,
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
-        GeometrySeries: GeometryRenderer,
+        Geometry2DSeries: GeometryRenderer,
+        Geometry3DSeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
+        HLineSeries: HVLineRenderer,
+        VLineSeries: HVLineRenderer,
         NyquistLineSeries: NyquistRenderer,
         NicholsLineSeries: NicholsLineRenderer,
         Arrow2DSeries: Arrow2DRendererFancyArrowPatch,
@@ -189,15 +99,6 @@ class MatplotlibBackend(Plot):
         PoleZeroSeries: PoleZeroRenderer,
         PoleZeroWithSympySeries: PoleZeroRenderer,
     }
-
-    pole_line_kw = {"color": "k", "linestyle": ":"}
-    grid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75}
-    sgrid_line_kw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75,
-        "zorder": 0}
-    ngrid_line_kw = {"color": 'lightgray', "linestyle": ':',
-        "zorder": 0}
-    mcircles_line_kw = {"color": '0.75', "linestyle": ':',
-        "zorder": 0, "linewidth": 0.9}
 
     def __init__(self, *args, **kwargs):
         self.matplotlib = import_module(
@@ -226,13 +127,12 @@ class MatplotlibBackend(Plot):
         self.Path3DCollection = self.mpl_toolkits.mplot3d.art3d.Path3DCollection
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
 
-        # set default colors
-        self.colormaps = [
+        kwargs["_library"] = "matplotlib"
+        kwargs.setdefault("colormaps", [
             cm.viridis, cm.autumn, cm.winter, cm.plasma, cm.jet,
-            cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer]
-        self.cyclic_colormaps = [cm.twilight, cm.hsv]
-        # load default colorloop
-        self.colorloop = self.plt.rcParams['axes.prop_cycle'].by_key()["color"]
+            cm.gnuplot, cm.brg, cm.coolwarm, cm.cool, cm.summer])
+        kwargs.setdefault("cyclic_colormaps", [cm.twilight, cm.hsv])
+        kwargs.setdefault("colorloop", self.plt.rcParams['axes.prop_cycle'].by_key()["color"])
 
         # plotgrid() can provide its figure and axes to be populated with
         # the data from the series. These attributes will also be populated
@@ -246,12 +146,16 @@ class MatplotlibBackend(Plot):
         if self._use_existing_figure and (self._plotgrid_ax is None):
             self._plotgrid_ax = self._plotgrid_fig.get_axes()[0]
 
-        self._init_cyclers()
+        kwargs.setdefault(
+            "update_event", cfg["matplotlib"]["update_event"])
+        kwargs.setdefault(
+            "use_latex", cfg["matplotlib"]["use_latex"])
+        kwargs.setdefault("grid", cfg["matplotlib"]["grid"])
+        kwargs.setdefault("minor_grid", cfg["matplotlib"]["show_minor_grid"])
+        kwargs.setdefault("theme", "default")
         super().__init__(*args, **kwargs)
 
         # set labels
-        self._use_latex = kwargs.get(
-            "use_latex", cfg["matplotlib"]["use_latex"])
         self._set_labels()
         self._set_title()
 
@@ -265,9 +169,6 @@ class MatplotlibBackend(Plot):
 
         if self.axis_center is None:
             self.axis_center = cfg["matplotlib"]["axis_center"]
-        self.grid = kwargs.get("grid", cfg["matplotlib"]["grid"])
-        self._show_minor_grid = kwargs.get(
-            "show_minor_grid", cfg["matplotlib"]["show_minor_grid"])
 
         self._legend_handles = []
 
@@ -275,9 +176,6 @@ class MatplotlibBackend(Plot):
         # use ImageGrid, which is suited to create equal aspect ratio axes
         # sharing colorbar
         self._imagegrid = kwargs.get("imagegrid", False)
-        self._update_event = kwargs.get(
-            "update_event", cfg["matplotlib"]["update_event"])
-
         self._create_renderers()
 
     def _set_piecewise_color(self, s, color):
@@ -327,7 +225,7 @@ class MatplotlibBackend(Plot):
             self._fig = self._plotgrid_fig
             self._ax = self._plotgrid_ax
         else:
-            if self.is_iplot and (self.imodule == "panel"):
+            if self._imodule == "panel":
                 self._fig = self.matplotlib.figure.Figure(figsize=self.size)
             else:
                 self._fig = self.plt.figure(figsize=self.size)
@@ -354,7 +252,7 @@ class MatplotlibBackend(Plot):
                 from spb.backends.matplotlib.renderers._sgrid_helper import sgrid_auto
                 self._ax = sgrid_auto(self._fig)
 
-        if self._update_event:
+        if self.update_event:
             self._fig.canvas.mpl_connect(
                 'button_release_event', self._update_axis_limits)
             self._fig.canvas.mpl_connect(
@@ -439,13 +337,22 @@ class MatplotlibBackend(Plot):
             if isinstance(self._ax, self.Axes3D):
                 self._ax.grid()
             else:
+                major_grid_line_kw = {
+                    "color": '0.75', "linestyle": '--', "linewidth": 0.75}
+                minor_grid_line_kw = {
+                    "color": '0.85', "linestyle": ':', "linewidth": 0.75}
+                if isinstance(self.grid, dict):
+                    major_grid_line_kw = self.merge(
+                        {}, major_grid_line_kw, self.grid)
+                if isinstance(self.minor_grid, dict):
+                    minor_grid_line_kw = self.merge(
+                        {}, minor_grid_line_kw, self.minor_grid)
+
                 self._ax.grid(
-                    visible=True, which='major', linestyle='-',
-                    linewidth=0.75, color='0.75')
+                    visible=True, which='major', **major_grid_line_kw)
                 self._ax.grid(
-                    visible=True, which='minor', linestyle='--',
-                    linewidth=0.6, color='0.825')
-                if self._show_minor_grid:
+                    visible=True, which='minor', **minor_grid_line_kw)
+                if self.minor_grid:
                     self._ax.minorticks_on()
         if self.legend:
             if len(self._legend_handles) > 0:
@@ -466,25 +373,60 @@ class MatplotlibBackend(Plot):
         self._set_lims(xlims, ylims, zlims)
         self._set_aspect()
 
+        if self.x_ticks_formatter:
+            if isinstance(self.x_ticks_formatter, tick_formatter_multiples_of):
+                self._ax.xaxis.set_major_locator(
+                    self.x_ticks_formatter.MB_major_locator())
+                if self.minor_grid:
+                    self._ax.xaxis.set_minor_locator(
+                        self.x_ticks_formatter.MB_minor_locator())
+                self._ax.xaxis.set_major_formatter(
+                    self.plt.FuncFormatter(
+                        self.x_ticks_formatter.MB_func_formatter()))
+
+                if self.polar_axis:
+                    # somehow, the formatter is going to insert other tick
+                    # values, especially the one at 2*pi, which coincides with
+                    # 0, so we'd end up with overlapping labels. Here I take
+                    # care of that
+                    ticks = self._ax.get_xticklabels()
+                    ticks_labels = [
+                        (t.get_position()[0], t.get_text()) for t in ticks]
+                    ticks_labels = [
+                        t for t in ticks_labels
+                        if (t[0] >= 0) and (t[0] < 2*self.np.pi)]
+                    self._ax.set_xticks(
+                        [t[0] for t in ticks_labels],
+                        [t[1] for t in ticks_labels])
+        if self.y_ticks_formatter:
+            if isinstance(self.y_ticks_formatter, tick_formatter_multiples_of):
+                self._ax.yaxis.set_major_locator(
+                    self.y_ticks_formatter.MB_major_locator())
+                if self.minor_grid:
+                    self._ax.yaxis.set_minor_locator(
+                        self.y_ticks_formatter.MB_minor_locator())
+                self._ax.yaxis.set_major_formatter(
+                    self.plt.FuncFormatter(
+                        self.y_ticks_formatter.MB_func_formatter()))
+
+        self._execute_hooks()
+
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
 
         if title:
             self._ax.set_title(title)
         if xlabel:
-            self._ax.set_xlabel(
-                xlabel, position=(1, 0) if self.axis_center else (0.5, 0)
-            )
+            self._ax.set_xlabel(xlabel)
         if ylabel:
-            self._ax.set_ylabel(
-                ylabel, position=(0, 1) if self.axis_center else (0, 0.5)
-            )
+            self._ax.set_ylabel(ylabel)
         if isinstance(self._ax, self.Axes3D):
             if zlabel:
                 self._ax.set_zlabel(zlabel, position=(0, 1))
 
     def update_interactive(self, params):
-        """Implement the logic to update the data generated by
+        """
+        Implement the logic to update the data generated by
         interactive-widget plots.
 
         Parameters
@@ -500,9 +442,13 @@ class MatplotlibBackend(Plot):
 
         xlims, ylims, zlims = [], [], []
         for r in self.renderers:
-            # when using interactive-widgets, grids series needs to be updated
-            # constantly
-            if r.series.is_interactive or r.series.is_grid:
+            if (
+                r.series.is_interactive
+                # when using interactive-widgets, grids series needs to be
+                # updated constantly
+                or r.series.is_grid
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
             xlims.extend(r._xlims)
             ylims.extend(r._ylims)
@@ -519,6 +465,7 @@ class MatplotlibBackend(Plot):
             self._ax.autoscale_view()
 
         self._set_lims(xlims, ylims, zlims)
+        self._execute_hooks()
 
     def _set_aspect(self):
         aspect = self.aspect
@@ -592,7 +539,7 @@ class MatplotlibBackend(Plot):
             else:
                 self._ax.set_zlim([0, 1])
 
-        if self._invert_x_axis:
+        if self.invert_x_axis:
             self._ax.invert_xaxis()
 
         # xlim and ylim should always be set at last so that plot limits
@@ -634,7 +581,7 @@ class MatplotlibBackend(Plot):
                 mappable = self.cm.ScalarMappable(cmap=cmap, norm=norm)
                 cb = self._fig.colorbar(mappable, ax=self._ax)
             cb.set_label(label, rotation=90)
-            return True
+            return cb
         return False
 
     def _update_colorbar(self, cax, cmap, label, param=None, norm=None):
@@ -677,19 +624,22 @@ class MatplotlibBackend(Plot):
         return np.ma.concatenate([points[:-1], points[1:]], axis=1)
 
     def draw(self):
-        """ Loop over the renderers, generates numerical data and add it to
+        """
+        Loop over the renderers, generates numerical data and add it to
         the figure. Note that this method doesn't show the plot.
         """
         # create the figure from scratch every time, otherwise if the plot was
         # previously shown, it would not be possible to show it again. This
         # behaviour is specific to Matplotlib
-        self._create_figure()
-        self._process_renderers()
+        with self.plt.style.context(self.theme):
+            self._create_figure()
+            self._process_renderers()
 
     process_series = draw
 
     def show(self, **kwargs):
-        """Display the current plot.
+        """
+        Display the current plot.
 
         Parameters
         ==========
@@ -724,7 +674,8 @@ class MatplotlibBackend(Plot):
             self.close()
 
     def save(self, path, **kwargs):
-        """Save the current plot at the specified location.
+        """
+        Save the current plot at the specified location.
 
         Refer to [#fn10]_ to visualize all the available keyword arguments.
 

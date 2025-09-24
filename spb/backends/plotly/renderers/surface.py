@@ -1,4 +1,7 @@
 from spb.backends.base_renderer import Renderer
+from spb.backends.utils import _get_cmin_cmax, _returns_z_coord
+import inspect
+from sympy import Expr
 
 
 def _draw_surface_helper(renderer, data):
@@ -15,16 +18,17 @@ def _draw_surface_helper(renderer, data):
     col = next(p._cl) if s.surface_color is None else s.surface_color
     colorscale = [[0, col], [1, col]]
     colormap = next(p._cm)
+    cmin, cmax = _get_cmin_cmax(surfacecolor, p, s)
     skw = dict(
-        name=s.get_label(p._use_latex),
+        name=s.get_label(p.use_latex),
         showscale=s.use_cm and s.colorbar,
         showlegend=(not s.use_cm) and s.show_in_legend,
         colorbar=p._create_colorbar(
-            s.get_label(p._use_latex), p._scale_down_colorbar),
+            s.get_label(p.use_latex), p._scale_down_colorbar),
         colorscale=colormap if s.use_cm else colorscale,
         surfacecolor=surfacecolor,
-        cmin=surfacecolor.min(),
-        cmax=surfacecolor.max()
+        cmin=cmin,
+        cmax=cmax
     )
 
     kw = p.merge({}, skw, s.rendering_kw)
@@ -45,11 +49,11 @@ def _update_surface_helper(renderer, data, idx):
         surfacecolor = s.eval_color_func(x, y, z, u, v)
     handle["x"] = x
     handle["y"] = y
-    _min, _max = surfacecolor.min(), surfacecolor.max()
+    cmin, cmax = _get_cmin_cmax(surfacecolor, p, s)
     handle["z"] = z
     handle["surfacecolor"] = surfacecolor
-    handle["cmin"] = _min
-    handle["cmax"] = _max
+    handle["cmin"] = cmin
+    handle["cmax"] = cmax
 
 
 class SurfaceRenderer(Renderer):

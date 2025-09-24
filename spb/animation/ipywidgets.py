@@ -9,19 +9,22 @@ from IPython.display import clear_output
 
 class Animation(BaseAnimation, IPlot):
     def __init__(self, *series, **kwargs):
+        super().__init__(
+            layout="bb",
+            ncols=1,
+            _original_params = kwargs.get("params", {})
+        )
+
         plotgrid = kwargs.get("plotgrid", None)
-        params = kwargs.get("params", {})
-        self._original_params = params
 
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
             self._post_init_plotgrid(**kwargs)
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "ipywidgets"
-            self._backend = Backend(*series, **kwargs)
+            kwargs["_imodule"] = "ipywidgets"
+            self.backend = Backend(*series, **kwargs)
             self._post_init_plot(**kwargs)
 
         play = ipywidgets.Play(
@@ -45,7 +48,7 @@ class Animation(BaseAnimation, IPlot):
     def _update(self, change):
         frame_idx = change["new"]
         self.update_animation(frame_idx)
-        if isinstance(self._backend, BB):
+        if isinstance(self.backend, BB):
             bokeh = import_module(
                 'bokeh',
                 import_kwargs={'fromlist': ['io']},
@@ -53,25 +56,25 @@ class Animation(BaseAnimation, IPlot):
                 min_module_version='2.3.0')
             with self._output_figure:
                 clear_output(True) # NOTE: this is the cause of flickering
-                bokeh.io.show(self._backend.fig)
+                bokeh.io.show(self.backend.fig)
 
     def _get_iplot_kw(self):
         return {
-            "backend": type(self._backend)
+            "backend": type(self.backend)
         }
 
     def show(self):
         # create the output figure
-        if (isinstance(self._backend, MB) or
-            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+        if (isinstance(self.backend, MB) or
+            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
             # without plt.ioff, picture will show up twice. Morover, there
             # won't be any update
-            self._backend.plt.ioff()
-            if isinstance(self._backend, PlotGrid):
-                if not self._backend.imagegrid:
-                    self._backend.fig.tight_layout()
-            self._output_figure = ipywidgets.Box([self._backend.fig.canvas])
-        elif isinstance(self._backend, BB):
+            self.backend.plt.ioff()
+            if isinstance(self.backend, PlotGrid):
+                if not self.backend.imagegrid:
+                    self.backend.fig.tight_layout()
+            self._output_figure = ipywidgets.Box([self.backend.fig.canvas])
+        elif isinstance(self.backend, BB):
             self._output_figure = ipywidgets.Output()
             bokeh = import_module(
                 'bokeh',
@@ -79,15 +82,15 @@ class Animation(BaseAnimation, IPlot):
                 warn_not_installed=True,
                 min_module_version='2.3.0')
             with self._output_figure:
-                bokeh.io.show(self._backend.fig)
+                bokeh.io.show(self.backend.fig)
         else:
-            self._output_figure = self._backend.fig
+            self._output_figure = self.backend.fig
 
-        if (isinstance(self._backend, MB) or
-            (isinstance(self._backend, PlotGrid) and self._backend.is_matplotlib_fig)):
+        if (isinstance(self.backend, MB) or
+            (isinstance(self.backend, PlotGrid) and self.backend.is_matplotlib_fig)):
             # turn back interactive behavior with plt.ion, so that picture
             # will be updated.
-            self._backend.plt.ion() # without it there won't be any update
+            self.backend.plt.ion() # without it there won't be any update
 
         return ipywidgets.VBox([self._output_figure, self._play_widget])
 

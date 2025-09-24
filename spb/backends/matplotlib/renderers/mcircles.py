@@ -7,11 +7,13 @@ def fdac(x):
     return abs(int((x - int(x)) * 10))
 
 
+_default_mcircles_line_kw = {
+    "color": '0.75', "linestyle": ':', "zorder": 0, "linewidth": 0.9}
+
+
 def _draw_mcircles_helper(renderer, data):
     p, s = renderer.plot, renderer.series
-
-    rkw = p.mcircles_line_kw
-    rkw = p.merge({}, rkw, s.rendering_kw)
+    rkw = p.merge({}, _default_mcircles_line_kw, s.rendering_kw)
 
     handles = []
     for (mdb, x, y) in data:
@@ -53,8 +55,7 @@ def _update_mcircles_helper(renderer, data, handles):
     p = renderer.plot
     s = renderer.series
 
-    rkw = p.mcircles_line_kw
-    rkw = p.merge({}, rkw, s.rendering_kw)
+    rkw = p.merge({}, _default_mcircles_line_kw, s.rendering_kw)
 
     for i, ((mdb, x, y), (h1, h2)) in enumerate(zip(data, handles)):
         label = str(int(mdb)) if fdac(mdb) == 0 else str(mdb)

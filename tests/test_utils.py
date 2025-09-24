@@ -7,7 +7,7 @@ from spb import (
 )
 from spb.utils import (
     _create_missing_ranges, _plot_sympify,
-    _validate_kwargs, prange, extract_solution,
+    prange, extract_solution,
     tf_to_control, tf_to_sympy, is_discrete_time, tf_find_time_delay,
     is_number, _get_free_symbols
 )
@@ -106,97 +106,6 @@ def test_create_missing_ranges():
         ValueError,
         lambda: _create_missing_ranges({x, y}, [(x, 0, 5), (y, 0, 1)], 1)
     )
-
-
-def test_raise_warning_keyword_validation():
-    # verify that plotting functions raise warning when a mispelled keyword
-    # argument is provided.
-    # NOTE: there is pytest.warn, however I can't get it to work here. I don't
-    # understand its error message :|
-    # Hence, I'm going to do it my own way: execute the _validate_kwargs
-    # function and check that the warning message contains the expected
-    # misspelled keywords.
-
-    x, y, z = symbols("x:z")
-
-    def do_test(p, kw, keys):
-        msg = _validate_kwargs(p, **kw)
-        assert all(k in msg for k in keys)
-
-    # x_label should be xlabel: this is a Backend-related keyword
-    kw = dict(adaptive=False, x_label="a")
-
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot(sin(x), backend=MB, show=False, **kw)
-        do_test(p, kw, ["x_label", "xlabel"])
-
-    # adapt should be adaptive: this is a LineOver1DRangeSeries keyword
-    kw = dict(adapt=False)
-
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot(sin(x), backend=MB, show=False, **kw)
-        do_test(p, kw, ["adapt", "adaptive"])
-
-    # surface_colors should be surface_color: this is a SurfaceBaseSeries
-    # keyword
-    kw = dict(surface_colors="r")
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot3d(cos(x**2 + y**2), backend=MB, show=False, **kw)
-        do_test(p, kw, ["surface_colors", "surface_color"])
-
-    # deptt should be depth: this is a ImplicitSeries keyword
-    kw = dict(deptt=2)
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot_implicit(cos(x), backend=MB, show=False, **kw)
-        do_test(p, kw, ["deptt", "depth"])
-
-    # streamline should be streamlines: this is a VectorBase keyword
-    kw = dict(streamline=True)
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot_vector(Matrix([sin(y), cos(x)]), backend=MB, show=False, **kw)
-        do_test(p, kw, ["streamline", "streamlines"])
-
-    # phase_res should be phaseres
-    kw = dict(phase_res=3)
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot_complex(z, (z, -2 - 2j, 2 + 2j), backend=MB, show=False, **kw)
-        do_test(p, kw, ["phase_res", "phaseres"])
-
-    # render_kw should be rendering_kw
-    kw = dict(render_kw={"color": "r"})
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot_complex_list(3 + 2 * I, backend=MB, show=False, **kw)
-        do_test(p, kw, ["render_kw", "rendering_kw"])
-
-    # is_fille should be is_filled
-    kw = dict(is_fille=False)
-    with warns(
-        UserWarning,
-        match="The following keyword arguments are unused."
-    ):
-        p = plot_geometry(Polygon((4, 0), 4, n=5), backend=MB, show=False)
-        do_test(p, kw, ["is_fille", "is_filled"])
 
 
 @pytest.mark.parametrize("_sym, _min, _max", [

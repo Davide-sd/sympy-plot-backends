@@ -29,7 +29,7 @@ def _draw_arrow_2d(renderer, data):
     if s.show_in_legend:
         proxy_artist = p.Line2D(
             [], [],
-            color=kw["color"], label=s.get_label(p._use_latex)
+            color=kw["color"], label=s.get_label(p.use_latex)
         )
         p._legend_handles.append(proxy_artist)
     return [arrow]

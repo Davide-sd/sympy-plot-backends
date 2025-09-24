@@ -51,7 +51,7 @@ def _draw_domain_coloring_helper(renderer, data):
             color_mapper=cm1,
             title=(
                 "Argument" if s.get_label(False) == str(s.expr)
-                else s.get_label(p._use_latex)
+                else s.get_label(p.use_latex)
             ),
             ticker=p.bokeh.models.tickers.FixedTicker(ticks=ticks),
             major_label_overrides={k: v for k, v in zip(ticks, labels)})

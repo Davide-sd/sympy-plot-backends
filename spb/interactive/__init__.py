@@ -1,12 +1,13 @@
 from collections import Counter
 import math
+import param
 from spb.defaults import cfg
 from spb.utils import is_number
 from sympy import latex
 from sympy.external import import_module
 
 
-def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
+def _tuple_to_dict(k, v, use_latex_on_widgets=False, latex_wrapper="$%s$"):
     """Create a dictionary of keyword arguments to be later used to
     instantiate sliders.
 
@@ -34,7 +35,7 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
                 Set N=-1 to have unit step increments.
             label : str
                 Label of the slider. Default to None. If None, the string or
-                latex representation will be used. See use_latex for more
+                latex representation will be used. See use_latex_on_widgets for more
                 information.
             spacing : str
                 Discretization spacing. Can be "linear" or "log".
@@ -58,7 +59,7 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
     defaults_keys = [
         "value", "min", "max", "step", "formatter", "description", "type"]
     defaults_values = [1, 0, 2, 0.1, None,
-        latex_wrapper % latex(k) if use_latex else str(k),
+        latex_wrapper % latex(k) if use_latex_on_widgets else str(k),
         "linear",
     ]
 
@@ -109,12 +110,15 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
 
 
 def create_interactive_plot(*series, **kwargs):
-    """Select which interactive module to use.
     """
-    imodule = kwargs.pop("imodule", cfg["interactive"]["module"])
+    Select which interactive module to use.
+    """
+    # sanitize `imodule`
+    imodule = kwargs.get("imodule", cfg["interactive"]["module"])
     if imodule is None:
         imodule = cfg["interactive"]["module"]
     imodule = imodule.lower()
+    kwargs["imodule"] = imodule
 
     animation = kwargs.get("animation", False)
 
@@ -138,20 +142,57 @@ def create_interactive_plot(*series, **kwargs):
     raise ValueError("`%s` is not a valid interactive module" % imodule)
 
 
-class IPlot:
-    """Mixin class for interactive plots containing common attributes and
+class IPlotAttributes(param.Parameterized):
+    imodule = param.Selector(
+        default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
+        Chose the interactive module to be used with parametric widgets
+        plots. Related parameters: ``app``, ``ncols``, ``layout``.""")
+    app = param.Boolean(default=False, doc="""
+        If True, shows interactive widgets useful to customize the numerical
+        data computation for each series.
+        Related parameters: ``imodule``, ``ncols``, ``layout``.""")
+    use_latex_on_widgets = param.Boolean(
+        default=cfg["interactive"]["use_latex"], doc="""
+        Use latex on the labels of the widgets.""")
+    ncols = param.Integer(default=2, bounds=(1, None), doc="""
+        Number of columns used by the interactive widgets.
+        Related parameters: ``app``, ``imodule``, ``layout``.""")
+    layout = param.Selector(
+        default="tb", objects={
+            "Widgets on the top bar": "tb",
+            "Widgets on the bottom bar": "bb",
+            "Widgets on the left side bar": "sbl",
+            "Widgets on the right side bar": "sbr",
+        }, doc="""
+        Select the location of the widgets in relation to the plotting
+        area of the interactive application.
+        Related parameters: ``app``, ``ncols``, ``imodule``.""")
+
+
+class IPlot(IPlotAttributes):
+    """
+    Mixin class for interactive plots containing common attributes and
     methods.
     """
+
+    backend = param.Parameter(doc="""
+        An instance of the `Plot` class where the numerical data will
+        be added to the appropriate figure.""")
+    _original_params = param.Dict(default={}, doc="""
+        Stores the original parameter dictionary received in the
+        function call.""")
+    _widgets = param.List(default=[], doc="""
+        List of the widgets created by the interactive application.""")
+    _grid_widgets = param.Parameter(doc="""
+        Store the actual object (created by the selected interactive module)
+        which holds the widgets already layed out in a grid.""")
+    _params_widgets = param.Dict(default={}, doc="""
+        Map symbols to widgets""")
 
     @property
     def fig(self):
         """Return the plot object"""
-        return self._backend.fig
-
-    @property
-    def backend(self):
-        """Return the backend"""
-        return self._backend
+        return self.backend.fig
 
     def save(self, *args, **kwargs):
         """Save the current figure.
@@ -159,7 +200,7 @@ class IPlot:
         backend's documentation to learn more about arguments and keyword
         arguments.
         """
-        self._backend.save(*args, **kwargs)
+        self.backend.save(*args, **kwargs)
 
     def __add__(self, other):
         return self._do_sum(other)
@@ -182,11 +223,11 @@ class IPlot:
                 "InteractivePlot or Plot class.\n"
                 "Received: {} + {}".format(type(self), type(other)))
 
-        series = self._backend.series
+        series = self.backend.series
         if isinstance(other, Plot):
             series.extend(other.series)
         else:
-            series.extend(other._backend.series)
+            series.extend(other.backend.series)
 
         # check that the interactive series uses the same parameters
         symbols = []
@@ -198,8 +239,13 @@ class IPlot:
                 "The same parameters must be used when summing up multiple "
                 "interactive plots.")
 
-        backend_kw = self._backend._copy_kwargs()
+        backend_kw = self.backend._copy_kwargs()
         iplot_kw = self._get_iplot_kw()
+        iplot_kw["backend"] = type(self.backend)
+        params_to_remove = [k for k in iplot_kw if k[0] == "_"]
+        for k in params_to_remove:
+            iplot_kw.pop(k)
+        iplot_kw.pop("fig", None)
         iplot_kw["show"] = False
 
         new_iplot = type(self)(*series, **merge({}, backend_kw, iplot_kw))

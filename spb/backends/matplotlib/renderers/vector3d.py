@@ -33,12 +33,12 @@ def _draw_vector3d_helper(renderer, data):
             p._ax.add_collection(streamlines)
             p._add_colorbar(
                 streamlines,
-                s.get_label(p._use_latex),
+                s.get_label(p.use_latex),
                 s.use_cm and s.colorbar
             )
 
         else:
-            lkw["label"] = s.get_label(p._use_latex)
+            lkw["label"] = s.get_label(p.use_latex)
             kw = p.merge({}, lkw, stream_kw)
             streamlines = p._ax.plot(
                 vertices[:, 0], vertices[:, 1], vertices[:, 2], **kw)
@@ -63,13 +63,13 @@ def _draw_vector3d_helper(renderer, data):
             kw = p.merge({}, qkw, s.rendering_kw)
             q = p._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
             is_cb_added = p._add_colorbar(
-                q, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                q, s.get_label(p.use_latex), s.use_cm and s.colorbar)
         else:
             qkw["color"] = next(p._cl)
             kw = p.merge({}, qkw, s.rendering_kw)
             q = p._ax.quiver(xx, yy, zz, uu, vv, ww, **kw)
             is_cb_added = False
-        handle = [q, kw, is_cb_added, p._fig.axes[-1]]
+        handle = [q, kw, is_cb_added, p.fig.axes[-1]]
     return handle
 
 
@@ -96,7 +96,7 @@ def _update_vector3d_helper(renderer, data, handle):
 
     if is_cb_added:
         p._update_colorbar(
-            cax, kw["cmap"], s.get_label(p._use_latex), param=mag)
+            cax, kw["cmap"], s.get_label(p.use_latex), param=mag)
 
 
 class Vector3DRenderer(MatplotlibRenderer):

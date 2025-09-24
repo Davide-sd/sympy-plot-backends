@@ -29,11 +29,11 @@ def _draw_line2d_helper(renderer, data):
             if not s.is_complex
             else "x: %{x}<br />y: %{y}<br />Arg: %{customdata}"
         )
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             ht = "r: %{r}<br />θ: %{theta}<br />u: %{customdata}"
 
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             line_color=color,
             mode=mode,
             customdata=param,
@@ -60,11 +60,11 @@ def _draw_line2d_helper(renderer, data):
                 # colorbars is greater than the available figure width.
                 # That raises a strange error.
                 lkw["marker"]["colorbar"] = p._create_colorbar(
-                    s.get_label(p._use_latex), True)
+                    s.get_label(p.use_latex), True)
 
         kw = p.merge({}, lkw, s.rendering_kw)
 
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             kw.setdefault("thetaunit", "radians")
             cls = _scatter_class(p, len(x), True)
             handle = cls(r=y, theta=x, **kw)
@@ -75,7 +75,7 @@ def _draw_line2d_helper(renderer, data):
         x, y = data
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
-            name=s.get_label(p._use_latex),
+            name=s.get_label(p.use_latex),
             mode="lines" if not s.is_point else "markers",
             line_color=color,
             showlegend=s.show_in_legend
@@ -92,7 +92,7 @@ def _draw_line2d_helper(renderer, data):
                     )
                 )
         kw = p.merge({}, lkw, s.rendering_kw)
-        if s.is_polar:
+        if hasattr(s, "is_polar") and s.is_polar:
             kw.setdefault("thetaunit", "radians")
             cls = _scatter_class(p, len(x), True)
             handle = cls(r=y, theta=x, **kw)
@@ -103,11 +103,17 @@ def _draw_line2d_helper(renderer, data):
     p._fig.add_trace(handle)
 
     # add vertical lines at discontinuities
-    for x_loc in s.poles_locations:
-        p._fig.add_vline(float(x_loc), **p.pole_line_kw)
-    n = len(p._fig.layout["shapes"])
-    m = len(s.poles_locations)
-    hvlines = list(range(n - m, n))
+    hvlines = []
+    if hasattr(s, "poles_locations"):
+        pole_line_kw = p.merge(
+            {"line": dict(color='black', dash='dot', width=1)},
+            s.poles_rendering_kw
+        )
+        for x_loc in s.poles_locations:
+            p._fig.add_vline(float(x_loc), **pole_line_kw)
+        n = len(p._fig.layout["shapes"])
+        m = len(s.poles_locations)
+        hvlines = list(range(n - m, n))
 
     # NOTE: as of Plotly 5.12.0, the figure appears to create a copy of
     # `handle`, which cannot be used to update the figure. Hence, need to keep
@@ -128,37 +134,43 @@ def _update_line2d_helper(renderer, data, idxs):
         handle["customdata"] = param
     else:
         x, y = data
-        if not s.is_polar:
-            handle["x"] = x
-            handle["y"] = y
-        else:
+        if hasattr(s, "is_polar") and s.is_polar:
             handle["r"] = y
             handle["theta"] = x
+        else:
+            handle["x"] = x
+            handle["y"] = y
 
     # update vertical lines
-    if len(vlines_idx) != len(s.poles_locations):
-        # TODO: highly unreliable! It doesn't work.
-        shapes = list(p._fig.layout.shapes)
-        p._fig.layout.shapes = []
-        for idx in reversed(vlines_idx):
-            shapes.pop(idx)
-        for shape in shapes:
-            p._fig.add_shape(shape)
-        for x_loc in s.poles_locations:
-            # TODO: weirdly, add_vline refuses to work here...
-            # p._fig.add_vline(x=float(x_loc), **p.pole_line_kw)
-            p._fig.add_shape(
-                type="line", x0=float(x_loc), x1=float(x_loc),
-                y0=0, y1=1, xref="x", yref="y domain",
-                **p.pole_line_kw
+    if hasattr(s, "poles_locations"):
+        if len(vlines_idx) != len(s.poles_locations):
+            # TODO: highly unreliable! It doesn't work.
+            shapes = list(p._fig.layout.shapes)
+            p._fig.layout.shapes = []
+            for idx in reversed(vlines_idx):
+                shapes.pop(idx)
+            for shape in shapes:
+                p._fig.add_shape(shape)
+
+            pole_line_kw = p.merge(
+                {"line": dict(color='black', dash='dot', width=1)},
+                s.poles_rendering_kw
             )
-        n = len(p._fig.layout["shapes"])
-        m = len(s.poles_locations)
-        idxs[1] = list(range(n - m, n))
-    elif len(vlines_idx) > 0:
-        for idx, x_loc in zip(vlines_idx, s.poles_locations):
-            p._fig.layout.shapes[idx]["x0"] = float(x_loc)
-            p._fig.layout.shapes[idx]["x1"] = float(x_loc)
+            for x_loc in s.poles_locations:
+                # TODO: weirdly, add_vline refuses to work here...
+                # p._fig.add_vline(x=float(x_loc), **p.pole_line_kw)
+                p._fig.add_shape(
+                    type="line", x0=float(x_loc), x1=float(x_loc),
+                    y0=0, y1=1, xref="x", yref="y domain",
+                    **pole_line_kw
+                )
+            n = len(p._fig.layout["shapes"])
+            m = len(s.poles_locations)
+            idxs[1] = list(range(n - m, n))
+        elif len(vlines_idx) > 0:
+            for idx, x_loc in zip(vlines_idx, s.poles_locations):
+                p._fig.layout.shapes[idx]["x0"] = float(x_loc)
+                p._fig.layout.shapes[idx]["x1"] = float(x_loc)
 
 
 class Line2DRenderer(Renderer):

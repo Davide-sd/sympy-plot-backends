@@ -1,6 +1,8 @@
 from sympy import (
-    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane
+    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Expr
 )
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries
@@ -10,107 +12,17 @@ from spb.utils import (
     prange, spherical_to_cartesian
 )
 from spb.graphics.utils import _plot3d_wireframe_helper, _plot_sympify
+from numbers import Number
 import warnings
 
 
+@modify_graphics_series_doc(Parametric3DLineSeries, replace={"params": _PARAMS})
 def line_parametric_3d(
-    expr1, expr2, expr3, range=None, label=None,
+    expr_x, expr_y, expr_z, range_p=None, label=None,
     rendering_kw=None, colorbar=True, use_cm=True, **kwargs
 ):
-    """Plots a 3D parametric curve.
-
-    Parameters
-    ==========
-
-    expr1, expr2, expr3 : Expr or callable
-        The expression representing x component of the parametric
-        function. It can be a:
-
-        * Symbolic expression representing the function of one variable
-          to be plotted.
-        * Numerical function of one variable, supporting vectorization.
-          In this case the following keyword arguments are not supported:
-          ``params``.
-    range : (symbol, min, max)
-        A 3-tuple denoting the range of the parameter variable.
-    label : str, optional
-        An optional string denoting the label of the expression
-        to be visualized on the legend. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        Setting ``adaptive=True`` activates the adaptive algorithm
-        implemented in [python-adaptive]_ to create smooth plots.
-        Use ``adaptive_goal`` and ``loss_fn`` to further customize the output.
-
-        The default value is ``False``, which uses an uniform sampling
-        strategy, where the number of discretization points is specified by
-        the ``n`` keyword argument.
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for more
-          information.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-    color_func : callable, optional
-        Define the line color mapping when ``use_cm=True``. It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(t)``, where ``t`` is the parameter.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-          * 4 arguments: ``f(x, y, z, t)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y`` or ``expr_z``.
-        * None: the default value (color mapping applied to the parameter).
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-    scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [python-adaptive]_ for more information.
-          Specifically, look at ``adaptive.learner.learner1D`` to find more
-          loss functions.
-    n : int, optional
-        Used when the ``adaptive=False``. The function is uniformly
-        sampled at ``n`` number of points. Default value to 1000.
-        If the ``adaptive=True``, this parameter will be ignored.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-    tx, ty, tz, tp : callable, optional
-        Apply a numerical function to the x, y, z directions and to the
-        discretized parameter.
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
-    xscale : 'linear' or 'log', optional
-        Sets the scaling of the parameter.
+    """
+    Plots a 3D parametric curve.
 
     Returns
     =======
@@ -139,7 +51,7 @@ def line_parametric_3d(
 
        >>> graphics(line_parametric_3d(cos(t), sin(t), t, (t, -5, 5)))
        Plot object containing:
-       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5.0, 5.0)
+       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5, 5)
 
     Customize the appearance by setting a label to the colorbar, changing the
     colormap and the line width.
@@ -156,7 +68,7 @@ def line_parametric_3d(
        ...     )
        ... )
        Plot object containing:
-       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0.0, 6.283185307179586)
+       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0, 2*pi)
 
     Plot multiple parametric 3D lines with different ranges:
 
@@ -183,9 +95,9 @@ def line_parametric_3d(
        ...         use_cm=False)
        ... )
        Plot object containing:
-       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0.0, 6.283185307179586)
-       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0.0, 18.84955592153876)
-       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0.0, 3.141592653589793)
+       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0, 2*pi)
+       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0, 6*pi)
+       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0, pi)
 
     Plotting a numerical function instead of a symbolic expression, using
     Plotly:
@@ -249,111 +161,28 @@ def line_parametric_3d(
     spb.graphics.functions_2d.line_parametric_2d, list_3d
 
     """
-    expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
+    expr_x, expr_y, expr_z = map(_plot_sympify, [expr_x, expr_y, expr_z])
     params = kwargs.get("params", {})
-    range = _create_missing_ranges(
-        [expr1, expr2, expr3], [range] if range else [], 1, params)[0]
+    range_p = _create_missing_ranges(
+        [expr_x, expr_y, expr_z], [range_p] if range_p else [], 1, params)[0]
     s = Parametric3DLineSeries(
-        expr1, expr2, expr3, range, label,
+        expr_x, expr_y, expr_z, range_p, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
         use_cm=use_cm, **kwargs)
     return [s]
 
 
+@modify_graphics_series_doc(SurfaceOver2DRangeSeries, replace={"params": _PARAMS})
 def surface(
-    expr, range1=None, range2=None, label=None, rendering_kw=None,
+    expr, range_x=None, range_y=None, label=None, rendering_kw=None,
     colorbar=True, use_cm=False, **kwargs
 ):
-    """Creates the surface of a function of 2 variables.
+    """
+    Creates the surface of a function of 2 variables.
 
     Parameters
     ==========
 
-    expr : Expr or callable
-        Expression representing the function of two variables to be plotted.
-        The expression representing the function of two variables to be
-        plotted. It can be a:
-
-        * Symbolic expression.
-        * Numerical function of two variable, supporting vectorization.
-          In this case the following keyword arguments are not supported:
-          ``params``.
-    range1, range2: (symbol, min, max)
-        A 3-tuple denoting the range of the first and second variable,
-        respectively. Default values: `min=-10` and `max=10`.
-    label : str, optional
-        The label to be shown in the colorbar.  If not provided, the string
-        representation of ``expr`` will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    adaptive : bool, optional
-        The default value is set to ``False``, which uses a uniform sampling
-        strategy with number of discretization points ``n1`` and ``n2`` along
-        the x and y directions, respectively.
-
-        Set adaptive to ``True`` to use the adaptive algorithm implemented in
-        [python-adaptive]_ to create smooth plots. Use ``adaptive_goal`` and
-        ``loss_fn`` to further customize the output.
-    adaptive_goal : callable, int, float or None
-        Controls the "smoothness" of the evaluation. Possible values:
-
-        * ``None`` (default):  it will use the following goal:
-          ``lambda l: l.loss() < 0.01``
-        * number (int or float). The lower the number, the more
-          evaluation points. This number will be used in the following goal:
-          ``lambda l: l.loss() < number``
-        * callable: a function requiring one input element, the learner. It
-          must return a float number. Refer to [python-adaptive]_ for more
-          information.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-    color_func : callable, optional
-        Define the surface color mapping when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function of 3 variables, x, y, z (the points computed
-          by the internal algorithm) supporting vectorization.
-        * A symbolic expression having at most as many free symbols as
-          ``expr``.
-        * None: the default value (color mapping applied to the z-value of
-          the surface).
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-    is_polar : boolean, optional
-        Default to False. If True, requests a polar discretization. In this
-        case, ``range1`` represents the radius, ``range2`` represents the
-        angle.
-    loss_fn : callable or None
-        The loss function to be used by the adaptive learner.
-        Possible values:
-
-        * ``None`` (default): it will use the ``default_loss`` from the
-          ``adaptive`` module.
-        * callable : Refer to [python-adaptive]_ for more information.
-          Specifically, look at ``adaptive.learner.learnerND`` to find more
-          loss functions.
-    n, n1, n2 : int, optional
-        Number of discretization points along the two ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        both directions.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot, which doesn't support the
-        adaptive algorithm (meaning it will use ``adaptive=False``).
-        Learn more by reading the documentation of the interactive sub-module.
-    tx, ty, tz : callable, optional
-        Apply a numerical function to the discretized domain in the
-        x, y and z direction, respectively.
-    use_cm : boolean, optional
-        If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to False.
     wireframe : boolean, optional
         Enable or disable a wireframe over the surface. Depending on the number
         of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
@@ -362,16 +191,16 @@ def surface(
     wf_n1, wf_n2 : int, optional
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
+        slow down the plot's creation. Related parameter: ``wireframe``.
     wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
+        Related parameter: ``wireframe``.
     wf_rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
-    xscale, yscale : 'linear' or 'log', optional
-        Sets the scaling of the discretized ranges.
+        Related parameter: ``wireframe``.
 
     Returns
     =======
@@ -393,16 +222,21 @@ def surface(
        >>> from spb import *
        >>> x, y = symbols('x y')
 
-    Single plot with Matplotlib:
+    Single plot with Matplotlib, with ticks formatted as multiples of `pi/2`.
+
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> graphics(surface(cos((x**2 + y**2)), (x, -3, 3), (y, -3, 3)))
+       >>> graphics(
+       ...     surface(cos((x**2 + y**2)), (x, -pi, pi), (y, -pi, pi)),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_2(),
+       ... )
        Plot object containing:
-       [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: cartesian surface: cos(x**2 + y**2) for x over (-pi, pi) and y over (-pi, pi)
 
 
     Single plot with Plotly, illustrating how to apply:
@@ -440,8 +274,8 @@ def surface(
        ...     surface(x*y, (x, -5, 5), (y, -5, 5), use_cm=True),
        ...     surface(-x*y, (x, -5, 5), (y, -5, 5), use_cm=True))
        Plot object containing:
-       [0]: cartesian surface: x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
-       [1]: cartesian surface: -x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x*y for x over (-5, 5) and y over (-5, 5)
+       [1]: cartesian surface: -x*y for x over (-5, 5) and y over (-5, 5)
 
     Multiple plots with different ranges and solid colors.
 
@@ -455,8 +289,8 @@ def surface(
        ...     surface(f, (x, -3, 3), (y, -3, 3)),
        ...     surface(-f, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: cartesian surface: x**2 + y**2 for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: cartesian surface: -x**2 - y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x**2 + y**2 for x over (-3, 3) and y over (-3, 3)
+       [1]: cartesian surface: -x**2 - y**2 for x over (-5, 5) and y over (-5, 5)
 
     Single plot with a polar discretization, a color function mapping a
     colormap to the radius. Note that the same result can be achieved with
@@ -527,88 +361,47 @@ def surface(
     surface_revolution, wireframe, plane
 
     """
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
-    if not (range1 and range2):
+    if not (range_x and range_y):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
-    ranges = _preprocess_multiple_ranges([expr], [range1, range2], 2, params)
+    kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
+    ranges = _preprocess_multiple_ranges([expr], [range_x, range_y], 2, params)
     s = SurfaceOver2DRangeSeries(
         expr, *ranges, label,
         rendering_kw=rendering_kw, colorbar=colorbar,
-        use_cm=use_cm, **kwargs)
+        use_cm=use_cm, **kwargs_without_wireframe)
     s = [s]
     s += _plot3d_wireframe_helper(s, **kwargs)
     return s
 
 
+def _remove_wireframe_kwargs(kwargs):
+    kwargs_without_wireframe = kwargs.copy()
+    for k in ["wireframe", "wf_n1", "wf_n2", "wf_npoints", "wf_rendering_kw"]:
+        kwargs_without_wireframe.pop(k, None)
+    return kwargs_without_wireframe
+
+
+@modify_graphics_series_doc(ParametricSurfaceSeries, replace={"params": _PARAMS})
 def surface_parametric(
-    expr1, expr2, expr3, range1=None, range2=None,
+    expr_x, expr_y, expr_z, range_u=None, range_v=None,
     label=None, rendering_kw=None, **kwargs
 ):
-    """Creates a 3D parametric surface.
+    """
+    Creates a 3D parametric surface.
 
     Parameters
     ==========
 
-    expr1, expr2, expr3: Expr or callable
-        Expression representing the function along `x`. It can be a:
-
-        * Symbolic expression.
-        * Numerical function of two variable, f(u, v), supporting
-          vectorization. In this case the following keyword arguments are
-          not supported: ``params``.
-    range1, range2: (symbol, min, max)
-        A 3-tuple denoting the range of the parameters.
-    label : str, optional
-        The label to be shown in the colorbar.  If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    colorbar : boolean, optional
-        Show/hide the colorbar. Default to True (colorbar is visible).
-        Only works when ``use_cm=True``.
-    color_func : callable, optional
-        Define the surface color mapping when ``use_cm=True``.
-        It can either be:
-
-        * A numerical function supporting vectorization. The arity can be:
-
-          * 1 argument: ``f(u)``, where ``u`` is the first parameter.
-          * 2 arguments: ``f(u, v)`` where ``u, v`` are the parameters.
-          * 3 arguments: ``f(x, y, z)`` where ``x, y, z`` are the coordinates
-            of the points.
-          * 5 arguments: ``f(x, y, z, u, v)``.
-
-        * A symbolic expression having at most as many free symbols as
-          ``expr_x`` or ``expr_y`` or ``expr_z``.
-        * None: the default value (color mapping applied to the z-value of
-          the surface).
-    force_real_eval : boolean, optional
-        Default to False, with which the numerical evaluation is attempted
-        over a complex domain, which is slower but produces correct results.
-        Set this to True if performance is of paramount importance, but be
-        aware that it might produce wrong results. It only works with
-        ``adaptive=False``.
-    n, n1, n2 : int, optional
-        Number of discretization points along the two ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        both directions.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-    tx, ty, tz : callable, optional
-        Apply a numerical function to the discretized domain in the
-        x, y and z direction, respectively.
-    use_cm : boolean, optional
-        If True, apply a color map to the surface.
-        If False, solid colors will be used instead. Default to False.
     wireframe : boolean, optional
         Enable or disable a wireframe over the surface. Depending on the number
         of wireframe lines (see ``wf_n1`` and ``wf_n2``), activating this
@@ -617,14 +410,16 @@ def surface_parametric(
     wf_n1, wf_n2 : int, optional
         Number of wireframe lines along the two ranges, respectively.
         Default to 10. Note that increasing this number might considerably
-        slow down the plot's creation.
+        slow down the plot's creation. Related parameter: ``wireframe``.
     wf_npoints : int or None, optional
         Number of discretization points for the wireframe lines. Default to
         None, meaning that each wireframe line will have ``n1`` or ``n2``
         number of points, depending on the line direction.
+        Related parameter: ``wireframe``.
     wf_rendering_kw : dict, optional
         A dictionary of keywords/values which is passed to the backend's
         function to customize the appearance of wireframe lines.
+        Related parameter: ``wireframe``.
 
     Returns
     =======
@@ -659,7 +454,7 @@ def surface_parametric(
        ...         (u, 0, pi), (v, 0, 2*pi), use_cm=False),
        ...     title="Sinusoidal Cone")
        Plot object containing:
-       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0.0, 3.141592653589793) and v over (0.0, 6.283185307179586)
+       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0, pi) and v over (0, 2*pi)
 
     Customize the appearance of the surface by changing the colormap. Apply a
     color function mapping the `v` values. Activate the wireframe to better
@@ -681,7 +476,7 @@ def surface_parametric(
                "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
                use_cm=True, color_func=lambda u, v: u,
                wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004}),
-           backend=KB, title=r"Möbius \, strip")
+           backend=KB, title="Möbius \\, strip")
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
     using Plotly:
@@ -749,7 +544,7 @@ def surface_parametric(
                    vp: (2, 0, 2),
                }),
            backend=KB, grid=False,
-           title=r"Catenoid \, to \, Right \, Helicoid \, Transformation"
+           title="Catenoid \\, to \\, Right \\, Helicoid \\, Transformation"
        )
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
@@ -782,59 +577,59 @@ def surface_parametric(
     surface, surface_spherical, surface_revolution, wireframe
 
     """
-    expr1, expr2, expr3 = map(_plot_sympify, [expr1, expr2, expr3])
+    # back-compatibility
+    range_u = kwargs.pop("range1", range_u)
+    range_v = kwargs.pop("range2", range_v)
+
+    expr_x, expr_y, expr_z = map(_plot_sympify, [expr_x, expr_y, expr_z])
     params = kwargs.get("params", {})
-    if not (range1 and range2):
+    if not (range_u and range_v):
         warnings.warn(
             "No ranges were provided. This function will attempt to find "
             "them, however the order will be arbitrary, which means the "
             "visualization might be flipped."
         )
+    kwargs_without_wireframe = _remove_wireframe_kwargs(kwargs)
     ranges = _preprocess_multiple_ranges(
-        [expr1, expr2, expr3], [range1, range2], 2, params)
+        [expr_x, expr_y, expr_z], [range_u, range_v], 2, params)
     s = ParametricSurfaceSeries(
-        expr1, expr2, expr3, *ranges, label,
-        rendering_kw=rendering_kw, **kwargs)
+        expr_x, expr_y, expr_z, *ranges, label,
+        rendering_kw=rendering_kw, **kwargs_without_wireframe)
     return [s] + _plot3d_wireframe_helper([s], **kwargs)
 
 
+@modify_graphics_series_doc(
+    ParametricSurfaceSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
+)
 def surface_spherical(
     r, range_theta=None, range_phi=None, label=None,
     rendering_kw=None, **kwargs
 ):
-    """Plots a radius as a function of the spherical coordinates theta and phi.
+    """
+    Plots a radius as a function of the spherical coordinates theta and phi.
 
     Parameters
     ==========
 
-    r: Expr or callable
+    r : Expr or callable
         Expression representing the radius. It can be a:
 
         * Symbolic expression.
         * Numerical function of two variable, f(theta, phi), supporting
           vectorization. In this case the following keyword arguments are
           not supported: ``params``.
-    range_theta: (symbol, min, max)
-        A 3-tuple denoting the range of the polar angle, which is limited
-        in [0, pi]. Consider a sphere:
+    range_theta : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the polar angle,
+        which is limited in [0, pi]. Consider a sphere:
 
         * ``theta=0`` indicates the north pole.
         * ``theta=pi/2`` indicates the equator.
         * ``theta=pi`` indicates the south pole.
-    range_phi: (symbol, min, max)
-        A 3-tuple denoting the range of the azimuthal angle, which is
-        limited in [0, 2*pi].
-    label : str, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface_parametric`.
-        Refer to its documentation for a for a full list of keyword arguments.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle,
+        which is limited in [0, 2*pi].
 
     Returns
     =======
@@ -866,7 +661,7 @@ def surface_spherical(
        >>> graphics(
        ...     surface_spherical(1, (theta, 0, 0.7 * pi), (phi, 0, 1.8 * pi)))
        Plot object containing:
-       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0.0, 2.199114857512855) and phi over (0.0, 5.654866776461628)
+       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0, 0.7*pi) and phi over (0, 1.8*pi)
 
     Plot real spherical harmonics, highlighting the regions in which the
     real part is positive and negative, using Plotly:
@@ -977,11 +772,13 @@ def surface_spherical(
         rendering_kw=rendering_kw, **kwargs)
 
 
+@modify_graphics_series_doc(Implicit3DSeries, replace={"params": _PARAMS})
 def implicit_3d(
-    expr, range1=None, range2=None, range3=None, label=None,
+    expr, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs
 ):
-    """Plots an isosurface of a function.
+    """
+    Plots an isosurface of a function.
 
     Notes
     =====
@@ -993,29 +790,6 @@ def implicit_3d(
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
-
-    Parameters
-    ==========
-
-    expr: Expr or callable
-        Implicit expression.  It can be a:
-
-        * Symbolic expression.
-        * Numerical function of three variable, f(x, y, z), supporting
-            vectorization.
-    range1, range2, range3: (symbol, min, max)
-        A 3-tuple denoting the range of a particular variable.
-    label : str, optional
-        The label to be shown in the colorbar. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    n, n1, n2, n3 : int, optional
-        Number of discretization points along the three ranges. Default to 100.
-        ``n`` is a shortcut to set the same number of discretization points on
-        all directions.
 
     Returns
     =======
@@ -1066,10 +840,15 @@ def implicit_3d(
     surface, spb.graphics.functions_2d.implicit_2d
 
     """
+    # back-compatibility
+    range_x = kwargs.pop("range1", range_x)
+    range_y = kwargs.pop("range2", range_y)
+    range_z = kwargs.pop("range3", range_z)
+
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
 
-    check = [range1 is None, range2 is None, range3 is None]
+    check = [range_x is None, range_y is None, range_z is None]
     if sum(check) >= 2:
         pre = "Not enough ranges were provided. "
         if sum(check) == 3:
@@ -1081,36 +860,43 @@ def implicit_3d(
         )
 
     ranges = _preprocess_multiple_ranges(
-        [expr], [range1, range2, range3], 3, params)
+        [expr], [range_x, range_y, range_z], 3, params)
     s = Implicit3DSeries(
         expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
+@modify_graphics_series_doc(
+    ParametricSurfaceSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"]
+)
 def surface_revolution(
     curve, range_t, range_phi=None, axis=(0, 0),
     parallel_axis='z', show_curve=False, curve_kw={}, **kwargs
 ):
-    """Creates a surface of revolution by rotating a curve around an axis of
+    """
+    Creates a surface of revolution by rotating a curve around an axis of
     rotation.
 
     Parameters
     ==========
 
-    curve : Expr, list/tuple of 2 or 3 elements
+    curve : Expr, list ortuple of 2 or 3 elements
         The curve to be revolved, which can be either:
 
         * a symbolic expression
         * a 2-tuple representing a parametric curve in 2D space
         * a 3-tuple representing a parametric curve in 3D space
-    range_t : (symbol, min, max)
-        A 3-tuple denoting the range of the parameter of the curve.
-    range_phi : (symbol, min, max)
-        A 3-tuple denoting the range of the azimuthal angle where the curve
-        will be revolved. Default to ``(phi, 0, 2*pi)``.
-    axis : (coord1, coord2)
-        A 2-tuple that specifies the position of the rotation axis.
-        Depending on the value of ``parallel_axis``:
+    range_t : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the parameter of
+        the curve.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle
+        where the curve will be revolved. Default to ``(phi, 0, 2*pi)``.
+    axis : tuple
+        A 2-tuple (coord1, coord2) that specifies the position of the rotation
+        axis. Depending on the value of ``parallel_axis``:
 
         * ``"x"``: the rotation axis intersects the YZ plane at
           (coord1, coord2).
@@ -1130,10 +916,6 @@ def surface_revolution(
         ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
         the appearance of the initial curve. Refer to its documentation for
         more information.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface_parametric`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1170,7 +952,7 @@ def surface_revolution(
                use_cm=True, color_func=lambda t, phi: phi,
                rendering_kw={"alpha": 0.6, "cmap": "twilight"},
                # indicates the azimuthal angle on the colorbar label
-               label=r"$\phi$ [rad]",
+               label="$\\phi$ [rad]",
                show_curve=True,
                # this dictionary will be passes to plot3d_parametric_line in
                # order to draw the initial curve
@@ -1316,51 +1098,22 @@ def surface_revolution(
 
     if show_curve:
         curve_kw["params"] = params
-        # uniform mesh evaluation is faster
-        curve_kw["adaptive"] = False
         # link the number of discretization points between the two series
         curve_kw["n"] = surface[0].n[0]
         curve_kw.setdefault("use_cm", False)
-        curve_kw.setdefault("force_real_eval", surface[0]._force_real_eval)
+        curve_kw.setdefault("force_real_eval", surface[0].force_real_eval)
         line = line_parametric_3d(x, y, z, range_t, **curve_kw)
 
         surface.extend(line)
     return surface
 
 
+@modify_graphics_series_doc(List3DSeries, replace={"params": _PARAMS})
 def list_3d(
-    coord_x, coord_y, coord_z, label=None, rendering_kw=None, **kwargs
+    list_x, list_y, list_z, label=None, rendering_kw=None, **kwargs
 ):
-    """Plots lists of coordinates in 3D space.
-
-    Parameters
-    ==========
-
-    coord_x, coord_y, coord_z : list or tuple or 1D NumPy array
-        Lists of coordinates.
-    label : str, optional
-        The label to be shown in the legend.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    color_func : callable, optional
-        A numerical function of 3 variables, x, y, z defining the line color.
-        Default to None. Requires ``use_cm=True`` in order to be applied.
-    scatter : boolean, optional
-        Default to False, which will render a line connecting all the points.
-        If True, a scatter plot will be generated.
-    fill : boolean, optional
-        Default to True, which will render filled circular markers. It only
-        works if `scatter=True`. If True, filled circular markers will be
-        rendered. Note that some backend might not support this feature.
-    params : dict
-        A dictionary mapping symbols to parameters. This keyword argument
-        enables the interactive-widgets plot. Learn more by reading the
-        documentation of the interactive sub-module.
-    use_cm : boolean, optional
-        If True, apply a color map to the parametric lines.
-        If False, solid colors will be used instead. Default to True.
+    """
+    Plots lists of coordinates in 3D space.
 
     Returns
     =======
@@ -1436,41 +1189,41 @@ def list_3d(
     spb.graphics.functions_2d.line, line_parametric_3d
 
     """
-    if not hasattr(coord_x, "__iter__"):
-        coord_x = [coord_x]
-    if not hasattr(coord_y, "__iter__"):
-        coord_y = [coord_y]
-    if not hasattr(coord_z, "__iter__"):
-        coord_z = [coord_z]
+    if not hasattr(list_x, "__iter__"):
+        list_x = [list_x]
+    if not hasattr(list_y, "__iter__"):
+        list_y = [list_y]
+    if not hasattr(list_z, "__iter__"):
+        list_z = [list_z]
     s = List3DSeries(
-        coord_x, coord_y, coord_z, label, rendering_kw=rendering_kw, **kwargs)
+        list_x, list_y, list_z, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
+@modify_graphics_series_doc(
+    Parametric3DLineSeries,
+    replace={"params": _PARAMS},
+    exclude=["expr_x", "expr_y", "expr_z", "range_p"]
+)
 def wireframe(
     surface_series, n1=10, n2=10, n=None, rendering_kw=None, **kwargs
 ):
-    """Creates a wireframe of a 3D surface.
+    """
+    Creates a wireframe of a 3D surface.
 
     Parameters
     ==========
     surface_series : BaseSeries
         A data series representing a surface.
-    n1, n2: int, optional
-        Number of wireframe lines along each direction (or range).
+    n1 : int, optional
+        Number of wireframe lines along the first direction (or range).
+    n2: int, optional
+        Number of wireframe lines along the second direction (or range).
     n : int, optional
         Number of evaluation points for each wireframe line. If not provided,
         the algorithm will chose the number of discretization points from
         the ``surface_series``. The higher this number, the slower the
         creation of the plot.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of surfaces. Refer to the
-        plotting library (backend) manual for more informations.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.line_parametric_3d`.
-        Refer to its documentation for a for a full list of keyword arguments.
 
     Returns
     =======
@@ -1549,30 +1302,19 @@ def wireframe(
     return _plot3d_wireframe_helper([surface_series], **kw)
 
 
+@modify_graphics_series_doc(PlaneSeries, replace={"params": _PARAMS}, exclude=["plane"])
 def plane(
-    p, range1=None, range2=None, range3=None, label=None,
+    p, range_x=None, range_y=None, range_z=None, label=None,
     rendering_kw=None, **kwargs
 ):
-    """Plot a plane in a 3D space.
+    """
+    Plot a plane in a 3D space.
 
     Parameters
     ==========
 
     p : Plane
-    range1, range2, range3 : (symbol, min, max)
-        A 3-tuple denoting the range of a particular variable.
-    label : str, optional
-        An optional string denoting the label of the expression
-        to be visualized on the legend. If not provided, the string
-        representation of the expression will be used.
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the
-        plotting library (backend) manual for more informations.
-    **kwargs :
-        Keyword arguments are the same as
-        :func:`~spb.graphics.functions_3d.surface`.
-        Refer to its documentation for a for a full list of keyword arguments.
+        The plane to be plotted.
 
     Returns
     =======
@@ -1609,7 +1351,7 @@ def plane(
             f"`p` must be an instance of `Plane`. Received type(p)={type(p)}")
     params = kwargs.get("params", {})
 
-    check = [range1 is None, range2 is None, range3 is None]
+    check = [range_x is None, range_y is None, range_z is None]
     if sum(check) >= 2:
         pre = "Not enough ranges were provided. "
         if sum(check) == 3:
@@ -1621,7 +1363,7 @@ def plane(
         )
 
     ranges = _preprocess_multiple_ranges(
-        [p], [range1, range2, range3], 3, params)
+        [p], [range_x, range_y, range_z], 3, params)
     s = PlaneSeries(
         p, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]

@@ -152,10 +152,11 @@ def _get_plots_imodule(plots):
     imodules = set()
     for plot in plots:
         if isinstance(plot, IPlot):
-            imodules.add(plot.backend.imodule)
+            imodules.add(plot.backend._imodule)
         else:
-            imodules.add(plot.imodule)
+            imodules.add(plot._imodule)
 
+    print("_get_plots_imodule", imodules)
     if None in imodules:
         imodules.remove(None)
 
@@ -357,12 +358,14 @@ def plotgrid(*args, **kwargs):
 
     is_iplot = len(all_parameters) > 0
     p = PlotGrid(nr, nc, *args, show=False, is_iplot=is_iplot, **kwargs)
-    if is_iplot:
+    is_animation = any(
+        isinstance(plot, BaseAnimation) for plot in p._all_plots)
+
+    if is_iplot or is_animation:
         kwargs["plotgrid"] = p
         kwargs["params"] = all_parameters
         kwargs["show"] = show
-        kwargs["animation"] = any(
-            isinstance(plot, BaseAnimation) for plot in p._all_plots)
+        kwargs["animation"] = is_animation
         return create_interactive_plot(**kwargs)
 
     if not show:

@@ -27,8 +27,8 @@ def _update_arrow3d(renderer, data, handle):
     uu -= xx
     vv -= yy
     ww -= zz
-    handle[0].origins = np.array([xx, yy, zz])
-    handle[0].vectors = np.array([uu, vv, ww])
+    handle[0].origins = np.array([xx, yy, zz], dtype=np.float32)
+    handle[0].vectors = np.array([uu, vv, ww], dtype=np.float32)
 
 
 class Arrow3DRenderer(Renderer):

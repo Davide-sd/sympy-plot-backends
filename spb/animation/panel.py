@@ -21,25 +21,23 @@ pn.extension("mathjax", "plotly", sizing_mode="stretch_width")
 
 class Animation(BaseAnimation, PanelCommon):
     def __init__(self, *series, **kwargs):
-        self._layout = "bb"
-        self._ncols = 1
-        self._servable = kwargs.pop("servable", cfg["interactive"]["servable"])
-        self._pane_kw = kwargs.pop("pane_kw", dict())
-        self._template = kwargs.pop("template", None)
-        self._name = kwargs.pop("name", "")
-        self._original_params = kwargs.get("params", {})
+        super().__init__(
+            layout="bb",
+            ncols=1,
+            name=kwargs.pop("name", ""),
+            _original_params = kwargs.get("params", {})
+        )
         self.merge = merge
 
         plotgrid = kwargs.get("plotgrid", None)
         if plotgrid:
-            self._backend = plotgrid
+            self.backend = plotgrid
             self._post_init_plotgrid(**kwargs)
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "panel"
-            self._backend = Backend(*series, **kwargs)
+            kwargs["_imodule"] = "panel"
+            self.backend = Backend(*series, **kwargs)
             self._post_init_plot(**kwargs)
 
         self._play_widget = pn.widgets.Player(
@@ -53,17 +51,17 @@ class Animation(BaseAnimation, PanelCommon):
 
     def _update(self, frame_idx):
         self.update_animation(frame_idx)
-        return self._backend.fig
+        return self.backend.fig
 
     def _init_pane_for_plotgrid(self):
         # First, set the necessary data to create bindings for each subplot
-        self._backend.pre_set_bindings(
+        self.backend.pre_set_bindings(
             [1], # anything but None
             [self._play_widget]
         )
-        self._backend.pre_set_animation(self)
+        self.backend.pre_set_animation(self)
         # Then, create the pn.GridSpec figure
-        self.pane = self._backend.fig
+        self.pane = self.backend.fig
 
     def _populate_template(self, template):
         template.main.append(pn.Column(self.pane, self._play_widget))
@@ -83,7 +81,6 @@ def animation(*series, show=True, **kwargs):
     series : BaseSeries
         Instances of :py:class:`spb.series.BaseSeries`, representing the
         symbolic expression to be plotted.
-
     animation : bool or dict
 
         * ``False`` (default value): no animation.
@@ -99,7 +96,6 @@ def animation(*series, show=True, **kwargs):
         values are just indicative: the animation is going to compute new
         data at each time step. Hence, the more data needs to be computed,
         the slower the update.
-
     params : dict
         A dictionary mapping the symbols to a parameter. The parameter can be:
 
@@ -126,12 +122,6 @@ def animation(*series, show=True, **kwargs):
         3. A 1D numpy array, with length given by ``fps * time``, specifying
            the custom value at each animation frame (or, at each time step)
            associated to the parameter.
-
-    servable : bool, optional
-        Default to False, which will show the interactive application on the
-        output cell of a Jupyter Notebook. If True, the application will be
-        served on a new browser window.
-
     show : bool, optional
         Default to True.
         If True, it will return an object that will be rendered on the
@@ -139,7 +129,6 @@ def animation(*series, show=True, **kwargs):
         of ``Animation``, which can later be shown by calling the
         ``show()`` method, or saved to a GIF/MP4 file using the
         ``save()`` method.
-
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
         title, write a tuple of the form:``(title_str, param_symbol1, ...)``,

@@ -1,8 +1,12 @@
 from spb.defaults import cfg
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.plot_functions.functions_2d import (
     _set_labels
 )
-from spb.series import ComplexPointSeries
+from spb.series import (
+    ComplexPointSeries, Vector2DSeries, ComplexDomainColoringSeries
+)
 from spb.graphics import (
     complex_points, line_abs_arg, line_abs_arg_colored, line_real_imag,
     surface_abs_arg, surface_real_imag, domain_coloring, analytic_landscape,
@@ -16,6 +20,9 @@ from spb.utils import (
 from spb.plotgrid import plotgrid
 from sympy import latex, Tuple, im, Expr, symbols, I
 import warnings
+
+
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
 
 
 # NOTE:
@@ -42,6 +49,7 @@ def _build_complex_point_series(*args, allow_lambda=False, pc=False, **kwargs):
     series = []
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
 
     if all([isinstance(a, Expr) for a in args]):
         # args is a list of complex numbers
@@ -103,6 +111,7 @@ def _build_series(*args, interactive=False, allow_lambda=False, **kwargs):
     new_args = []
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
 
     # option to be used with lambdify with complex functions
     kwargs.setdefault("modules", cfg["complex"]["modules"])
@@ -255,14 +264,16 @@ def _set_axis_labels(series, kwargs):
     if (
         kwargs.get("aspect", None) is None) and any(
             (s.is_complex and s.is_domain_coloring and (not s.is_3D))
-            or s.is_point for s in series
+            # or s.is_point
+            for s in series
     ):
         # set aspect equal for 2D domain coloring or complex points
         kwargs.setdefault("aspect", "equal")
 
 
 def plot_real_imag(*args, **kwargs):
-    """Plot the real and imaginary parts, the absolute value and the
+    """
+    Plot the real and imaginary parts, the absolute value and the
     argument of a complex function. By default, only the real and imaginary
     parts will be plotted. Use keyword argument to be more specific.
     By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
@@ -297,15 +308,6 @@ def plot_real_imag(*args, **kwargs):
             (expr1, range1, label1 [opt], rendering_kw1 [opt]),
             (expr2, range2, label2 [opt], rendering_kw2 [opt]), ..., **kwargs)
 
-    Refer to :func:`~spb.graphics.complex_analysis.line_real_imag` or
-    :func:`~spb.graphics.complex_analysis.surface_real_imag` for a full
-    list of keyword arguments to customize the appearances of lines and
-    surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Parameters
     ==========
     real : boolean, optional
@@ -339,8 +341,8 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3))
        Plot object containing:
-       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: im(sqrt(x)) for x over (-3, 3)
 
     Plot only the real part:
 
@@ -351,7 +353,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), imag=False)
        Plot object containing:
-       [0]: cartesian line: re(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: re(sqrt(x)) for x over (-3, 3)
 
     Plot only the imaginary part:
 
@@ -362,7 +364,7 @@ def plot_real_imag(*args, **kwargs):
 
        >>> plot_real_imag(sqrt(x), (x, -3, 3), real=False)
        Plot object containing:
-       [0]: cartesian line: im(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: im(sqrt(x)) for x over (-3, 3)
 
     Plot only the absolute value and argument:
 
@@ -374,8 +376,8 @@ def plot_real_imag(*args, **kwargs):
        >>> plot_real_imag(
        ...     sqrt(x), (x, -3, 3), real=False, imag=False, abs=True, arg=True)
        Plot object containing:
-       [0]: cartesian line: abs(sqrt(x)) for x over (-3.0, 3.0)
-       [1]: cartesian line: arg(sqrt(x)) for x over (-3.0, 3.0)
+       [0]: cartesian line: abs(sqrt(x)) for x over (-3, 3)
+       [1]: cartesian line: arg(sqrt(x)) for x over (-3, 3)
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. This plot illustrates:
@@ -455,6 +457,7 @@ def plot_real_imag(*args, **kwargs):
     plot_complex, plot_complex_list, plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = False
     kwargs.setdefault("abs", False)
     kwargs.setdefault("arg", False)
@@ -463,8 +466,10 @@ def plot_real_imag(*args, **kwargs):
     return _plot_complex(*args, **kwargs)
 
 
+@modify_plot_functions_doc(ComplexDomainColoringSeries, replace=_repl)
 def plot_complex(*args, **kwargs):
-    """Plot the absolute value of a complex function colored by its argument.
+    """
+    Plot the absolute value of a complex function colored by its argument.
     By default, the aspect ratio of 2D plots is set to ``aspect="equal"``.
 
     Depending on the provided range, this function will produce different
@@ -498,16 +503,6 @@ def plot_complex(*args, **kwargs):
             (expr2, range2, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
 
-    Refer to :func:`~spb.graphics.complex_analysis.line_abs_arg_colored` or
-    :func:`~spb.graphics.complex_analysis.domain_coloring` or
-    :func:`~spb.graphics.complex_analysis.analytic_landscape` for a full
-    list of keyword arguments to customize the appearances of lines and
-    surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Examples
     ========
 
@@ -529,7 +524,7 @@ def plot_complex(*args, **kwargs):
 
        >>> plot_complex(cos(x) + sin(I * x), "f", (x, -2, 2))
        Plot object containing:
-       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over ((-2+0j), (2+0j))
+       [0]: cartesian abs-arg line: cos(x) + I*sinh(x) for x over (-2, 2)
 
     Interactive-widget plot of a Fourier Transform. Refer to the interactive
     sub-module documentation to learn more about the ``params`` dictionary.
@@ -640,6 +635,7 @@ def plot_complex(*args, **kwargs):
     plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = True
     kwargs["real"] = False
     kwargs["imag"] = False
@@ -648,8 +644,10 @@ def plot_complex(*args, **kwargs):
     return _plot_complex(*args, allow_lambda=True, **kwargs)
 
 
+@modify_plot_functions_doc(ComplexPointSeries, replace=_repl)
 def plot_complex_list(*args, **kwargs):
-    """Plot lists of complex points. By default, the aspect ratio of the plot
+    """
+    Plot lists of complex points. By default, the aspect ratio of the plot
     is set to ``aspect="equal"``.
 
     Typical usage examples are in the followings:
@@ -750,6 +748,7 @@ def plot_complex_list(*args, **kwargs):
     plot_real_imag, plot_complex, plot_complex_vector
 
     """
+    kwargs["plot_function"] = True
     kwargs["absarg"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
@@ -759,8 +758,15 @@ def plot_complex_list(*args, **kwargs):
     return _plot_complex(*args, allow_lambda=False, pcl=True, **kwargs)
 
 
+@modify_plot_functions_doc(
+    Vector2DSeries,
+    replace=_repl,
+    exclude=["u", "v", "range_x", "range_y"],
+    priority=["expr", "range_c"]
+)
 def plot_complex_vector(*args, **kwargs):
-    """Plot the vector field `[re(f), im(f)]` for a complex function `f`
+    """
+    Plot the vector field `[re(f), im(f)]` for a complex function `f`
     over the specified complex domain. By default, the aspect ratio of 2D
     plots is set to ``aspect="equal"``.
 
@@ -780,13 +786,16 @@ def plot_complex_vector(*args, **kwargs):
             (expr1, range1, label1 [optional]),
             (expr2, range2, label2 [optional]), **kwargs)
 
-    Refer to :func:`~spb.graphics.vectors.vector_field_2d` for a full
-    list of keyword arguments to customize the appearances of quivers,
-    streamlines and contour.
+    Parameters
+    ==========
 
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
+    expr : Expr
+        Represent the complex function.
+    range_c : tuple
+        A 3-element tuples denoting the range of the variables. For example
+        ``(z, -5 - 3*I, 5 + 3*I)``. Note that we can specify the range
+        by using standard Python complex numbers, for example
+        ``(z, -5-3j, 5+3j)``.
 
     Examples
     ========
@@ -812,7 +821,7 @@ def plot_complex_vector(*args, **kwargs):
        >>> plot_complex_vector(expr, (z, -5 - 5j, 5 + 5j),
        ...     quiver_kw=dict(color="orange"), normalize=True, grid=False)
        Plot object containing:
-       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.0, 5.0) and _y over (-5.0, 5.0)
+       [0]: contour: sqrt(4*(re(_x) - im(_y))**2*(re(_y) + im(_x))**2 + ((re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2)**2) for _x over (-5.00000000000000, 5.00000000000000) and _y over (-5.00000000000000, 5.00000000000000)
        [1]: 2D vector series: [(re(_x) - im(_y))**2 - (re(_y) + im(_x))**2 + 2, 2*(re(_x) - im(_y))*(re(_y) + im(_x))] over (_x, -5.0, 5.0), (_y, -5.0, 5.0)
 
     Only quiver plot with normalized lengths and solid color.
@@ -891,15 +900,18 @@ def plot_complex_vector(*args, **kwargs):
     """
     # for each argument, generate one series. Those series will be used to
     # generate the proper input arguments for plot_vector
+    kwargs["plot_function"] = True
+    kwargs.setdefault("xlabel", "Re")
+    kwargs.setdefault("ylabel", "Im")
+    global_labels = kwargs.pop("label", [])
+
+    original_kwargs = kwargs.copy()
     kwargs["absarg"] = False
     kwargs["abs"] = False
     kwargs["arg"] = False
     kwargs["real"] = True
     kwargs["imag"] = False
     kwargs["threed"] = False
-    kwargs.setdefault("xlabel", "Re")
-    kwargs.setdefault("ylabel", "Im")
-    global_labels = kwargs.pop("label", [])
 
     args = _plot_sympify(args)
     series = _build_series(*args, allow_lambda=False, **kwargs)
@@ -916,17 +928,19 @@ def plot_complex_vector(*args, **kwargs):
     for i, s in enumerate(series):
         new_series.extend(
             complex_vector_field(
-                s.expr, s.ranges[0], label=get_label(i), **kwargs)
+                s.expr, s.ranges[0], label=get_label(i), **original_kwargs)
         )
     for s, lbl in zip(new_series, global_labels):
         s.label = lbl
-    return graphics(*new_series, **kwargs)
+    return graphics(*new_series, **original_kwargs)
 
 
+@modify_plot_functions_doc(ComplexDomainColoringSeries, replace=_repl)
 def plot_riemann_sphere(
     expr, range=None, annotate=True, riemann_mask=True, **kwargs
 ):
-    """Visualize stereographic projections of the Riemann sphere.
+    """
+    Visualize stereographic projections of the Riemann sphere.
 
     Note:
 
@@ -1131,6 +1145,7 @@ def plot_riemann_sphere(
     plot_complex
 
     """
+    kwargs["plot_function"] = True
     expr = _plot_sympify(expr)
     params = kwargs.get("params", {})
 

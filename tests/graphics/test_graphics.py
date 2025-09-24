@@ -6,11 +6,14 @@ from spb.graphics import (
     graphics, line, line_polar,
     line_parametric_2d, line_parametric_3d,
 )
+from spb.plot_functions import plot
 from spb.series import (
     LineOver1DRangeSeries, Parametric2DLineSeries, Parametric3DLineSeries,
 )
 from sympy import symbols, cos, sin, pi, exp
 from sympy.external import import_module
+from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
+from spb.interactive.ipywidgets import InteractivePlot as IPYInteractivePlot
 
 pn = import_module("panel")
 
@@ -75,9 +78,9 @@ def test_graphics_single_series_interactive(backend, imodule):
 
     g = graphics(line(cos(u * x), params={u: (1, 0, 2)}), **graphics_options)
     if imodule == "panel":
-        g_type = spb.interactive.panel.InteractivePlot
+        g_type = PanelInteractivePlot
     else:
-        g_type = spb.interactive.ipywidgets.InteractivePlot
+        g_type = IPYInteractivePlot
     assert isinstance(g, g_type)
     assert isinstance(g.backend, backend)
     assert len(g.backend.series) == 1
@@ -145,3 +148,39 @@ def test_graphics_polar_axis():
     )
     d2 = g2[0].get_data()
     assert not np.allclose(d1, d2)
+
+
+def test_validation_kwargs():
+    x, y, z = symbols("x, y, z")
+
+    def do_test(warning_checker, wrong_correct_map):
+        for warning in warning_checker:
+            user_warning = warning.message
+            msg = user_warning.args[0]
+            for k, v in wrong_correct_map.items():
+                assert f"'{k}': did you mean '{v}'?" in msg
+
+    with pytest.warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `graphics`."
+    ) as w:
+        graphics(line(cos(x), (x, 0, 2*pi)), x_scale="log", show=False)
+        do_test(w, {"x_scale": "xscale"})
+
+    with pytest.warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `graphics`."
+    ) as w:
+        graphics(
+            line_parametric_2d(cos(x), sin(x), (x, 0, 2*pi)),
+            tite="test", show=False)
+        do_test(w, {"tite": "title"})
+
+    with pytest.warns(
+        UserWarning,
+        match="The following keyword arguments are unused by `LineOver1DRangeSeries`."
+    ) as w:
+        # this happens because all keyword arguments from plot gets directed
+        # to the series
+        plot(cos(x), (x, 0, 2*pi), tite="test", show=False)
+        do_test(w, {"tite": "name"})

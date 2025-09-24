@@ -2,6 +2,87 @@
  Changelog
 ==========
 
+v4.0.0
+======
+
+* Refactoring of the plotting module in order to use the
+  `param module <https://param.holoviz.org>`_. While this add a new
+  mandatory dependency (previously, it was installed and used only
+  by the interactive module), it brings many benefits:
+
+  * Clearer code base, in particular inside the `spb.series` modules, becaue
+    each attributes is now very well documented.
+  * Automatic and complete generation of the documentation when the
+    module is imported, on all classes and plotting function.
+    The documentation is shown when the user executes
+    `help(plot_function)` or `plot_function?`. All available
+    parameters will be shown.
+  * Capability of adding widgets related to attributes of data series.
+
+* Improvements to the function ``graphics()`` and the backends:
+
+  * Improved the handling of grid lines thanks to the keyword arguments ``grid``
+    and ``minor_grid``. These parameters can be:
+
+    * boolean: toggle the visibility of major and minor grid lines.
+    * dict: keyword arguments used to customize the grid lines.
+
+  * Added capability to set axis ticks to multiple of some quantity
+    (for example `pi/2`) thanks to the keyword arguments
+    ``x_ticks_formatter`` and ``y_ticks_formatter`` of the function
+    ``graphics()``. A few preconfigured formatter are available as well, like
+    ``multiples_of_pi_over_2``, etc.
+
+  * Added ``hooks`` keyword argument: it accepts a list of user
+    defined functions that are going to further customize the appearance of the
+    plot. For example, users can change the tick labels on the colorbars, etc.
+
+  * Added ``app`` keyword argument: if set to True, an interactive application
+    will be shown, with widgets that allows to customize the numerical
+    data generation process for each data series. Look at the documentation
+    of ``domain_coloring`` to see an example.
+
+  * Added ``use_latex_on_widgets`` keyword argument, which clearly separates
+    the scope with respect to ``use_latex``.
+
+* Improvements to ``spb.series`` (numerical data generation):
+
+  * Added support for plotting summations with infinite bounds on all series
+    (thus, all plotting function as well).
+  * Improved evaluation of symbolic expressions producing very large numbers.
+  * Improved logic dealing with lambdification in order minimize the time
+    spent in this stage.
+  * BREAKING: Removed the adaptive algorithm from
+    ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
+    respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
+    Main motivations were:
+
+    1. easier to use the plotting module, as there are 3/4 keyword arguments
+       less to be worried about.
+    2. cleaner and simpler code base.
+    3. easier to implement new features (interactive ones), that only works
+       with the uniform evaluation strategy.
+
+  * BREAKING: Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
+    ``Geometry3DSeries`` for better code separation.
+  * Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
+    ``Line2D`` in the specified range along the x-axis.
+  * Added attribute ``LineOver1DRangeSeries.poles_rendering_kw``,
+    which is a dictionary of keyword arguments passed to the specific plotting
+    library renderer in order to customize the appearance of vertical lines
+    representing essential discontinuities.
+  * BREAKING: Changed the init signature of ``NicholsLineSeries``.
+  * Fixed bugs:
+
+    * with the numerical algorithm about singularities detection of
+      2D parametric lines.
+    * with the algorithm used to insert exclusion points through the
+      ``exclude`` keyword argument.
+
+* BREAKING: remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
+  ``impulse_response``.
+
+
 v3.4.5
 ======
 

@@ -3,14 +3,17 @@ from pytest import raises
 bokeh = pytest.importorskip("bokeh")
 from bokeh.models import (
     ColumnDataSource, Span, Arrow, LabelSet, Label, Line as BLine, Scatter,
-    MultiLine
+    MultiLine, BasicTicker, SingleIntervalTicker
 )
+from bokeh.io import curdoc
+from bokeh.themes import built_in_themes
 import os
 from tempfile import TemporaryDirectory
 import numpy as np
 from spb import (
     BB, plot, plot_complex, plot_vector, plot_contour,
-    plot_parametric, plot_geometry, plot_nyquist, plot_nichols
+    plot_parametric, plot_geometry, plot_nyquist, plot_nichols,
+    multiples_of_pi_over_4, tick_formatter_multiples_of
 )
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
@@ -73,7 +76,10 @@ from .make_tests import (
     make_test_sgrid,
     make_test_zgrid,
     make_test_mcircles,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_grid_minor_grid,
+    make_test_tick_formatters_2d,
+    make_test_hooks_2d
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -423,7 +429,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert f.renderers[1].glyph.line_color == "red"
     assert f.legend[0].visible is True
     assert f.xaxis.axis_label == label_func(use_latex, x)
-    assert f.yaxis.axis_label == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert f.yaxis.axis_label == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
 
 @pytest.mark.parametrize(
@@ -596,7 +602,7 @@ def test_save(mocker):
     #    Hence, if in our system those libraries are installed, tests will
     #    fail!
     x, y, z = symbols("x:z")
-    options = dict(backend=BB, show=False, adaptive=False, n=5)
+    options = dict(backend=BB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         # Bokeh requires additional libraries to save static pictures.
@@ -741,7 +747,7 @@ def test_update_interactive():
 
     p = plot(
         sin(u * x), (x, -pi, pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
     )
     p.backend.draw()
@@ -749,7 +755,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=False,
@@ -759,7 +765,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
         is_point=True,
@@ -769,7 +775,7 @@ def test_update_interactive():
 
     p = plot_parametric(
         cos(u * x), sin(u * x), (x, 0, 2 * pi),
-        adaptive=False, n=5, backend=BB, show=False,
+        n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=False,
     )
@@ -778,7 +784,7 @@ def test_update_interactive():
 
     p = plot_contour(
         cos(u * x**2 + y**2), (x, -2, 2), (y, -2, 2),
-        backend=BB, show=False, adaptive=False,
+        backend=BB, show=False,
         n=5,
         params={u: (1, 0, 2)},
     )
@@ -852,7 +858,6 @@ def test_generic_data_series():
         x,
         backend=BB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"x": [0, 1], "y": [0, 1], "marker": "square"}],
         annotations=[{"x": "x", "y": "y", "source": source}],
@@ -906,7 +911,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:The following keyword arguments are unused.")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=BB, show=False)
+    options = dict(use_cm=True, n=5, backend=BB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi), colorbar=c, **options
@@ -1533,3 +1538,122 @@ def test_hvlines():
     assert lines[0].dimension == "width"
     assert lines[1].dimension == "height"
     p.backend.update_interactive({a: 3, b: 4})
+
+
+def test_bokeh_theme():
+    p1 = plot(sin(x), backend=BB, show=False)
+    p2 = plot(cos(x), backend=BB, show=False, theme="dark_minimal")
+
+    p3 = p1 + p2
+    p4 = p2 + p1
+    assert p1.theme == "caliber"
+    assert p2.theme == "dark_minimal"
+    assert p3.theme == "caliber"
+    assert p4.theme == "dark_minimal"
+
+    # TODO: how to compare themes on figures?????
+
+
+def test_grid_minor_grid():
+    p = make_test_grid_minor_grid(BB, False, False)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, True, False)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, False, True)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color == '#e5e5e5'
+    assert p.fig.ygrid.minor_grid_line_color == '#e5e5e5'
+
+    grid = {"grid_line_color": "#ff0000"}
+    minor_grid = {"minor_grid_line_color": "#00ff00"}
+    p = make_test_grid_minor_grid(BB, grid, False)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.grid_line_color == "#ff0000"
+    assert p.fig.ygrid.grid_line_color == "#ff0000"
+    assert p.fig.xgrid.minor_grid_line_color is None
+    assert p.fig.ygrid.minor_grid_line_color is None
+
+    p = make_test_grid_minor_grid(BB, False, minor_grid)
+    assert p.fig.xgrid.visible is False
+    assert p.fig.ygrid.visible is False
+    assert p.fig.xgrid.minor_grid_line_color == "#00ff00"
+    assert p.fig.ygrid.minor_grid_line_color == "#00ff00"
+
+    p = make_test_grid_minor_grid(BB, grid, minor_grid)
+    assert p.fig.xgrid.visible is True
+    assert p.fig.ygrid.visible is True
+    assert p.fig.xgrid.grid_line_color == "#ff0000"
+    assert p.fig.ygrid.grid_line_color == "#ff0000"
+    assert p.fig.xgrid.minor_grid_line_color == "#00ff00"
+    assert p.fig.ygrid.minor_grid_line_color == "#00ff00"
+
+
+def test_tick_formatter_multiples_of():
+    # NOTE: bokeh tick labels are generated on Javascript, so there is no
+    # way to test what they looks like. Right now, the best I can do is to
+    # test for the appropriate ticker interval.
+    # More rigorous testing would involve selenium, but it's a PITA.
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="π", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="π", n=1)
+
+    p = make_test_tick_formatters_2d(BB, None, None)
+    assert isinstance(p.fig.xaxis.ticker, BasicTicker)
+    assert isinstance(p.fig.yaxis.ticker, BasicTicker)
+
+    p = make_test_tick_formatters_2d(BB, tf_x, None)
+    assert isinstance(p.fig.xaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.xaxis.ticker.interval, np.pi/2)
+    assert isinstance(p.fig.yaxis.ticker, BasicTicker)
+
+    p = make_test_tick_formatters_2d(BB, None, tf_y)
+    assert isinstance(p.fig.xaxis.ticker, BasicTicker)
+    assert isinstance(p.fig.yaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.yaxis.ticker.interval, np.pi)
+
+    p = make_test_tick_formatters_2d(BB, tf_x, tf_y)
+    assert isinstance(p.fig.xaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.xaxis.ticker.interval, np.pi / 2)
+    assert isinstance(p.fig.yaxis.ticker, SingleIntervalTicker)
+    assert np.isclose(p.fig.yaxis.ticker.interval, np.pi)
+
+
+def test_tick_formatter_multiples_of_number_of_minor_gridlines():
+    tf_x1 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=4)
+    tf_x2 = tick_formatter_multiples_of(
+        quantity=np.pi, label="π", n=2, n_minor=8)
+
+    p = make_test_tick_formatters_2d(BB, tf_x1, None)
+    assert p.fig.xaxis.ticker.num_minor_ticks == 5
+
+    p = make_test_tick_formatters_2d(BB, tf_x2, None)
+    assert p.fig.xaxis.ticker.num_minor_ticks == 9
+
+
+def test_hooks():
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
+        formatter = multiples_of_pi_over_4("π")
+        cb = fig.right[0]
+        cb.ticker = formatter.BB_ticker()
+        cb.formatter = formatter.BB_formatter()
+
+    p = make_test_hooks_2d(BB, [])
+    cb = p.fig.right[0]
+    assert cb.ticker == "auto"
+    assert cb.formatter == "auto"
+
+    p = make_test_hooks_2d(BB, [colorbar_ticks_formatter])
+    cb = p.fig.right[0]
+    assert isinstance(cb.ticker, SingleIntervalTicker)
+    assert np.isclose(cb.ticker.interval, np.pi / 4)

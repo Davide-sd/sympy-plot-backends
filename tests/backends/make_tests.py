@@ -6,7 +6,7 @@ from spb import (
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
-    root_locus
+    root_locus, contour, list_2d, line_parametric_2d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -22,10 +22,11 @@ import numpy as np
 
 
 def options():
-    return dict(n=5, adaptive=False, show=False)
+    return dict(n=5, show=False)
 
 
 def custom_colorloop_1(B):
+    opts = options()
     return plot(
         sin(x),
         cos(x),
@@ -34,7 +35,7 @@ def custom_colorloop_1(B):
         2 * sin(x),
         2 * cos(x),
         backend=B,
-        **options()
+        **opts
     )
 
 
@@ -55,6 +56,7 @@ def custom_colorloop_2(B, show=False):
 
 
 def make_test_plot(B, rendering_kw, use_latex=False):
+    opts = options()
     return plot(
         sin(a * x),
         cos(b * x),
@@ -63,11 +65,12 @@ def make_test_plot(B, rendering_kw, use_latex=False):
         legend=True,
         use_latex=use_latex,
         params={a: (1, 0, 2), b: (1, 0, 2)},
-        **options()
+        **opts
     )
 
 
 def make_test_plot_parametric(B, use_cm, rendering_kw={}):
+    opts = options()
     return plot_parametric(
         cos(a * x), sin(b * x),
         (x, 0, 1.5 * pi),
@@ -76,7 +79,7 @@ def make_test_plot_parametric(B, use_cm, rendering_kw={}):
         rendering_kw=rendering_kw,
         use_latex=False,
         params={a: (1, 0, 2), b: (1, 0, 2)},
-        **options()
+        **opts
     )
 
 
@@ -185,8 +188,6 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
     x = (1 + v / 2 * cos(u / 2)) * cos(u)
     y = (1 + v / 2 * cos(u / 2)) * sin(u)
     z = v / 2 * sin(u / 2)
-    opts = options()
-    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         (u, 0, 2 * pi), (v, -1, 1),
@@ -196,7 +197,7 @@ def make_plot3d_parametric_surface_wireframe_1(B, wf):
         wf_n1=5,
         wf_n2=6,
         wf_rendering_kw=wf,
-        **opts
+        **options()
     )
 
 
@@ -204,8 +205,6 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
     x = lambda u, v: v * np.cos(u)
     y = lambda u, v: v * np.sin(u)
     z = lambda u, v: np.sin(4 * u)
-    opts = options()
-    opts.pop("adaptive")
     return plot3d_parametric_surface(
         x, y, z,
         ("u", 0, 2 * np.pi), ("v", -1, 0),
@@ -214,7 +213,7 @@ def make_plot3d_parametric_surface_wireframe_2(B, wf):
         wireframe=wf,
         wf_n1=5,
         wf_n2=6,
-        **opts
+        **options()
     )
 
 
@@ -274,7 +273,6 @@ def make_test_plot_vector_3d_quiver_streamlines(
 ):
     opts = options()
     opts["show"] = show
-    opts.pop("adaptive")
     return plot_vector(
         Matrix([a * z, y, x]),
         (x, -5, 5), (y, -4, 4), (z, -3, 3),
@@ -289,8 +287,6 @@ def make_test_plot_vector_3d_quiver_streamlines(
 
 
 def make_test_plot_vector_2d_normalize(B, norm):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         [-u * sin(y), cos(x)],
         (x, -2, 2), (y, -2, 2),
@@ -304,8 +300,6 @@ def make_test_plot_vector_2d_normalize(B, norm):
 
 
 def make_test_plot_vector_3d_normalize(B, norm):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         [u * z, -x, y],
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -313,7 +307,7 @@ def make_test_plot_vector_3d_normalize(B, norm):
         normalize=norm,
         use_cm=False,
         params={u: (1, 0, 2)},
-        **opts
+        **options()
     )
 
 
@@ -332,15 +326,13 @@ def make_test_plot_vector_2d_color_func(B, streamlines, cf):
 
 
 def make_test_plot_vector_3d_quiver_color_func(B, cf):
-    opts = options()
-    opts.pop("adaptive")
     return plot_vector(
         Matrix([a * z, a * y, a * x]),
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
         backend=B,
         color_func=cf,
         params={a: (1, 0, 2)},
-        **opts
+        **options()
     )
 
 
@@ -401,28 +393,24 @@ def make_test_plot_complex_1d(B, rendering_kw, use_latex):
 
 
 def make_test_plot_complex_2d(B, rendering_kw, use_latex=False):
-    opts = options()
-    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
         backend=B,
         coloring="a",
         rendering_kw=rendering_kw,
         use_latex=use_latex,
-        **opts
+        **options()
     )
 
 
 def make_test_plot_complex_3d(B, rendering_kw):
-    opts = options()
-    opts.pop("adaptive")
     return plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
         backend=B,
         rendering_kw=rendering_kw,
         threed=True,
         use_cm=False,
-        **opts
+        **options()
     )
 
 
@@ -585,7 +573,6 @@ def make_test_plot_polar_use_cm(B, pa=False, ucm=False, cf=None):
 def make_test_plot3d_implicit(B, show=False):
     opts = options()
     opts["show"] = show
-    opts.pop("adaptive")
     return plot3d_implicit(
         x**2 + y**3 - z**2,
         (x, -2, 2), (y, -2, 2), (z, -2, 2),
@@ -750,7 +737,7 @@ def make_test_domain_coloring_2d(B, at_infinity):
 
 
 def make_test_show_in_legend_3d(B):
-    options = dict(backend=B, use_cm=False, show=False, adaptive=False, n=5)
+    options = dict(backend=B, use_cm=False, show=False, n=5)
 
     p1 = plot3d_parametric_line(
         cos(x), sin(x), x, (x, 0, 2 * pi), "a", **options
@@ -780,7 +767,7 @@ def make_test_show_in_legend_3d(B):
 
 
 def make_test_show_in_legend_2d(B):
-    options = dict(backend=B, use_cm=False, show=False, adaptive=False, n=5)
+    options = dict(backend=B, use_cm=False, show=False, n=5)
 
     p5 = plot_parametric(cos(x), sin(x), (x, 0, 2 * pi), "a", **options)
     p6 = plot_parametric(
@@ -802,7 +789,7 @@ def make_test_show_in_legend_2d(B):
 
 
 def make_test_legend_plot_sum_1(B, l):
-    options = dict(show=False, backend=B, adaptive=False, n=5)
+    options = dict(show=False, backend=B, n=5)
     p1 = plot(cos(x), **options, legend=l)
     p2 = plot(sin(x), **options)
     p3 = plot(cos(x) * sin(x), **options)
@@ -810,7 +797,7 @@ def make_test_legend_plot_sum_1(B, l):
 
 
 def make_test_legend_plot_sum_2(B, l):
-    options = dict(show=False, backend=B, adaptive=False, n=5)
+    options = dict(show=False, backend=B, n=5)
     p1 = plot(cos(x), **options)
     p2 = plot(sin(x), **options, legend=l)
     p3 = plot(cos(x) * sin(x), **options)
@@ -983,7 +970,85 @@ def make_test_mcircles(B, mag):
 def make_test_hvlines(B):
     p = {a: (1, 0, 5), b: (2, 0, 5)}
     return graphics(
-        HVLineSeries(a, horizontal=True, params=p),
-        HVLineSeries(b, horizontal=False, params=p),
+        HVLineSeries(a, is_horizontal=True, params=p),
+        HVLineSeries(b, is_horizontal=False, params=p),
         backend=B, show=False
+    )
+
+
+def make_test_grid_minor_grid(B, grid, minor_grid):
+    return graphics(
+        line(cos(x), (x, -pi, pi)),
+        show=False, backend=B, grid=grid, minor_grid=minor_grid
+    )
+
+
+def make_test_tick_formatters_2d(B, x_ticks_formatter, y_ticks_formatter):
+    return graphics(
+        contour(cos(x**2 + y**2), (x, -pi, pi), (y, -2*pi, 2*pi), n=10),
+        show=False, backend=B, grid=False,
+        x_ticks_formatter=x_ticks_formatter,
+        y_ticks_formatter=y_ticks_formatter
+    )
+
+
+def make_test_tick_formatters_3d(B, x_ticks_formatter, y_ticks_formatter):
+    return graphics(
+        contour(cos(x**2 + y**2), (x, -pi, pi), (y, -2*pi, 2*pi), n=10),
+        show=False, backend=B, grid=False,
+        x_ticks_formatter=x_ticks_formatter,
+        y_ticks_formatter=y_ticks_formatter
+    )
+
+
+def make_test_tick_formatter_polar_axis(B, x_ticks_formatter):
+    # plots of the soluzion of sin(z**3 + 1) = 0 on the complex plane
+    # in polar form
+    x = [
+        0.8708338169785833, 0.8708338169785833, -1.7416676339571666,
+        0.6444891748561715, 0.6444891748561715, -1.288978349712343,
+        1.0, -0.5, -0.5, 1.6059146520513297, -0.8029573260256648,
+        -0.8029573260256648
+    ]
+    y = [
+        1.508328415956043, -1.508328415956043, 0.0, 1.1162879957790313,
+        -1.1162879957790313, 0.0, 0.0, -0.8660254037844386,
+        0.8660254037844386, 0.0, -1.3907628849860991, 1.3907628849860991
+    ]
+    return graphics(
+        list_2d(x, y, is_point=True),
+        backend=B, polar_axis=True, show=False,
+        x_ticks_formatter=x_ticks_formatter
+    )
+
+
+def make_test_hooks_2d(B, hooks):
+    return graphics(
+        line_parametric_2d(cos(x), sin(x), (x, 0, 3*pi/2), n=10),
+        backend=B, hooks=hooks, show=False
+    )
+
+
+def make_test_hooks_3d(B, hooks):
+    return graphics(
+        surface(cos(x**2 + y**2), (x, -pi, pi), (y, -pi, pi), n=10),
+        backend=B, hooks=hooks, show=False, title="title"
+    )
+
+
+def make_test_surface_use_cm_cmin_cmax_zlim(B, zlim, color_func=None):
+    x, y, a, b = symbols("x, y, a, b")
+    expr = x**4 + y**4 + y**3 - (4 * x**2 * y) + y**2 - (a * x) + (b * y)
+    x_range = (x, -3, 3)
+    y_range = (y, -3, 3)
+    params = {a: (0, -2, 2), b: (0, -2, 2)}
+    kwargs = {}
+    if color_func:
+        kwargs["color_func"] = color_func
+    return graphics(
+        surface(
+            expr, x_range, y_range,
+            params=params, use_cm=True, label="z", n=10, **kwargs
+        ),
+        backend=B, zlim=zlim, show=False
     )

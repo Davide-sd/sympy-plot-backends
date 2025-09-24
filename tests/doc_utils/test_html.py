@@ -1,6 +1,6 @@
 import pytest
 import sys
-from spb.doc_utils import _modify_code, _modify_iplot_code
+from spb.doc_utils.html import _modify_code, _modify_iplot_code
 
 # NOTE: those functions requires Python >= 3.9 because they use the
 # ast module, in particular the unparse function, which is not available
@@ -306,4 +306,41 @@ graphics(
     assert "imodule='panel'" in new_code
     assert "template={" in new_code
     assert "panelplot = graphics" in s[-2]
+    assert "create_template" in s[-1]
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+def test_modify_iplot_code_graphics_series_ui_widgets():
+    # Verify that if `graphics(..., app=True), then the modified code
+    # contains the variable panelplot and that it returns the template in
+    # order to construct the webpage for the screenshot
+    code = """
+from sympy import *
+from spb import *
+z = symbols("z")
+
+graphics(
+    domain_coloring(sin(z), (z, -2-2j, 2+2j), coloring="b"),
+    backend=MB,
+    grid=False,
+    layout="sbl",
+    ncols=1,
+    template={"sidebar_width": "30%"},
+    app=True,
+)
+"""
+    assert "show" not in code
+    assert "servable" not in code
+
+    new_code = _modify_iplot_code(code)
+    s = new_code.split("\n")
+    assert "show=False" in new_code
+    assert "servable" not in new_code
+    assert "imodule='panel'" in new_code
+    assert "template={" in new_code
+    assert "panelplot = graphics" in s[3]
+    assert "for k, card in panelplot._additional_widgets.items():" in s[-3]
+    assert "card.collapsed = False" in s[-2]
     assert "create_template" in s[-1]

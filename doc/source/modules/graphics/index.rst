@@ -50,8 +50,8 @@ multiple expressions over the same range.
    >>> from spb import *
    >>> plot(sin(x), cos(x), (x, -pi, pi))
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (-3.141592653589793, 3.141592653589793)
-   [1]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+   [0]: cartesian line: sin(x) for x over (-pi, pi)
+   [1]: cartesian line: cos(x) for x over (-pi, pi)
 
 More typing is required to achieve the same results with ``graphics()``:
 
@@ -64,8 +64,8 @@ More typing is required to achieve the same results with ``graphics()``:
    ...     line(sin(x), (x, -pi, pi)),
    ...     line(cos(x), (x, -pi, pi)))
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (-3.141592653589793, 3.141592653589793)
-   [1]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+   [0]: cartesian line: sin(x) for x over (-pi, pi)
+   [1]: cartesian line: cos(x) for x over (-pi, pi)
 
 Note that both approaches returned an instance of
 :class:`~spb.backends.base_backend.Plot`, containing two data series.
@@ -81,10 +81,10 @@ rendering options:
    >>> plot(
    ...     (sin(x), (x, 0, pi), "a"),
    ...     (cos(x), (x, -pi, pi), "b", {"linestyle": "--"}),
-   ...     n=500) 
+   ...     n=500)
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (0.0, 3.141592653589793)
-   [1]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+   [0]: cartesian line: sin(x) for x over (0, pi)
+   [1]: cartesian line: cos(x) for x over (-pi, pi)
 
 Both expressions were evaluated over 500 points. The *graphics module* allows
 a much finer level of control. In the following code block, the first
@@ -100,8 +100,8 @@ the second expression is evaluated over a 1000 points.
    ...     line(sin(x), (x, 0, pi), label="a", n=20, scatter=True),
    ...     line(cos(x), (x, -pi, pi), label="b", rendering_kw={"linestyle": "--"}))
    Plot object containing:
-   [0]: cartesian line: sin(x) for x over (0.0, 3.141592653589793)
-   [1]: cartesian line: cos(x) for x over (-3.141592653589793, 3.141592653589793)
+   [0]: cartesian line: sin(x) for x over (0, pi)
+   [1]: cartesian line: cos(x) for x over (-pi, pi)
 
 Things gets even better for ``graphics()`` when we combine different kinds
 of visualization. The usual approach with plotting functions is kind of a mess:

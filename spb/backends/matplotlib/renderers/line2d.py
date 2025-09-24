@@ -25,10 +25,10 @@ def _draw_line2d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p._ax.scatter(x, y, **kw)
 
-        is_cb_added = p._add_colorbar(
-            c, s.get_label(p._use_latex), s.use_cm and s.colorbar
+        colorbar = p._add_colorbar(
+            c, s.get_label(p.use_latex), s.use_cm and s.colorbar
         )
-        handle = (c, kw, is_cb_added, p._fig.axes[-1])
+        handle = (c, kw, colorbar, p.fig.axes[-1])
     else:
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color
@@ -36,7 +36,7 @@ def _draw_line2d_helper(renderer, data):
             color = p.wireframe_color
 
         lkw = dict(
-            label=s.get_label(p._use_latex) if s.show_in_legend else "_nolegend_",
+            label=s.get_label(p.use_latex) if s.show_in_legend else "_nolegend_",
             color=color
         )
         if s.is_point:
@@ -49,9 +49,13 @@ def _draw_line2d_helper(renderer, data):
         handle = l
 
     # add vertical lines at discontinuities
-    hvlines = [
-        p._ax.axvline(x_loc, **p.pole_line_kw) for x_loc in s.poles_locations
-    ]
+    hvlines = []
+    if hasattr(s, "poles_locations"):
+        pole_line_kw = p.merge(
+            {"color": "k", "linestyle": ":"}, s.poles_rendering_kw)
+        hvlines = [
+            p._ax.axvline(x_loc, **pole_line_kw) for x_loc in s.poles_locations
+        ]
 
     return [handle, hvlines]
 
@@ -66,7 +70,7 @@ def _update_line2d_helper(renderer, data, handles):
     line_handles, hvlines = handles
 
     if s.is_parametric and s.use_cm:
-        line, kw, is_cb_added, cax = line_handles
+        line, kw, colorbar, cax = line_handles
 
         if not s.is_point:
             segments = p.get_segments(x, y)
@@ -77,26 +81,29 @@ def _update_line2d_helper(renderer, data, handles):
         line.set_array(param)
         line.set_clim(vmin=min(param), vmax=max(param))
 
-        if is_cb_added:
-            norm = p.Normalize(vmin=p.np.amin(param), vmax=p.np.amax(param))
-            p._update_colorbar(
-                cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
+        if colorbar:
+            colorbar.update_normal(line)
+
     else:
         line = line_handles[0]
         # TODO: Point2D are updated but not visible.
         line.set_data(x, y)
 
     # update vertical lines
-    if len(hvlines) != len(s.poles_locations):
-        for hvl in hvlines:
-            hvl.remove()
-        handles[1] = [
-            p._ax.axvline(x_loc, **p.pole_line_kw)
-            for x_loc in s.poles_locations
-        ]
-    elif len(hvlines) > 0:
-        for hvl, x_loc in zip(hvlines, s.poles_locations):
-            hvl.set_xdata([x_loc, x_loc])
+    if hasattr(s, "poles_locations"):
+        if len(hvlines) != len(s.poles_locations):
+            pole_line_kw = p.merge(
+                {"color": "k", "linestyle": ":"}, s.poles_rendering_kw)
+
+            for hvl in hvlines:
+                hvl.remove()
+            handles[1] = [
+                p._ax.axvline(x_loc, **pole_line_kw)
+                for x_loc in s.poles_locations
+            ]
+        elif len(hvlines) > 0:
+            for hvl, x_loc in zip(hvlines, s.poles_locations):
+                hvl.set_xdata([x_loc, x_loc])
 
 
 class Line2DRenderer(MatplotlibRenderer):

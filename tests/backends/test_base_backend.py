@@ -7,7 +7,7 @@ from spb import (
     PB, MB, KB, BB, plot, plot3d, prange, plot_vector, plot_contour,
     plot_complex, plot_parametric
 )
-from sympy import sin, cos, pi, exp, symbols, I
+from sympy import sin, cos, pi, exp, symbols, I, S
 from sympy.external import import_module
 
 pn = import_module("panel")
@@ -91,7 +91,7 @@ def test_colorloop_colormaps(Backend):
 def test_plot_sum():
     x, y = symbols("x, y")
 
-    options = dict(adaptive=False, n=5, show=False)
+    options = dict(n=5, show=False)
 
     # the choice of the backend dictates the keyword arguments
     # inside rendering_kw
@@ -241,25 +241,29 @@ def test_number_of_renderers():
         do_test(BB)
 
 
-def test_axis_scales():
+@pytest.mark.parametrize("axis_scale", [
+    "linear",
+    "log"
+])
+def test_axis_scales(axis_scale):
     # by default, axis scales should be set to None: this allows users to
     # extend plot capabilities to create plots with categoricals axis.
     # See: https://github.com/Davide-sd/sympy-plot-backends/issues/29
     x = symbols("x")
     p = plot(sin(x), backend=MB, show=False, n=5)
-    assert all(t is None for t in [p.xscale, p.yscale, p.zscale])
+    assert all(t == "linear" for t in [p.xscale, p.yscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, xscale="linear")
-    assert p.xscale == "linear"
-    assert all(t is None for t in [p.yscale, p.zscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, xscale=axis_scale)
+    assert p.xscale == axis_scale
+    assert all(t == "linear" for t in [p.yscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, yscale="linear")
-    assert p.yscale == "linear"
-    assert all(t is None for t in [p.xscale, p.zscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, yscale=axis_scale)
+    assert p.yscale == axis_scale
+    assert all(t == "linear" for t in [p.xscale, p.zscale])
 
-    p = plot(sin(x), backend=MB, show=False, n=5, zscale="linear")
-    assert p.zscale == "linear"
-    assert all(t is None for t in [p.xscale, p.yscale])
+    p = plot(sin(x), backend=MB, show=False, n=5, zscale=axis_scale)
+    assert p.zscale == axis_scale
+    assert all(t == "linear" for t in [p.xscale, p.yscale])
 
 
 @pytest.mark.parametrize(
@@ -329,7 +333,7 @@ def test_update_event_parametric_ranges(backend):
     x, y, z = symbols("x, y, z")
     ip = plot(sin(x), prange(x, -y*pi, pi), show=False, n=10, backend=backend,
         params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -y*pi, pi)]
     p._update_series_ranges((-10, 10))
     assert p[0].ranges == [(x, -y*pi, pi)]
@@ -339,7 +343,7 @@ def test_update_event_parametric_ranges(backend):
         prange(x, -z*pi, pi), (y, -pi, pi),
         show=False, n=10, backend=backend, params={z: (1, 0, 2)}
     )
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, -z*pi, pi), (y, -5, 6)]
@@ -348,7 +352,7 @@ def test_update_event_parametric_ranges(backend):
         [-sin(y), cos(x)], prange(x, -z*pi, pi), (y, -pi, pi),
         backend=backend, scalar=True, n=10, show=False, params={z: (1, 0, 2)}
     )
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     assert p[1].ranges == [(x, -z*pi, pi), (y, -pi, pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
@@ -357,7 +361,7 @@ def test_update_event_parametric_ranges(backend):
 
     ip = plot_complex(sin(x), prange(x, -y-2j, 2+2j),
         show=False, n=10, backend=backend, params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges[0][0] == x
     assert (p[0].ranges[0][1] - (-y - 2*I)).nsimplify() == 0
     assert (p[0].ranges[0][2] - (2 + 2*I)).nsimplify() == 0
@@ -369,7 +373,35 @@ def test_update_event_parametric_ranges(backend):
     # parametric plot must not update the range
     ip = plot_parametric(cos(x), sin(x), prange(x, y, 2*pi),
         show=False, backend=PB, n=10, params={y: (1, 0, 2)})
-    p = ip._backend
+    p = ip.backend
     assert p[0].ranges == [(x, y, 2*pi)]
     p._update_series_ranges((-10, 10), (-5, 6))
     assert p[0].ranges == [(x, y, 2*pi)]
+
+
+@pytest.mark.parametrize("lim, should_fail", [
+    [(-1, 1), False],
+    [(-1.5, 3.5), False],
+    [(-1, pi), False],
+    [(-S.Half, 1), False],
+    [(-S.Half, S.Infinity), True],
+    [(S.NegativeInfinity, 5), True],
+    [(S.ComplexInfinity, 5), True],
+    [(-2+3j, 4), True],
+    [(-2+3*I, 4), True],
+    [(-2, 4+2j), True],
+    [(-2, 4+2*I), True],
+])
+def test_xlim_ylim_zlim(lim, should_fail):
+    x = symbols("x")
+    fx = lambda : plot(sin(x), show=False, xlim=lim)
+    fy = lambda : plot(sin(x), show=False, ylim=lim)
+    fz = lambda : plot(sin(x), show=False, zlim=lim)
+    if should_fail:
+        raises(ValueError, fx)
+        raises(ValueError, fy)
+        raises(ValueError, fz)
+    else:
+        fx()
+        fy()
+        fz()

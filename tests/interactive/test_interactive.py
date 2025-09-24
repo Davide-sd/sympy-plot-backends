@@ -47,7 +47,7 @@ def test_tuple_to_dict(
     tup, val, min, max, step, formatter, description, spacing
 ):
     x = symbols("x")
-    t = _tuple_to_dict(x, tup, use_latex=False)
+    t = _tuple_to_dict(x, tup, use_latex_on_widgets=False)
     assert math.isclose(t["value"], val)
     assert math.isclose(t["min"], min)
     assert math.isclose(t["max"], max)
@@ -70,7 +70,7 @@ def test_tuple_to_dict(
 def test_tuple_to_dict_errors(tup, err, msg):
     x = symbols("x")
     with raises(err, match=msg):
-        _tuple_to_dict(x, tup, use_latex=False)
+        _tuple_to_dict(x, tup, use_latex_on_widgets=False)
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_tuple_to_dict_errors(tup, err, msg):
 def test_tuple_to_dict_use_latex(use_latex, latex_wrapper, expected):
     x = symbols("x_2")
     t = _tuple_to_dict(x, (1, 0, 5),
-        use_latex=use_latex, latex_wrapper=latex_wrapper)
+        use_latex_on_widgets=use_latex, latex_wrapper=latex_wrapper)
     assert t["description"] == expected
 
 
@@ -107,19 +107,19 @@ def test_mix_interactive_non_interactive(backend, imodule, instance):
     params = {a: (1, 0, 5), b: (2, 0, 5)}
     p = graphics(
         line(cos(a), (a, 0, 10), n=10),
-        HVLineSeries(a, horizontal=True, params=params),
-        HVLineSeries(b, horizontal=False, params=params),
+        HVLineSeries(a, is_horizontal=True, params=params),
+        HVLineSeries(b, is_horizontal=False, params=params),
         backend=backend, show=False, imodule=imodule
     )
     assert isinstance(p, instance)
-    assert isinstance(p._backend[0], LineOver1DRangeSeries)
-    d1 = p._backend[0].get_data()
-    d2 = p._backend[1].get_data()
-    d3 = p._backend[2].get_data()
-    p._backend.update_interactive({a: 2, b: 3})
-    d4 = p._backend[0].get_data()
-    d5 = p._backend[1].get_data()
-    d6 = p._backend[2].get_data()
+    assert isinstance(p.backend[0], LineOver1DRangeSeries)
+    d1 = p.backend[0].get_data()
+    d2 = p.backend[1].get_data()
+    d3 = p.backend[2].get_data()
+    p.backend.update_interactive({a: 2, b: 3})
+    d4 = p.backend[0].get_data()
+    d5 = p.backend[1].get_data()
+    d6 = p.backend[2].get_data()
     assert np.allclose(d1, d4)
     assert not np.isclose(d2, d5)
     assert not np.isclose(d3, d6)
@@ -175,7 +175,6 @@ def test_iplot_sum_1(
     p3 = plot(
         sin(x) * cos(x), (x, -5, 5),
         backend=backend,
-        adaptive=False,
         n=50,
         is_point=True,
         is_filled=True,

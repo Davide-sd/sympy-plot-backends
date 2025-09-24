@@ -13,7 +13,8 @@ from spb import (
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
-    plot_step_response
+    plot_step_response, multiples_of_pi_over_3, multiples_of_pi_over_4,
+    tick_formatter_multiples_of
 )
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
@@ -99,7 +100,11 @@ from .make_tests import (
     make_test_sgrid,
     make_test_zgrid,
     make_test_mcircles,
-    make_test_hvlines
+    make_test_hvlines,
+    make_test_tick_formatters_2d,
+    make_test_tick_formatters_3d,
+    make_test_tick_formatter_polar_axis,
+    make_test_hooks_2d
 )
 
 ct = import_module("control")
@@ -752,7 +757,7 @@ def test_plot_real_imag(use_latex, label_func):
     assert ax.get_lines()[1].get_label() == "Im(sqrt(x))"
     assert ax.get_lines()[1].get_color() == "red"
     assert ax.get_xlabel() == label_func(use_latex, x)
-    assert ax.get_ylabel() == r"$f\left(x\right)$" if use_latex else "f(x)"
+    assert ax.get_ylabel() == (r"$f\left(x\right)$" if use_latex else "f(x)")
 
     p.close()
 
@@ -949,7 +954,7 @@ def test_save():
     # Verify that the save method accepts keyword arguments.
 
     x, y, z = symbols("x:z")
-    options = dict(backend=MB, show=False, adaptive=False, n=5)
+    options = dict(backend=MB, show=False, n=5)
 
     with TemporaryDirectory(prefix="sympy_") as tmpdir:
         p = plot(sin(x), cos(x), **options)
@@ -1081,12 +1086,10 @@ def test_plot3d_update_interactive():
         (x, -5, 5),
         (y, -5, 5),
         "test",
-        threed=True,
         use_cm=False,
         params={u: 1},
         n1=3,
         n2=3,
-        n3=3,
     )
     p = MB(s, show=False)
     p.draw()
@@ -1103,12 +1106,10 @@ def test_plot3d_update_interactive():
         (x, -5, 5),
         (y, -5, 5),
         "test",
-        threed=True,
         use_cm=True,
         params={u: 1},
         n1=3,
         n2=3,
-        n3=3,
     )
     p = MB(s, show=False)
     p.draw()
@@ -1246,7 +1247,7 @@ def test_label_after_plot_instantiation():
     # verify that it is possible to set a label after a plot has been created
     x = symbols("x")
 
-    p = plot(sin(x), cos(x), show=False, backend=MB, adaptive=False, n=5)
+    p = plot(sin(x), cos(x), show=False, backend=MB, n=5)
     p[0].label = "a"
     p[1].label = "$b^{2}$"
     f = p.fig
@@ -1259,8 +1260,7 @@ def test_min_install():
     # raise errors. Useful to test minimum installation of the module
 
     x, y, z = symbols("x:z")
-    options = dict(adaptive=False, n=5, backend=MB, show=False)
-    options2 = dict(n=5, backend=MB, show=False)
+    options = dict(n=5, backend=MB, show=False)
 
     p = plot(sin(x), (x, -pi, pi), **options)
     p.draw()
@@ -1289,7 +1289,7 @@ def test_min_install():
 
     p = plot_implicit(
         x**2 + y**2 - 4, (x, -5, 5), (y, -5, 5),
-        **options
+        adaptive=False, **options
     )
     p.draw()
     p.close()
@@ -1297,7 +1297,7 @@ def test_min_install():
     # points
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=True, **options2
+        is_point=True, **options
     )
     p.draw()
     p.close()
@@ -1352,42 +1352,42 @@ def test_min_install():
     fz = v / 2 * sin(u / 2)
     p = plot3d_parametric_surface(
         fx, fy, fz, (u, 0, 2 * pi), (v, -1, 1),
-        use_cm=True, **options2
+        use_cm=True, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
-        scalar=True, **options2
+        scalar=True, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([-y, x]), (x, -5, 5), (y, -4, 4),
-        scalar=False, **options2
+        scalar=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_vector(
         Matrix([z, y, x]), (x, -5, 5), (y, -4, 4), (z, -3, 3),
-        **options2
+        **options
     )
     p.draw()
     p.close()
 
     p = plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
-        threed=False, **options2
+        threed=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_complex(
         sqrt(x), (x, -5 - 5 * I, 5 + 5 * I),
-        threed=True, use_cm=True, **options2
+        threed=True, use_cm=True, **options
     )
     p.draw()
     p.close()
@@ -1473,7 +1473,6 @@ def test_generic_data_series():
         x,
         backend=MB,
         show=False,
-        adaptive=False,
         n=5,
         markers=[{"args": [[0, 1], [0, 1]], "marker": "*", "linestyle": "none"}],
         annotations=[{"text": "test", "xy": (0, 0)}],
@@ -1490,7 +1489,7 @@ def test_axis_center(ac):
     x = symbols("x")
     p = plot(
         sin(x),
-        adaptive=False, n=5,
+        n=5,
         backend=MB, show=False, axis_center=ac
     )
     p.draw()
@@ -1577,7 +1576,7 @@ def test_contour_and_3d():
         legend=True,
         n=4
     )
-    p3 = plot(cos(x), (x, 0, 2 * pi), adaptive=False, n=5, show=False)
+    p3 = plot(cos(x), (x, 0, 2 * pi), n=5, show=False)
 
     p = p1 + p2
     p.draw()
@@ -1765,7 +1764,7 @@ def test_domain_coloring_2d():
 @pytest.mark.filterwarnings("ignore:NumPy is unable to evaluate with complex numbers")
 def test_show_hide_colorbar():
     x, y, z = symbols("x, y, z")
-    options = dict(use_cm=True, n=5, adaptive=False, backend=MB, show=False)
+    options = dict(use_cm=True, n=5, backend=MB, show=False)
 
     p = lambda c: plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi),
@@ -1946,7 +1945,6 @@ def test_axis_limits():
         expr,
         (x, -5, 5),
         ylim=(-10, 10),
-        adaptive=False,
         detect_poles=True,
         n=1000,
         eps=1e-04,
@@ -2635,3 +2633,141 @@ def test_plot_vector_2d_legend_2(streamlines, use_cm, expected):
         backend=MB, n=10, show=False, streamlines=streamlines, use_cm=use_cm
     )
     assert p.legend is expected
+
+
+def test_tick_formatter_multiples_of_2d():
+    # NOTE: this character `−` is different from the keyboard `-`
+    expected_x1 = ["−4", "−3", "−2", "−1", "0", "1", "2", "3", "4"]
+    expected_x2 = ["$-\\frac{3\\pi}{2}$", "$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$", "$\\frac{3\\pi}{2}$"]
+    expected_y1 = ["−8", "−6", "−4", "−2", "0", "2", "4", "6", "8"]
+    expected_y2 = ["$-3\\pi$", "$-2\\pi$", "$-\\pi$", "$0$", "$\\pi$", "$2\\pi$", "$3\\pi$"]
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=1)
+
+    p = make_test_tick_formatters_2d(MB, None, None)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x1
+    assert len(y_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y1
+
+    p = make_test_tick_formatters_2d(MB, tf_x, None)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y1
+
+    p = make_test_tick_formatters_2d(MB, None, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 9
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x1
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2
+
+    p = make_test_tick_formatters_2d(MB, tf_x, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2
+
+
+def test_tick_formatter_multiples_of_3d():
+    # NOTE: this character `−` is different from the keyboard `-`
+    expected_x1 = ["−4", "−3", "−2", "−1", "0", "1", "2", "3", "4"]
+    expected_x2 = ["$-\\frac{3\\pi}{2}$", "$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$", "$\\frac{3\\pi}{2}$"]
+    expected_y1 = ["−8", "−6", "−4", "−2", "0", "2", "4", "6", "8"]
+    expected_y2 = ["$-3\\pi$", "$-2\\pi$", "$-\\pi$", "$0$", "$\\pi$", "$2\\pi$", "$3\\pi$"]
+
+    tf_x = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=2)
+    tf_y = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=1)
+    p = make_test_tick_formatters_3d(MB, tf_x, tf_y)
+    x_ticks = p.ax.get_xticklabels()
+    y_ticks = p.ax.get_yticklabels()
+    assert len(x_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in x_ticks)
+    assert [t.get_text() for t in x_ticks] == expected_x2
+    assert len(y_ticks) == 7
+    assert all(isinstance(t, matplotlib.text.Text) for t in y_ticks)
+    assert [t.get_text() for t in y_ticks] ==expected_y2
+
+
+@pytest.mark.parametrize("x_ticks_formatter, expected_positions, expected_labels", [
+    (
+        None,
+        np.linspace(0, 2*np.pi, 9)[:-1],
+        ["0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°"]
+    ),
+    (
+        multiples_of_pi_over_3(),
+        np.linspace(0, 2*np.pi, 7)[:-1],
+        [
+            '$0$', '$\\frac{\\pi}{3}$', '$\\frac{2\\pi}{3}$', '$\\pi$',
+            '$\\frac{4\\pi}{3}$', '$\\frac{5\\pi}{3}$'
+        ]
+    )
+])
+def test_tick_formatter_multiples_of_polar_plot(
+    x_ticks_formatter, expected_positions, expected_labels
+):
+    p = make_test_tick_formatter_polar_axis(MB, x_ticks_formatter)
+
+    ticks = p.ax.get_xticklabels()
+    positions = [t.get_position()[0] for t in ticks]
+    labels = [t.get_text() for t in ticks]
+    assert np.allclose(positions, expected_positions)
+    assert labels == expected_labels
+
+
+@pytest.mark.parametrize("case, expected_positions, expected_labels", [
+    (
+        0,
+        [0, 1, 2, 3, 4, 5],
+        ['0', '1', '2', '3', '4', '5']
+    ),
+    (
+        1,
+        [
+            -0.7853981633974483, 0.0, 0.7853981633974483, 1.5707963267948966,
+            2.356194490192345, 3.141592653589793, 3.9269908169872414,
+            4.71238898038469, 5.497787143782138
+        ],
+        [
+            '$-\\frac{\\pi}{4}$', '$0$', '$\\frac{\\pi}{4}$',
+            '$\\frac{\\pi}{2}$', '$\\frac{3\\pi}{4}$', '$\\pi$',
+            '$\\frac{5\\pi}{4}$', '$\\frac{3\\pi}{2}$', '$\\frac{7\\pi}{4}$'
+        ]
+    )
+])
+def test_hooks(case, expected_positions, expected_labels):
+    def colorbar_ticks_formatter(plot_object):
+        fig = plot_object.fig
+        cax = fig.axes[1]
+        formatter = multiples_of_pi_over_4()
+        cax.yaxis.set_major_locator(formatter.MB_major_locator())
+        cax.yaxis.set_major_formatter(formatter.MB_func_formatter())
+
+    p = make_test_hooks_2d(
+        MB,
+        [colorbar_ticks_formatter] if case else []
+    )
+    cax = p.fig.axes[1]
+    ticks = cax.yaxis.get_ticklabels()
+    positions = [t.get_position()[1] for t in ticks]
+    labels = [t.get_text() for t in ticks]
+    assert np.allclose(positions, expected_positions)
+    assert labels == expected_labels

@@ -209,13 +209,15 @@ def _modify_iplot_code(code):
         # ordinary example: plot_something(expr, range, params={}, ...)
         func_name = tree.body[-1].value.func.id
         if (func_name == "graphics") or (func_name[:4] == "plot"):
-            params_node, servable_node = None, None
+            params_node, servable_node, app_node = None, None, None
             show_node, imodule_node, backend_node = None, None, None
             for kw in tree.body[-1].value.keywords:
                 if kw.arg == "params":
                     params_node = kw
                 elif kw.arg == "servable":
                     servable_node = kw
+                elif kw.arg == "app":
+                    app_node = kw
                 elif kw.arg == "show":
                     show_node = kw
                 elif kw.arg == "imodule":
@@ -236,6 +238,8 @@ def _modify_iplot_code(code):
                 ((params_node is None) or (servable_node is None))
                 and (not is_KB)
             ):
+                if (app_node is not None) and app_node.value.value:
+                    tree = _deal_with_series_ui_widgets(tree, show_node)
                 return ast.unparse(tree)
             if servable_node is None:
                 servable_node = ast.keyword(
@@ -269,6 +273,37 @@ def _modify_iplot_code(code):
 
             tree.body.append(last_command.body[-1])
     return ast.unparse(tree)
+
+
+def _deal_with_series_ui_widgets(tree, show_node):
+    """
+    Insert the necessary edits in order to expand the collapsed Cards,
+    thus showing the series-related widgets that controls numerical
+    data generation.
+    """
+    if show_node is not None:
+        show_node.value.value = False
+    else:
+        tree.body[-1].value.keywords.append(
+            ast.keyword(arg='show', value=ast.Constant(value=False))
+        )
+
+    ln = tree.body[-1]
+
+    # assign the `graphics` call to a variable name
+    tree.body[-1] = ast.Assign(
+        targets=[ast.Name(id="panelplot")],
+        value=ln.value, lineno=ln.lineno)
+
+    # open up the Card widget so the controls widget can be seen.
+    for_loop = ast.parse(
+        "for k, card in panelplot._additional_widgets.items(): card.collapsed = False")
+    tree.body.append(for_loop.body[-1])
+
+    # generate the application
+    last_command = ast.parse("panelplot._create_template(show=False)")
+    tree.body.append(last_command.body[-1])
+    return tree
 
 
 def postprocess_KB_interactive_image(
@@ -329,7 +364,7 @@ def postprocess_KB_interactive_image(
     # Guesstimate (in pixel) for the vertical space of each row of widgets
     hr = 50
     # number of rows used by the widgets
-    nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot._ncols))
+    nr = int(np.ceil(len(panelplot.backend[0].params) / panelplot.ncols))
     # need to pad before first row and after last row. Guesstimate for padding.
     pad_h = 25
     # Prediction of the height of image to be cropped

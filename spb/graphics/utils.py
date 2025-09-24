@@ -18,7 +18,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         return []
 
     np = import_module('numpy')
-    lines = []
+    all_lines = []
     wf_n1 = kwargs.get("wf_n1", 10)
     wf_n2 = kwargs.get("wf_n2", 10)
     npoints = kwargs.get("wf_npoints", None)
@@ -26,21 +26,21 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
 
     wf_kwargs = dict(
         use_cm=False, show_in_legend=False,
-        # use uniform meshing to maximize performance
-        adaptive=False, n=npoints,
-        rendering_kw=wf_rend_kw
+        n=npoints, rendering_kw=wf_rend_kw
     )
 
     def create_series(expr, ranges, surface_series, **kw):
         expr = [e if callable(e) else sympify(e) for e in expr]
-        kw["tx"] = surface_series._tx
-        kw["ty"] = surface_series._ty
-        kw["tz"] = surface_series._tz
-        kw["tp"] = surface_series._tp
-        kw["force_real_eval"] = surface_series._force_real_eval
+        kw["tx"] = surface_series.tx
+        kw["ty"] = surface_series.ty
+        kw["tz"] = surface_series.tz
+        if hasattr(surface_series, "tp"):
+            kw["tp"] = surface_series.tp
+        kw["force_real_eval"] = surface_series.force_real_eval
+        kw["_is_wireframe_line"] = True
         if "return" not in kw.keys():
-            return Parametric3DLineSeries(*expr, *ranges, "__k__", **kw)
-        return ComplexParametric3DLineSeries(*expr, *ranges, "__k__", **kw)
+            return Parametric3DLineSeries(*expr, *ranges, **kw)
+        return ComplexParametric3DLineSeries(*expr, *ranges, **kw)
 
     # NOTE: can't use np.linspace because start, end might be
     # symbolic expressions
@@ -48,6 +48,7 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
         return [start + (end - start) * i / (n - 1) for i in range(n)]
 
     for s in surfaces:
+        lines = []
         param_expr, ranges = [], []
 
         if s.is_3Dsurface:
@@ -95,7 +96,8 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                     sy, ey = im(start), im(end)
                     kw["return"] = s._return
 
-                if not s.is_polar:
+                is_polar = getattr(s, "is_polar", False)
+                if not is_polar:
                     for xval in linspace(sx, ex, wf_n1):
                         kw["n"] = s.n[1] if npoints is None else npoints
                         if callable(expr):
@@ -148,7 +150,9 @@ def _plot3d_wireframe_helper(surfaces, **kwargs):
                             ranges = [(x, sx, ex)]
                         lines.append(create_series(param_expr, ranges, s, **kw))
 
-    return lines
+        s._wireframe_lines = lines
+        all_lines.extend(lines)
+    return all_lines
 
 
 def _plot_sympify(expr):

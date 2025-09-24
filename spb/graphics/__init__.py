@@ -33,7 +33,7 @@ __all__ = [
     "riemann_sphere_3d", "complex_vector_field",
     "contour_real_imag", "contour_abs_arg", "plane",
     "control_axis", "pole_zero", "step_response", "impulse_response",
-    "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols"
+    "ramp_response", "bode_magnitude", "bode_phase", "nyquist", "nichols",
     "hline", "vline", "arrow_2d", "arrow_3d", "root_locus", "sgrid", "zgrid",
     "ngrid", "mcircles"
 ]

@@ -1,6 +1,6 @@
 import pytest
 from spb.graphics import (
-    vector_field_2d, vector_field_3d, surface_parametric, arrow_2d
+    vector_field_2d, vector_field_3d, surface_parametric, arrow_2d, arrow_3d
 )
 from spb.series import (
     ContourSeries, Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
@@ -58,7 +58,7 @@ def test_vector_field_2d(
     if quiver_kw:
         kwargs["quiver_kw"] = quiver_kw
     if stream_kw:
-        kwargs["stream_kw"] = quiver_kw
+        kwargs["stream_kw"] = stream_kw
     if contour_kw:
         kwargs["contour_kw"] = contour_kw
     series = vector_field_2d(
@@ -79,11 +79,11 @@ def test_vector_field_2d(
         assert vec_series.ranges[0] == r1c
         assert vec_series.ranges[1] == r2c
     if streamlines:
-        assert vec_series.rendering_kw == {} if not stream_kw else stream_kw
+        assert vec_series.rendering_kw == ({} if not stream_kw else stream_kw)
     else:
-        assert vec_series.rendering_kw == {} if not quiver_kw else quiver_kw
+        assert vec_series.rendering_kw == ({} if not quiver_kw else quiver_kw)
     assert vec_series.is_interactive == (len(vec_series.params) > 0)
-    assert vec_series.params == {} if not params else params
+    assert vec_series.params == ({} if not params else params)
     if len(series) > 1:
         assert isinstance(con_series, ContourSeries)
         assert con_series.expr == sqrt(sum(t**2 for t in vec_series.expr))
@@ -230,7 +230,7 @@ def test_arrow_3d(start, direc, label, rkw, sil, params):
     kwargs = {}
     if params:
         kwargs["params"] = params
-    series = arrow_2d(
+    series = arrow_3d(
         start, direc, label=label, rendering_kw=rkw, show_in_legend=sil,
         **kwargs
     )

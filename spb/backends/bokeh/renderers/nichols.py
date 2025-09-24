@@ -33,7 +33,7 @@ def _draw_nichols_helper(renderer, data):
 
         ds, line, cb, kw = p._create_gradient_line(
             "ol_p", "ol_m", "o", source,
-            colormap, s.get_label(p._use_latex),
+            colormap, s.get_label(p.use_latex),
             s.rendering_kw, s.is_point)
         h = p._fig.add_glyph(ds, line)
         handles.append(h)
@@ -49,7 +49,7 @@ def _draw_nichols_helper(renderer, data):
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
             line_width=2, color=color,
-            legend_label=s.get_label(p._use_latex)
+            legend_label=s.get_label(p.use_latex)
         )
         arrows = None
         if not s.is_point:
@@ -60,7 +60,7 @@ def _draw_nichols_helper(renderer, data):
             arrow_style = p.bokeh.models.VeeHead(
                     line_color=color, fill_color=color, size=10)
             source = _compute_arrows_position(
-                ol_phase, ol_mag, arrow_locs=s.arrow_locs, dir=1)
+                ol_phase, ol_mag, arrow_locs=s._arrow_locs, dir=1)
             arrows = p.bokeh.models.Arrow(
                 source=p.bokeh.models.ColumnDataSource(data=source),
                 line_color=color, end=arrow_style)
@@ -121,7 +121,7 @@ def _update_nichols_helper(renderer, data, handles):
         handles[0].data_source.data.update(source)
         if len(handles) > 1:
             source = _compute_arrows_position(
-                ol_phase, ol_mag, arrow_locs=s.arrow_locs, dir=1)
+                ol_phase, ol_mag, arrow_locs=s._arrow_locs, dir=1)
             handles[1].source.data.update(source)
 
 

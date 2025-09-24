@@ -32,11 +32,11 @@ def test_complex_points_1(label, rkw, scatter, params):
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexPointSeries)
-    assert s.get_label(False) == label
+    assert s.get_label(False) == ("" if label is None else label)
     assert s.is_point is scatter
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == params
+    assert s.params == ({} if not params else params)
 
 
 @pytest.mark.parametrize("label, rkw, scatter, params", [
@@ -57,11 +57,11 @@ def test_complex_points_2(label, rkw, scatter, params):
     s = series[0]
     assert len(series) == 1
     assert isinstance(s, ComplexPointSeries)
-    assert s.get_label(False) == label
+    assert s.get_label(False) == ("" if label is None else label)
     assert s.is_point is scatter
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
-    assert s.params == params
+    assert s.params == ({} if not params else params)
     raises(TypeError, lambda: complex_points(l1, l2))
 
 
@@ -80,7 +80,7 @@ def test_line_abs_arg_colored(default_range, rang, label, rkw, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = line_abs_arg_colored(
-        expr, range=r, label=label, rendering_kw=rkw, **kwargs
+        expr, range_x=r, label=label, rendering_kw=rkw, **kwargs
     )
     assert len(series) == 1
     s = series[0]
@@ -110,7 +110,7 @@ def test_line_abs_arg(default_range, rang, label, rkw, abs, arg, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = line_abs_arg(
-        expr, range=r, label=label,
+        expr, range_x=r, label=label,
         rendering_kw=rkw, abs=abs, arg=arg, **kwargs
     )
     ref = LineOver1DRangeSeries(
@@ -153,7 +153,7 @@ def test_line_real_imag(default_range, rang, label, rkw, real, imag, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = line_real_imag(
-        expr, range=r, label=label,
+        expr, range_x=r, label=label,
         rendering_kw=rkw, real=real, imag=imag, **kwargs
     )
     ref = LineOver1DRangeSeries(
@@ -201,7 +201,7 @@ def test_surface_abs_arg(
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = surface_abs_arg(
-        expr, range=r, label=label,
+        expr, range_c=r, label=label,
         rendering_kw=rkw, abs=abs, arg=arg, **kwargs
     )
     assert len(series) == sum([abs, arg]) * (1 + ((wf_n1 + wf_n2) if wf else 0))
@@ -255,7 +255,7 @@ def test_surface_real_imag(
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = surface_real_imag(
-        expr, range=r, label=label,
+        expr, range_c=r, label=label,
         rendering_kw=rkw, real=real, imag=imag, **kwargs
     )
     assert len(series) == sum([real, imag]) * (1 + ((wf_n1 + wf_n2) if wf else 0))
@@ -306,7 +306,7 @@ def test_domain_coloring(default_complex_range, rang, coloring, params):
         kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = domain_coloring(expr, range=r, coloring=coloring, **kwargs)
+    series = domain_coloring(expr, range_c=r, coloring=coloring, **kwargs)
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexDomainColoringSeries)
@@ -335,7 +335,7 @@ def test_analytic_landscape(default_complex_range, rang, coloring, params):
         kwargs["params"] = params
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
-    series = analytic_landscape(expr, range=r, coloring=coloring, **kwargs)
+    series = analytic_landscape(expr, range_c=r, coloring=coloring, **kwargs)
     assert len(series) == 1
     s = series[0]
     assert isinstance(s, ComplexDomainColoringSeries)
@@ -370,7 +370,7 @@ def test_riemann_sphere_2d(rang, coloring, at_infinity, riemann_mask, params):
 
     r = (x, *rang) if isinstance(rang, (list, tuple)) else None
     series = riemann_sphere_2d(
-        expr, range=r, coloring=coloring,
+        expr, range_c=r, coloring=coloring,
         riemann_mask=riemann_mask, at_infinity=at_infinity, **kwargs
     )
     assert len(series) == 1 + (1 if riemann_mask else 0)

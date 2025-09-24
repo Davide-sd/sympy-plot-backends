@@ -34,7 +34,6 @@ pn = import_module("panel")
 def pc_options(panel_options):
     panel_options["n"] = 5
     panel_options["backend"] = MB
-    panel_options["adaptive"] = False
     return panel_options
 
 
@@ -50,24 +49,21 @@ def test_plot_complex_list(pc_options):
     # verify that plot_complex_list is capable of creating data
     # series according to the documented modes of operation
 
-    pc_list_options = pc_options.copy()
-    pc_list_options.pop("adaptive")
-
     # single complex number
-    p = plot_complex_list(3 + 2 * I, **pc_list_options)
+    p = plot_complex_list(3 + 2 * I, **pc_options)
     assert isinstance(p, MB)
     assert len(p.series) == 1
     assert isinstance(p.series[0], ComplexPointSeries)
 
     # list of complex numbers, each one with its own label
-    p = plot_complex_list((3 + 2 * I, "a"), (5 * I, "b"), **pc_list_options)
+    p = plot_complex_list((3 + 2 * I, "a"), (5 * I, "b"), **pc_options)
     assert isinstance(p, MB)
     assert len(p.series) == 2
     assert all(isinstance(t, ComplexPointSeries) for t in p.series)
 
     # lists of grouped complex numbers with labels
     p = plot_complex_list(
-        [3 + 2 * I, 2 * I, 3], [2 + 3 * I, -2 * I, -3], **pc_list_options
+        [3 + 2 * I, 2 * I, 3], [2 + 3 * I, -2 * I, -3], **pc_options
     )
     assert isinstance(p, MB)
     assert len(p.series) == 2
@@ -76,7 +72,7 @@ def test_plot_complex_list(pc_options):
     p = plot_complex_list(
         ([3 + 2 * I, 2 * I, 3], "a"),
         ([2 + 3 * I, -2 * I, -3], "b"),
-        **pc_list_options
+        **pc_options
     )
     assert isinstance(p, MB)
     assert len(p.series) == 2
@@ -89,12 +85,10 @@ def test_plot_complex_list_interactive(pc_options):
     # series according to the documented modes of operation
 
     x, y, z = symbols("x:z")
-    pc_list_options = pc_options.copy()
-    pc_list_options.pop("adaptive")
 
     # single complex number
     p = plot_complex_list(
-        x * 3 + 2 * I, params={x: (1, 0, 2)}, **pc_list_options)
+        x * 3 + 2 * I, params={x: (1, 0, 2)}, **pc_options)
     assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 1
     s = p.backend.series[0]
@@ -105,7 +99,7 @@ def test_plot_complex_list_interactive(pc_options):
         (3 + 2 * I, "a"),
         (5 * I, "b"),
         params={x: (1, 0, 2)},
-        **pc_list_options
+        **pc_options
     )
     assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 2
@@ -119,7 +113,7 @@ def test_plot_complex_list_interactive(pc_options):
         [3 + 2 * I, 2 * I, 3],
         [2 + 3 * I, -2 * I, -3],
         params={x: (1, 0, 2)},
-        **pc_list_options
+        **pc_options
     )
     assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 2
@@ -132,7 +126,7 @@ def test_plot_complex_list_interactive(pc_options):
         ([3 + 2 * I, 2 * I, 3], "a"),
         ([2 + 3 * I, -2 * I, -3], "b"),
         params={x: (1, 0, 2)},
-        **pc_list_options
+        **pc_options
     )
     assert isinstance(p, spb.interactive.panel.InteractivePlot)
     assert len(p.backend.series) == 2
@@ -1371,8 +1365,8 @@ def test_plot_complex_vector(pc_options):
     assert len(s) == 2
     assert isinstance(s[0], ContourSeries)
     assert s[0].get_label(False) == "Magnitude"
-    assert (s[0].start_x, s[0].end_x) == (-5, 4)
-    assert (s[0].start_y, s[0].end_y) == (-2, 3)
+    assert to_float((s[0].start_x, s[0].end_x)) == (-5, 4)
+    assert to_float((s[0].start_y, s[0].end_y)) == (-2, 3)
     assert isinstance(s[1], Vector2DSeries)
     assert to_float(s[1].ranges[0][1:]) == (-5, 4)
     assert to_float(s[1].ranges[1][1:]) == (-2, 3)
@@ -2720,7 +2714,7 @@ def test_plot_riemann_sphere():
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     z = symbols("z")
-    options = dict(adaptive=False, show=False, backend=MB)
+    options = dict(show=False, backend=MB)
 
     p = plot_real_imag(sqrt(z), (z, -10, 10), **options)
     assert all(s.n[0] == 1000 for s in p.series)
@@ -2784,7 +2778,7 @@ def test_number_discretization_points():
     assert p[0].n[:2] == [50, 200]
     p = plot_riemann_sphere(
         (z - 1) / (z**2 + z + 1), n1=50, threed=True, **options)
-    assert p[0].n[:2] == [50, 150]
+    assert p[0].n[:2] == [50, 600]
     p = plot_riemann_sphere(
         (z - 1) / (z**2 + z + 1), n2=50, threed=True, **options)
     assert p[0].n[:2] == [150, 50]
@@ -2799,6 +2793,7 @@ def test_plot_real_imag_wireframe_true(pi_options):
 
     x, u = symbols("x, u")
     pi_options["n"] = 12
+
 
     t = plot_real_imag(
         sqrt(x) * exp(u * x),
@@ -2825,7 +2820,7 @@ def test_plot_real_imag_wireframe_true(pi_options):
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
-def test_plot_real_imag_wireframe_true(pi_options):
+def test_plot_real_imag_wireframe_true_interactive(pi_options):
     # verify that wireframe lines also work with plot_real_imag
 
     x, u = symbols("x, u")

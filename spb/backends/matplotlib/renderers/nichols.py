@@ -21,14 +21,14 @@ def _draw_nichols_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p._ax.scatter(ol_phase, ol_mag, **kw)
         is_cb_added = p._add_colorbar(
-            c, s.get_label(p._use_latex), s.use_cm and s.colorbar
+            c, s.get_label(p.use_latex), s.use_cm and s.colorbar
         )
-        handles = (c, kw, is_cb_added, p._fig.axes[-1])
+        handles = (c, kw, is_cb_added, p.fig.axes[-1])
 
     else:
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
-            label=s.get_label(p._use_latex) if s.show_in_legend else "_nolegend_",
+            label=s.get_label(p.use_latex) if s.show_in_legend else "_nolegend_",
             color=color
         )
 
@@ -44,7 +44,7 @@ def _draw_nichols_helper(renderer, data):
         arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
         arrows = _draw_arrows_helper(
             p._ax, line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=1
         )
@@ -73,7 +73,7 @@ def _update_nichols_helper(renderer, data, handles):
         if is_cb_added:
             norm = p.Normalize(vmin=p.np.amin(omega), vmax=p.np.amax(omega))
             p._update_colorbar(
-                cax, kw["cmap"], s.get_label(p._use_latex), norm=norm)
+                cax, kw["cmap"], s.get_label(p.use_latex), norm=norm)
     else:
         line, arrows = handles
         line.set_data(ol_phase, ol_mag)
@@ -84,7 +84,7 @@ def _update_nichols_helper(renderer, data, handles):
         arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
         new_arrows = _draw_arrows_helper(
             p._ax, line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=1
         )

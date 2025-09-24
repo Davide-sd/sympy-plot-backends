@@ -214,7 +214,7 @@ def _draw_vector2d_helper(renderer, data):
         source = p.bokeh.models.ColumnDataSource(data=data)
         qkw = dict(
             line_color=line_color, line_width=1,
-            name=s.get_label(p._use_latex)
+            name=s.get_label(p.use_latex)
         )
         kw = p.merge({}, qkw, quiver_kw)
         glyph = p.bokeh.models.Segment(
@@ -223,7 +223,7 @@ def _draw_vector2d_helper(renderer, data):
         if isinstance(line_color, dict) and s.colorbar:
             colorbar = p.bokeh.models.ColorBar(
                 color_mapper=color_mapper, width=8,
-                title=s.get_label(p._use_latex))
+                title=s.get_label(p.use_latex))
             p._fig.add_layout(colorbar, "right")
             handle.append(colorbar)
 

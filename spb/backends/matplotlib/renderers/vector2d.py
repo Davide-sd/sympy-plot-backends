@@ -20,14 +20,14 @@ def _draw_vector2d_helper(renderer, data):
             kw = p.merge({}, skw, s.rendering_kw)
             sp = p._ax.streamplot(xx, yy, uu, vv, **kw)
             is_cb_added = p._add_colorbar(
-                sp.lines, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                sp.lines, s.get_label(p.use_latex), s.use_cm and s.colorbar)
         else:
             skw["color"] = next(p._cl)
             kw = p.merge({}, skw, s.rendering_kw)
             solid_color = kw["color"]
             sp = p._ax.streamplot(xx, yy, uu, vv, **kw)
             is_cb_added = False
-        handle = [sp, kw, is_cb_added, p._fig.axes[-1]]
+        handle = [sp, kw, is_cb_added, p.fig.axes[-1]]
     else:
         qkw = dict()
         if any(s.is_contour for s in p.series):
@@ -52,20 +52,20 @@ def _draw_vector2d_helper(renderer, data):
             kw = p.merge({}, qkw, s.rendering_kw)
             q = p._ax.quiver(xx, yy, uu, vv, color_val, **kw)
             is_cb_added = p._add_colorbar(
-                q, s.get_label(p._use_latex), s.use_cm and s.colorbar)
+                q, s.get_label(p.use_latex), s.use_cm and s.colorbar)
         else:
             is_cb_added = False
             qkw["color"] = next(p._cl)
             kw = p.merge({}, qkw, s.rendering_kw)
             solid_color = kw["color"]
             q = p._ax.quiver(xx, yy, uu, vv, **kw)
-        handle = [q, kw, is_cb_added, p._fig.axes[-1]]
+        handle = [q, kw, is_cb_added, p.fig.axes[-1]]
 
     if (not s.use_cm) and s.show_in_legend:
         # quivers are rendered with solid color: set up a legend handle
         proxy_artist = p.Line2D(
             [], [],
-            color=solid_color, label=s.get_label(p._use_latex)
+            color=solid_color, label=s.get_label(p.use_latex)
         )
         p._legend_handles.append(proxy_artist)
 
@@ -74,6 +74,11 @@ def _draw_vector2d_helper(renderer, data):
 
 def _update_vector2d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
+    update_discr = (
+        (s.n != renderer.previous_n)
+        or (s.only_integers != renderer.previous_only_integers)
+    )
+
     xx, yy, uu, vv = data
     mag = p.np.sqrt(uu ** 2 + vv ** 2)
     uu0, vv0 = [t.copy() for t in [uu, vv]]
@@ -87,12 +92,19 @@ def _update_vector2d_helper(renderer, data, handle):
         if s.color_func is not None:
             color_val = s.eval_color_func(xx, yy, uu0, vv0)
 
+        if update_discr:
+            quivers.X = xx
+            quivers.Y = yy
+            quivers.N = xx.shape[0] * xx.shape[1]
+            renderer.previous_n = s.n
+            renderer.previous_only_integers = s.only_integers
+
         if is_cb_added:
             quivers.set_UVC(uu, vv, color_val)
             p._update_colorbar(
                 cax,
                 kw["cmap"],
-                s.get_label(p._use_latex),
+                s.get_label(p.use_latex),
                 color_val
             )
         else:
@@ -104,3 +116,9 @@ class Vector2DRenderer(MatplotlibRenderer):
     draw_update_map = {
         _draw_vector2d_helper: _update_vector2d_helper
     }
+
+    def __init__(self, plot, s):
+        super().__init__(plot, s)
+        # previous numbers of discretization points
+        self.previous_n = s.n
+        self.previous_only_integers = s.only_integers

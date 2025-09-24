@@ -32,7 +32,7 @@ def _draw_sgrid_helper(renderer, data):
     np = p.np
     xi_dict, wn_dict, y_tp, x_ts = data
 
-    lkw = p.sgrid_line_kw
+    lkw = {"color": '0.75', "linestyle": '--', "linewidth": 0.75, "zorder": 0}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     xlim, ylim, xtext_pos_lim, ytext_pos_lim = _text_position_limits(
@@ -209,7 +209,7 @@ class SGridLineRenderer(MatplotlibRenderer):
         self.series.set_axis_limits(xlim, ylim)
 
     def draw(self):
-        if (self.series._xlim is None) and (self.series._ylim is None):
+        if (self.series.xlim is None) and (self.series.ylim is None):
             # if user didn't set xlim/ylim in sgrid() function call
             self._set_axis_limits_before_compute_data()
 

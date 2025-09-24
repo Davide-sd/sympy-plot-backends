@@ -234,7 +234,7 @@ def test_step_response(tf, label, rkw, params):
     s1 = series[0]
     assert isinstance(s1, LineOver1DRangeSeries)
     d1 = s1.get_data()
-    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.rendering_kw == ({} if not rkw else rkw)
     assert s1.is_interactive == (len(s1.params) > 0)
     assert s1.params == ({} if not params else params)
 
@@ -245,7 +245,7 @@ def test_step_response(tf, label, rkw, params):
     s2 = series[0]
     assert isinstance(s2, SystemResponseSeries)
     d2 = s2.get_data()
-    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.rendering_kw == ({} if not rkw else rkw)
     assert s2.is_interactive == (len(s2.params) > 0)
     assert s2.params == ({} if not params else params)
 
@@ -303,7 +303,7 @@ def test_impulse_response(tf, label, rkw, params):
     s1 = series[0]
     assert isinstance(s1, LineOver1DRangeSeries)
     d1 = s1.get_data()
-    assert s1.rendering_kw == {} if not rkw else rkw
+    assert s1.rendering_kw == ({} if not rkw else rkw)
     assert s1.is_interactive == (len(s1.params) > 0)
     assert s1.params == ({} if not params else params)
 
@@ -314,7 +314,7 @@ def test_impulse_response(tf, label, rkw, params):
     s2 = series[0]
     assert isinstance(s2, SystemResponseSeries)
     d2 = s2.get_data()
-    assert s2.rendering_kw == {} if not rkw else rkw
+    assert s2.rendering_kw == ({} if not rkw else rkw)
     assert s2.is_interactive == (len(s2.params) > 0)
     assert s2.params == ({} if not params else params)
 

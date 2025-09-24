@@ -68,7 +68,7 @@ def test_empty_plotgrid():
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_mode_1_matplotlib():
     x, y, z = symbols("x, y, z")
-    options = dict(adaptive=False, n=10, backend=MB, show=False)
+    options = dict(n=10, backend=MB, show=False)
 
     # all plots with MatplotlibBackend: combine them into a matplotlib figure
     p1 = plot(cos(x), (x, -5, 5), ylabel="a", use_latex=True, **options)
@@ -123,8 +123,7 @@ def test_plotgrid_mode_1_matplotlib():
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_plotgrid_mode_1_different_backends():
     x, y, z = symbols("x, y, z")
-    options = dict(adaptive=False, n=10, backend=MB,
-        show=False, imodule="panel")
+    options = dict(n=10, backend=MB, show=False, imodule="panel")
 
     p1 = plot(cos(x), (x, -3, 3), **options)
     p2 = plot_contour(
@@ -132,14 +131,21 @@ def test_plotgrid_mode_1_different_backends():
         backend=PB,
         n1=20, n2=20,
         show=False,
+        imodule="panel"
     )
     p3 = plot3d(
         cos(x**2 + y**2), (x, -3, 3), (y, -3, 3),
         backend=KBchild1,
         n1=20, n2=20,
         show=False,
+        imodule="panel"
     )
-    p4 = plot_vector([-y, x], (x, -5, 5), (y, -5, 5), backend=BB, show=False)
+    p4 = plot_vector(
+        [-y, x], (x, -5, 5), (y, -5, 5),
+        backend=BB,
+        show=False,
+        imodule="panel"
+    )
 
     p = plotgrid(p1, p2, p3, p4, nr=2, nc=2, show=False, imodule="panel")
     assert isinstance(p.fig, pn.GridSpec)
@@ -158,7 +164,7 @@ def test_plotgrid_mode_1_interactive_ipywidgets():
     def build_plotgrid(backend):
         x, y, z = symbols("x, y, z")
         options = dict(
-            adaptive=False, n=10,
+            n=10,
             backend=backend,
             imodule="ipywidgets",
             show=False,
@@ -218,7 +224,6 @@ def test_plotgrid_mode_1_interactive_panel():
     def build_plotgrid(backend):
         x, y, z = symbols("x, y, z")
         options = dict(
-            adaptive=False,
             n=10,
             backend=backend,
             imodule="panel",
@@ -298,7 +303,7 @@ def test_plotgrid_mode_2_matplotlib():
 
     # all plots are instances of MatplotlibBackend
     options = dict(
-        adaptive=False, n=100, backend=MB, show=False, use_latex=False
+        n=100, backend=MB, show=False, use_latex=False
     )
     p1 = plot(exp(x), **options)
     p2 = plot(sin(x), **options)
@@ -345,7 +350,7 @@ def test_plotgrid_mode_2_different_backends():
     x, y, z = symbols("x, y, z")
     # Mixture of different backends
     options = dict(
-        adaptive=False, n=100, show=False, use_latex=False, imodule="panel"
+        n=100, show=False, use_latex=False, imodule="panel"
     )
     p1 = plot(exp(x), backend=MB, **options)
     p2 = plot(sin(x), backend=PB, **options)
@@ -365,6 +370,7 @@ def test_plotgrid_mode_2_different_backends():
         n=20,
         show=False,
         use_latex=False,
+        imodule="panel"
     )
 
     gs = GridSpec(3, 3)
@@ -397,7 +403,7 @@ def test_plotgrid_mode_2_interactive_ipywidgets():
     x, y, z = symbols("x, y, z")
     # all plots are instances of PlotlyBackend
     options = dict(
-        adaptive=False, n=100,
+        n=100,
         backend=PB,
         show=False,
         use_latex=False,
@@ -472,7 +478,7 @@ def test_plotgrid_mode_2_interactive_panel():
     x, y, z = symbols("x, y, z")
     # all plots are instances of PlotlyBackend
     options = dict(
-        adaptive=False, n=100,
+        n=100,
         backend=PB,
         imodule="panel",
         show=False,
@@ -550,7 +556,7 @@ def test_plotgrid_mode_2_interactive_panel():
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_panel_kw_imodule_panel():
     x = symbols("x")
-    options = dict(adaptive=False, n=100, show=False, imodule="panel")
+    options = dict(n=100, show=False, imodule="panel")
     p1 = plot(sin(x), backend=MB, **options)
     p2 = plot(tan(x), backend=PB, **options)
     p3 = plot(exp(-x), backend=BB, **options)
@@ -589,7 +595,7 @@ def test_plot_size_matplotlib():
     # verify that the `size` keyword argument works fine
 
     x = symbols("x")
-    options = dict(adaptive=False, n=100, backend=MB, show=False)
+    options = dict(n=100, backend=MB, show=False)
     p1 = plot(sin(x), **options)
     p2 = plot(cos(x), **options)
     p = plotgrid(p1, p2, size=(5, 7.5), show=False)
@@ -602,7 +608,7 @@ def test_plot_size_matplotlib():
     # verify that the `size` keyword argument works fine
 
     x = symbols("x")
-    options = dict(adaptive=False, n=100, backend=PB, show=False)
+    options = dict(n=100, backend=PB, show=False)
     p1 = plot(sin(x), **options)
     p2 = plot(cos(x), **options)
     p = plotgrid(p1, p2, size=(400, 600), show=False, imodule="ipywidgets")
@@ -611,7 +617,7 @@ def test_plot_size_matplotlib():
     # assert res.height == "600px"
 
     options = dict(
-        adaptive=False, n=100, backend=PB, show=False, imodule="panel"
+        n=100, backend=PB, show=False, imodule="panel"
     )
     p1 = plot(sin(x), **options)
     p2 = plot(cos(x), **options)
@@ -647,14 +653,19 @@ def test_save():
     x, y = symbols("x, y")
 
     def _create_plots(B):
-        options = dict(adaptive=False, n=10, show=False, backend=B)
+        options = dict(n=10, show=False, backend=B)
         p1 = plot(x, **options)
-        p2 = plot_parametric((sin(x), cos(x)), (x, sin(x)), **options)
-        p3 = plot_parametric(cos(x), sin(x), **options)
-        p4 = plot3d_parametric_line(sin(x), cos(x), x, **options)
+        p2 = plot_parametric(
+            (sin(x), cos(x)), (x, sin(x)), **options)
+        p3 = plot_parametric(
+            cos(x), sin(x), **options)
+        p4 = plot3d_parametric_line(
+            sin(x), cos(x), x, **options)
         p5 = plot(cos(x), (x, -pi, pi), **options)
         p5[0].color_func = lambda a: a
-        p6 = plot(Piecewise((1, x > 0), (0, True)), (x, -1, 1), **options)
+        p6 = plot(
+            Piecewise((1, x > 0), (0, True)), (x, -1, 1),
+            **options)
         p7 = plot_contour(
             (x**2 + y**2, (x, -5, 5), (y, -5, 5)),
             (x**3 + y**3, (x, -3, 3), (y, -3, 3)),
@@ -709,7 +720,7 @@ def test_plotgrid_interactive_mixed_modules():
         x, y, z = symbols("x, y, z")
         # all plots are instances of PlotlyBackend
         options = dict(
-            adaptive=False, n=100,
+            n=100,
             backend=PB,  # imodule="panel",
             show=False,
             use_latex=False,

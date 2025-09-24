@@ -18,8 +18,6 @@ import pytest
 import numpy as np
 
 pn = import_module("panel")
-adaptive_module = import_module("adaptive")
-
 
 # NOTE:
 #
@@ -343,14 +341,14 @@ def test_plot3d_revolution(paf_options, pi_options):
     p = plot3d_revolution(cos(t), (t, 0, pi), **options)
     assert len(p.series) == 1
     assert isinstance(p[0], ParametricSurfaceSeries)
-    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
-    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(2 * pi))
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, pi)
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, 2 * pi)
 
     p = plot3d_revolution(cos(t), (t, 0, pi), (phi, 0, pi / 2), **options)
     assert len(p.series) == 1
     assert isinstance(p[0], ParametricSurfaceSeries)
-    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, float(pi))
-    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, float(pi / 2))
+    assert (p[0].var_u, p[0].start_u, p[0].end_u) == (t, 0, pi)
+    assert (p[0].var_v, p[0].start_v, p[0].end_v) == (phi, 0, pi / 2)
 
     # by setting parallel_axis it produces different expressions/data
     p1 = plot3d_revolution(
@@ -580,7 +578,7 @@ def test_plot3d_wireframe_transform_function():
         tx=fx, ty=fy, tz=fz,
     )
     assert all(
-        (s._tx == fx) and (s._ty == fy) and (s._tz == fz) for s in p.series)
+        (s.tx == fx) and (s.ty == fy) and (s.tz == fz) for s in p.series)
 
 
 def test_plot3d_plot_contour_base_scalars(paf_options):
@@ -686,7 +684,6 @@ def test_plot3d_parametric_surface_wireframe(pi_options):
     # verify that wireframe=True produces the expected data series
     x, y, u = symbols("x, y, u")
     pi_options["n"] = 10
-    pi_options.pop("adaptive")
 
     _plot3d_ps = lambda wf: plot3d_parametric_surface(
         u * x * cos(y), x * sin(y), x * cos(4 * y) / 2,
@@ -778,7 +775,7 @@ def test_plot3d_wireframe_and_labels(pi_options):
 def test_number_discretization_points():
     # verify the different ways of setting the numbers of discretization points
     x, y, z = symbols("x, y, z")
-    options = dict(adaptive=False, show=False, backend=MB)
+    options = dict(show=False, backend=MB)
 
     p = plot3d_parametric_line(cos(x), sin(x), x, (x, 0, 2 * pi), **options)
     assert p[0].n[0] == 1000
@@ -924,7 +921,6 @@ def test_indexed_objects():
     p = plot3d(
         cos(x[0] ** 2 + x[1] ** 2),
         (x[0], -pi, pi), (x[1], -pi, pi),
-        adaptive=False,
         n=10,
         show=False,
         backend=MB,
@@ -944,13 +940,9 @@ def test_indexed_objects():
 # plotting module
 
 
-@pytest.mark.parametrize("adaptive", [True, False])
-def test_plot3d_parametric_line_limits(paf_options, adaptive):
-    if adaptive and (adaptive_module is None):
-        return
-
+def test_plot3d_parametric_line_limits(paf_options):
     x = symbols("x")
-    paf_options.update({"adaptive": adaptive, "n": 60})
+    paf_options.update({"n": 60})
 
     v1 = (2 * cos(x), 2 * sin(x), 2 * x, (x, -5, 5))
     v2 = (sin(x), cos(x), x, (x, -5, 5))

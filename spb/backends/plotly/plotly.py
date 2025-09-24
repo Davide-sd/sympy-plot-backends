@@ -1,7 +1,10 @@
+import param
 import itertools
 import os
 from spb.defaults import cfg
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     ComplexRenderer, ContourRenderer, SurfaceRenderer, Implicit3DRenderer,
@@ -15,123 +18,17 @@ from spb.series import (
     RiemannSphereSeries, Implicit3DSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries, GenericDataSeries,
-    HVLineSeries, Arrow2DSeries
+    PlaneSeries, Geometry2DSeries, Geometry3DSeries, GenericDataSeries,
+    HVLineSeries, Arrow2DSeries, HLineSeries, VLineSeries
 )
 from sympy.external import import_module
 import warnings
 
 
+@modify_parameterized_doc()
 class PlotlyBackend(Plot):
     """
     A backend for plotting SymPy's symbolic expressions using Plotly.
-
-    Parameters
-    ==========
-
-    aspect : str, optional
-        Set the aspect ratio of the plot. Default to ``"auto"``.
-        Possible values:
-
-        - ``"equal"``: sets equal spacing on the axis of a 2D plot.
-        - For 3D plots:
-
-          * ``"cube"``: fix the ratio to be a cube
-          * ``"data"``: draw axes in proportion to the proportion of their
-            ranges
-          * ``"auto"``: automatically produce something that is well
-            proportioned using 'data' as the default.
-          * manually set the aspect ratio by providing a dictionary.
-            For example: ``dict(x=1, y=1, z=2)`` forces the z-axis to appear
-            twice as big as the other two.
-
-    camera : dict, optional
-        A dictionary of keyword arguments that will be passed to the layout's
-        ``scene_camera`` in order to set the 3D camera orientation.
-        Refer to [#fn18]_ for more information.
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Refer to [#fn1]_ and [#fn2]_ to customize contour plots.
-        * Refer to [#fn3]_ and [#fn4]_ to customize line plots.
-        * Refer to [#fn7]_ to customize surface plots.
-        * Refer to [#fn14]_ to customize implicit surface plots.
-        * Refer to [#fn5]_ to customize 2D quiver plots. Default to:
-          ``dict( scale = 0.075 )``.
-        * Refer to [#fn6]_ to customize 3D cone plots. Default to:
-          ``dict( sizemode = "absolute", sizeref = 40 )``.
-        * Refer to [#fn8]_ to customize 2D streamlines plots. Defaul to:
-          ``dict( arrow_scale = 0.15 )``.
-        * Refer to [#fn9]_ to customize 3D streamlines plots. Defaul to:
-          ``dict( sizeref = 0.3 )``.
-        * Refere to to [#fn19]_ to customize 2D arrow plots.
-
-    axis : boolean, optional
-        Turns on/off the axis visibility (and associated tick labels).
-        Default to True (axis are visible).
-
-    theme : str, optional
-        Set the theme. Default to ``"plotly_dark"``. Find more Plotly themes at
-        [#fn10]_ .
-
-    update_event : bool, optional
-        If True, it binds pan/zoom events in order to automatically compute
-        new data as the user interact with the plot.
-        Default to False.
-
-    annotations : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn15]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    markers : list, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn3]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    rectangles : list, optional
-        A list of dictionaries specifying the dimensions of the
-        rectangles to be plotted. The keys in the dictionary should be
-        equivalent to the arguments of the Plotly's
-        `graph_objects.Figure.add_shape` function. Refer to [#fn16]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    fill : dict, optional
-        A list of dictionaries specifying the type the markers required.
-        The keys in the dictionary should be equivalent to the arguments
-        of the Plotly's `graph_objects.Scatter` class. Refer to [#fn17]_
-        for more information.
-        This feature is experimental. It might get removed in the future.
-
-    References
-    ==========
-    .. [#fn1] https://plotly.com/python/contour-plots/
-    .. [#fn2] https://plotly.com/python/builtin-colorscales/
-    .. [#fn3] https://plotly.com/python/line-and-scatter/
-    .. [#fn4] https://plotly.com/python/3d-scatter-plots/
-    .. [#fn5] https://plotly.com/python/quiver-plots/
-    .. [#fn6] https://plotly.com/python/cone-plot/
-    .. [#fn7] https://plotly.com/python/3d-surface-plots/
-    .. [#fn8] https://plotly.com/python/streamline-plots/
-    .. [#fn9] https://plotly.com/python/streamtube-plot/
-    .. [#fn10] https://plotly.com/python/templates/
-    .. [#fn13] https://github.com/plotly/plotly.js/issues/5003
-    .. [#fn14] https://plotly.com/python/3d-isosurface-plots/
-    .. [#fn15] https://plotly.com/python/text-and-annotations/
-    .. [#fn16] https://plotly.com/python/shapes/
-    .. [#fn17] https://plotly.com/python/filled-area-plots/
-    .. [#fn18] https://plotly.com/python/3d-camera-controls/
-    .. [#fn19] https://plotly.com/python/reference/layout/annotations/
-
 
     Notes
     =====
@@ -141,8 +38,9 @@ class PlotlyBackend(Plot):
     * with 2D domain coloring, the vertical axis is reversed, with negative
       values on the top and positive values on the bottom.
     * with 3D complex plots: when hovering a point, the tooltip will display
-      wrong information for the argument and the phase. Hopefully, this bug
-      [#fn13]_ will be fixed upstream.
+      wrong information for the argument and the phase.
+      https://github.com/plotly/plotly.js/issues/5003
+      Hopefully, this bug will be fixed upstream.
 
     See also
     ========
@@ -150,18 +48,9 @@ class PlotlyBackend(Plot):
     Plot, MatplotlibBackend, BokehBackend, K3DBackend
     """
 
-    _library = "plotly"
-    _allowed_keys = Plot._allowed_keys + [
-        "markers", "annotations", "fill", "rectangles", "camera"]
-
-    colorloop = []
-    colormaps = []
-    cyclic_colormaps = []
-    quivers_colors = []
     wireframe_color = "#000000"
 
     scattergl_threshold = 2000
-
     # color bar spacing
     _cbs = 0.15
     # color bar scale down factor
@@ -188,13 +77,17 @@ class PlotlyBackend(Plot):
         SurfaceOver2DRangeSeries: SurfaceRenderer,
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
-        GeometrySeries: GeometryRenderer,
+        Geometry2DSeries: GeometryRenderer,
+        Geometry3DSeries: GeometryRenderer,
         GenericDataSeries: GenericRenderer,
         HVLineSeries: HVLineRenderer,
+        HLineSeries: HVLineRenderer,
+        VLineSeries: HVLineRenderer,
         Arrow2DSeries: Arrow2DRenderer
     }
 
-    pole_line_kw = {"line": dict(color='black', dash='dot', width=1)}
+    quivers_colors = param.ClassSelector(default=[], class_=(list, tuple), doc="""
+        List of colors for rendering quivers.""")
 
     def __init__(self, *series, **kwargs):
         self.np = import_module('numpy')
@@ -207,26 +100,36 @@ class PlotlyBackend(Plot):
         self.create_quiver = self.plotly.figure_factory.create_quiver
         self.create_streamline = self.plotly.figure_factory.create_streamline
 
+        kwargs["_library"] = "plotly"
         # The following colors corresponds to the discret color map
         # px.colors.qualitative.Plotly.
-        self.colorloop = [
+        kwargs.setdefault("colorloop", [
             "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
-        self.colormaps = [
+            "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"])
+        kwargs.setdefault("colormaps", [
             "aggrnyl", "plotly3", "reds_r", "ice", "inferno",
-            "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"]
-        self.cyclic_colormaps = ["phase", "twilight", "hsv", "icefire"]
+            "deep_r", "turbid_r", "gnbu_r", "geyser_r", "oranges_r"])
+        kwargs.setdefault("cyclic_colormaps", [
+            "phase", "twilight", "hsv", "icefire"])
         # TODO: here I selected black and white, but they are not visible
         # with dark or light theme respectively... Need a better selection
         # of colors. Although, they are placed in the middle of the loop,
         # so they are unlikely going to be used.
-        self.quivers_colors = [
+        kwargs.setdefault("quivers_colors", [
             "magenta", "crimson", "darkorange", "dodgerblue", "wheat",
-            "slategrey", "white", "black", "darkred", "indigo"]
+            "slategrey", "white", "black", "darkred", "indigo"])
+        kwargs.setdefault("update_event", cfg["plotly"]["update_event"])
+        kwargs.setdefault("use_latex", cfg["plotly"]["use_latex"])
+        kwargs.setdefault("grid", cfg["plotly"]["grid"])
+        kwargs.setdefault("minor_grid", cfg["plotly"]["show_minor_grid"])
+        kwargs.setdefault("theme", cfg["plotly"]["theme"])
 
-        self._update_event = kwargs.get(
-            "update_event", cfg["plotly"]["update_event"])
-        if (self._update_event and any(isinstance(s, Vector2DSeries) for
+        # _init_cyclers needs to know if an existing figure was provided
+        self._use_existing_figure = "fig" in kwargs
+
+        super().__init__(*series, **kwargs)
+
+        if (self.update_event and any(isinstance(s, Vector2DSeries) for
             s in series)):
             warnings.warn(
                 "You are trying to use `update_event=True` with a 2D quiver "
@@ -234,18 +137,12 @@ class PlotlyBackend(Plot):
                 "need to interrupt the kernel."
             )
 
-        # _init_cyclers needs to know if an existing figure was provided
-        self._use_existing_figure = kwargs.get("fig", False)
-        self._fig = None
         self._init_cyclers()
-        super().__init__(*series, **kwargs)
-        if self._use_existing_figure:
-            self._fig = self._use_existing_figure
-            self._use_existing_figure = True
-        else:
+
+        if not self._use_existing_figure:
             if (
-                (self.is_iplot and (self.imodule == "ipywidgets"))
-                or self._update_event
+                (self._imodule == "ipywidgets")
+                or self.update_event
             ):
                 self._fig = self.go.FigureWidget()
             else:
@@ -253,7 +150,6 @@ class PlotlyBackend(Plot):
 
         # NOTE: Plotly 3D currently doesn't support latex labels
         # https://github.com/plotly/plotly.js/issues/608
-        self._use_latex = kwargs.get("use_latex", cfg["plotly"]["use_latex"])
         self._set_labels()
         self._set_title()
 
@@ -272,9 +168,6 @@ class PlotlyBackend(Plot):
                 "#BC7196", "#7E7DCD", "#FC6955", "#E48F72"
             ]
 
-        self._theme = kwargs.get("theme", cfg["plotly"]["theme"])
-        self.grid = kwargs.get("grid", cfg["plotly"]["grid"])
-
         self._colorbar_counter = 0
         self._scale_down_colorbar = (
             self.legend and
@@ -285,7 +178,7 @@ class PlotlyBackend(Plot):
         self._create_renderers()
         self._n_annotations = 0
 
-        if self._update_event:
+        if self.update_event:
             self._fig.layout.on_change(
                 lambda obj, xrange, yrange: self._update_axis_limits(xrange, yrange),
                 ('xaxis', 'range'), ('yaxis', 'range'))
@@ -317,6 +210,7 @@ class PlotlyBackend(Plot):
         """
         self._process_renderers()
         self._update_layout()
+        self._execute_hooks()
 
     process_series = draw
 
@@ -332,22 +226,19 @@ class PlotlyBackend(Plot):
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
-        kw = p1._copy_kwargs()
-        kw["theme"] = p1._theme
-        return kw
+        return p1._copy_kwargs()
 
     def _init_cyclers(self):
         start_index_cl, start_index_cm = None, None
         if self._use_existing_figure:
-            fig = self._use_existing_figure if self._fig is None else self._fig
             # attempt to determine how many lines or surfaces are plotted
             # on the user-provided figure
 
             # assume user plotted 3d surfaces using solid colors
             count_meshes = sum([
-                isinstance(c, self.go.Surface) for c in fig.data])
+                isinstance(c, self.go.Surface) for c in self._fig.data])
             count_lines = sum([
-                isinstance(c, self.go.Scatter) for c in fig.data])
+                isinstance(c, self.go.Scatter) for c in self._fig.data])
             start_index_cl = count_lines + count_meshes
         super()._init_cyclers(start_index_cl, 0)
         tb = type(self)
@@ -407,7 +298,8 @@ class PlotlyBackend(Plot):
             r.draw()
 
     def update_interactive(self, params):
-        """Implement the logic to update the data generated by
+        """
+        Implement the logic to update the data generated by
         interactive-widget plots.
 
         Parameters
@@ -421,23 +313,81 @@ class PlotlyBackend(Plot):
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
 
-        if self.imodule == "ipywidgets":
+        if self._imodule == "ipywidgets":
             with self._fig.batch_update():
                 self._update_interactive_helper(params)
         else:
             self._update_interactive_helper(params)
 
         self._set_axes_texts()
+        self._execute_hooks()
 
     def _update_interactive_helper(self, params):
         for r in self.renderers:
-            if r.series.is_interactive:
+            if (
+                r.series.is_interactive
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
+
+    def _get_data_limits_for_custom_tickers(self):
+        _min = lambda t: min(t) if len(t) > 0 else 0
+        _max = lambda t: max(t) if len(t) > 0 else 0
+        x_min, x_max = [], []
+        y_min, y_max = [], []
+        for s in self.series:
+            if isinstance(s, (LineOver1DRangeSeries, SurfaceOver2DRangeSeries)):
+                x_min.append(s.ranges[0][1].subs(s.params))
+                x_max.append(s.ranges[0][2].subs(s.params))
+            if isinstance(s, SurfaceOver2DRangeSeries):
+                y_min.append(s.ranges[1][1].subs(s.params))
+                y_max.append(s.ranges[1][2].subs(s.params))
+        x_min, y_min = float(_min(x_min)), float(_min(y_min))
+        x_max, y_max = float(_max(x_max)), float(_max(y_max))
+        return x_min, x_max, y_min, y_max
 
     def _update_layout(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
+        show_major_grid = True if self.grid else False
+        show_minor_grid = True if self.minor_grid else False
+        major_grid_line_kw = {}
+        minor_grid_line_kw = {}
+        if isinstance(self.grid, dict):
+            major_grid_line_kw = self.grid
+        if isinstance(self.minor_grid, dict):
+            minor_grid_line_kw = self.minor_grid
+        minor_grid_line_kw_x = minor_grid_line_kw.copy()
+        minor_grid_line_kw_y = minor_grid_line_kw.copy()
+
+        # if necessary, apply custom tick formatting
+        x_tickvals, x_ticktext = None, None
+        y_tickvals, y_ticktext = None, None
+        polar_angular_dtick = 30
+        is_formatter = lambda t: isinstance(t, tick_formatter_multiples_of)
+        if any(is_formatter(t) for t in [
+            self.x_ticks_formatter, self.y_ticks_formatter]
+        ):
+            x_min, x_max, y_min, y_max = self._get_data_limits_for_custom_tickers()
+        if is_formatter(self.x_ticks_formatter):
+            if not self.np.isclose(x_min, x_max):
+                x_tickvals, x_ticktext = self.x_ticks_formatter.PB_ticks(
+                    x_min, x_max)
+            q = self.x_ticks_formatter.quantity
+            n = self.x_ticks_formatter.n
+            n_minor = self.x_ticks_formatter.n_minor
+            minor_grid_line_kw_x["dtick"] = (q / n) / (n_minor + 1)
+            polar_angular_dtick = q / n
+        if is_formatter(self.y_ticks_formatter):
+            if not self.np.isclose(y_min, y_max):
+                y_tickvals, y_ticktext = self.y_ticks_formatter.PB_ticks(
+                    y_min, y_max)
+            q = self.y_ticks_formatter.quantity
+            n = self.y_ticks_formatter.n
+            n_minor = self.y_ticks_formatter.n_minor
+            minor_grid_line_kw_y["dtick"] = (q / n) / (n_minor + 1)
+
         self._fig.update_layout(
-            template=self._theme,
+            template=self.theme,
             width=None if not self.size else self.size[0],
             height=None if not self.size else self.size[1],
             title=r"<b>%s</b>" % ("" if not title else title),
@@ -446,24 +396,37 @@ class PlotlyBackend(Plot):
                 title="" if not xlabel else xlabel,
                 range=None if not self.xlim else self.xlim,
                 type=self.xscale,
-                showgrid=self.grid,  # thin lines in the background
-                zeroline=self.grid,  # thick line at x=0
+                showgrid=show_major_grid,  # thin lines in the background
+                zeroline=show_major_grid,  # thick line at x=0
                 constrain="domain",
                 visible=self.axis,
-                autorange=None if not self._invert_x_axis else "reversed"
+                autorange=None if not self.invert_x_axis else "reversed",
+                tickvals=x_tickvals,
+                ticktext=x_ticktext,
+                **major_grid_line_kw
             ),
             yaxis=dict(
                 title="" if not ylabel else ylabel,
                 range=None if not self.ylim else self.ylim,
                 type=self.yscale,
-                showgrid=self.grid,  # thin lines in the background
-                zeroline=self.grid,  # thick line at x=0
+                showgrid=show_major_grid,  # thin lines in the background
+                zeroline=show_major_grid,  # thick line at x=0
                 scaleanchor="x" if self.aspect == "equal" else None,
-                visible=self.axis
+                visible=self.axis,
+                tickvals=y_tickvals,
+                ticktext=y_ticktext,
+                **major_grid_line_kw
             ),
             polar=dict(
-                angularaxis={'direction': 'counterclockwise', 'rotation': 0},
-                radialaxis={'range': None if not self.ylim else self.ylim},
+                angularaxis=dict(
+                    direction='counterclockwise',
+                    rotation=0,
+                    thetaunit="radians" if is_formatter(self.x_ticks_formatter) else None,
+                    dtick=polar_angular_dtick,
+                ),
+                radialaxis=dict(
+                    range=None if not self.ylim else self.ylim
+                ),
                 sector=None if not self.xlim else self.xlim
             ),
             margin=dict(
@@ -478,25 +441,29 @@ class PlotlyBackend(Plot):
                     title="" if not xlabel else xlabel,
                     range=None if not self.xlim else self.xlim,
                     type=self.xscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below,
+                    tickvals=x_tickvals,
+                    ticktext=x_ticktext,
                 ),
                 yaxis=dict(
                     title="" if not ylabel else ylabel,
                     range=None if not self.ylim else self.ylim,
                     type=self.yscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below,
+                    tickvals=y_tickvals,
+                    ticktext=y_ticktext,
                 ),
                 zaxis=dict(
                     title="" if not zlabel else zlabel,
                     range=None if not self.zlim else self.zlim,
                     type=self.zscale,
-                    showgrid=self.grid,  # thin lines in the background
-                    zeroline=self.grid,  # thick line at x=0
-                    visible=self.grid,  # numbers below
+                    showgrid=show_major_grid,  # thin lines in the background
+                    zeroline=show_major_grid,  # thick line at x=0
+                    visible=show_major_grid,  # numbers below
                 ),
                 aspectmode=(
                     "manual" if isinstance(self.aspect, dict)
@@ -508,6 +475,10 @@ class PlotlyBackend(Plot):
                 camera=self.camera
             ),
         )
+        self._fig.update_xaxes(minor=dict(
+            showgrid=show_minor_grid, **minor_grid_line_kw_x))
+        self._fig.update_yaxes(minor=dict(
+            showgrid=show_minor_grid, **minor_grid_line_kw_y))
 
     def _set_axes_texts(self):
         title, xlabel, ylabel, zlabel = self._get_title_and_labels()
@@ -533,13 +504,16 @@ class PlotlyBackend(Plot):
         )
 
     def show(self):
-        """Visualize the plot on the screen."""
+        """
+        Visualize the plot on the screen.
+        """
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
         self._fig.show()
 
     def save(self, path, **kwargs):
-        """ Export the plot to a static picture or to an interactive html file.
+        """
+        Export the plot to a static picture or to an interactive html file.
 
         Refer to [#fn11]_ and [#fn12]_ to visualize all the available keyword
         arguments.

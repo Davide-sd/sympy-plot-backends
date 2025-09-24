@@ -827,7 +827,7 @@ def test_plot_vector_3d_slice(pv_options_3d):
     assert isinstance(pss, ParametricSurfaceSeries)
     assert pss.expr == (u * cos(v), u * sin(v), u)
     assert (pss.var_u, pss.start_u, pss.end_u) == (u, -2, 0)
-    assert (pss.var_v, pss.start_v, pss.end_v) == (v, 0, float(2 * pi))
+    assert (pss.var_v, pss.start_v, pss.end_v) == (v, 0, 2 * pi)
     assert to_float(s[0].ranges[0][1:]) == (-10, 9)
     assert to_float(s[0].ranges[1][1:]) == (-8, 7)
     assert to_float(s[0].ranges[2][1:]) == (-6, 5)

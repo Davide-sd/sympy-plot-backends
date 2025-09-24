@@ -24,7 +24,7 @@ def _draw_analytic_landscape_helper(renderer, data):
     p._high_aspect_ratio(x, y, z)
 
     a = dict(
-        name=s.get_label(p._use_latex, "%s") if p._show_label else None,
+        name=s.get_label(p.use_latex, "%s") if p.show_label else None,
         side="double",
         flat_shading=False,
         wireframe=False,

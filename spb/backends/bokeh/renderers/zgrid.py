@@ -5,7 +5,7 @@ def _draw_zgrid_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     xi_dict, wn_dict, tp_dict, ts_dict = data
 
-    lkw = p.grid_line_kw
+    lkw = {"line_color": "#aaa", "line_dash": "dotted"}
     kw = p.merge({}, lkw, s.rendering_kw)
 
     def _add_labels(x, y, labels):
@@ -45,8 +45,8 @@ def _draw_zgrid_helper(renderer, data):
         wn_handles.append(h1)
         xlabels.append(v["lx"])
         ylabels.append(v["ly"])
-        label = v["label"](p._use_latex)
-        labels.append(r"$%s$" % label if p._use_latex else label)
+        label = v["label"](p.use_latex)
+        labels.append(r"$%s$" % label if p.use_latex else label)
         xi_handles.append(h1)
 
     wn_labels = _add_labels(xlabels, ylabels, labels)
@@ -119,8 +119,8 @@ def _update_zgrid_helper(renderer, data, handles):
         h1.data_source.data.update(source)
         xlabels.append(v["lx"])
         ylabels.append(v["ly"])
-        label = v["label"](p._use_latex)
-        labels.append(r"$%s$" % label if p._use_latex else label)
+        label = v["label"](p.use_latex)
+        labels.append(r"$%s$" % label if p.use_latex else label)
 
     wn_labels.source.data.update(
         {"x": xlabels, "y": ylabels, "labels": labels})

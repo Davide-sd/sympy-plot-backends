@@ -16,10 +16,16 @@ Simplicity of code takes much greater importance than performance. Don't use
 it if you care at all about performance.
 """
 
+from spb.doc_utils.docstrings import _PARAMS, _LABEL_PF
+from spb.doc_utils.ipython import modify_plot_functions_doc
 from spb.graphics import (
     graphics, line_parametric_3d,
     surface_parametric, surface_revolution, surface_spherical,
     implicit_3d, list_3d
+)
+from spb.series import (
+    SurfaceOver2DRangeSeries, Parametric3DLineSeries, ParametricSurfaceSeries,
+    List3DSeries, Implicit3DSeries
 )
 from spb.utils import (
     _plot_sympify, _check_arguments
@@ -29,6 +35,10 @@ from spb.plot_functions.functions_2d import (
 )
 
 
+_repl = {"params": _PARAMS, "label": _LABEL_PF}
+
+
+@modify_plot_functions_doc(Parametric3DLineSeries, replace=_repl)
 def plot3d_parametric_line(*args, **kwargs):
     """
     Plots a 3D parametric line plot.
@@ -65,13 +75,6 @@ def plot3d_parametric_line(*args, **kwargs):
             (expr_x2, expr_y2, expr_z2, range2, label1, rendering_kw2),
             ..., **kwargs)
 
-    Refer to :func:`~spb.graphics.functions_3d.line_parametric_3d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Examples
     ========
 
@@ -93,7 +96,7 @@ def plot3d_parametric_line(*args, **kwargs):
 
        >>> plot3d_parametric_line(cos(t), sin(t), t, (t, -5, 5))
        Plot object containing:
-       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5.0, 5.0)
+       [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5, 5)
 
     Customize the appearance by setting a label to the colorbar, changing the
     colormap and the line width.
@@ -108,7 +111,7 @@ def plot3d_parametric_line(*args, **kwargs):
        ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
        ...     aspect="equal")
        Plot object containing:
-       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0.0, 6.283185307179586)
+       [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0, 2*pi)
 
     Plot multiple parametric 3D lines with different ranges:
 
@@ -130,9 +133,9 @@ def plot3d_parametric_line(*args, **kwargs):
        ...     (xr, yr, zr, (r, 0, 6*pi), "roots"),
        ...     (-sin(s)/3, 0, s, (s, 0, pi), "stem"), use_cm=False)
        Plot object containing:
-       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0.0, 6.283185307179586)
-       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0.0, 18.84955592153876)
-       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0.0, 3.141592653589793)
+       [0]: 3D parametric cartesian line: (2*cos(p)*cos(4*p), 2*sin(p)*cos(4*p), cos(4*p)**2 + pi) for p over (0, 2*pi)
+       [1]: 3D parametric cartesian line: (r**(1/3)*cos(r), r**(1/3)*sin(r), 0) for r over (0, 6*pi)
+       [2]: 3D parametric cartesian line: (-sin(s)/3, 0, s) for s over (0, pi)
 
     Plotting a numerical function instead of a symbolic expression, using
     Plotly:
@@ -146,7 +149,7 @@ def plot3d_parametric_line(*args, **kwargs):
        fz = lambda t: t + 2 * np.sin(75 * t)
        plot3d_parametric_line(fx, fy, fz, ("t", 0, 6 * np.pi),
            {"line": {"colorscale": "bluered"}},
-           title="Helical Toroid", backend=PB, adaptive=False, n=1e04)
+           title="Helical Toroid", backend=PB, n=1e04)
 
     Interactive-widget plot of the parametric line over a tennis ball.
     Refer to the interactive sub-module documentation to learn more about the
@@ -192,6 +195,7 @@ def plot3d_parametric_line(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 1, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -206,6 +210,7 @@ def plot3d_parametric_line(*args, **kwargs):
     return graphics(*lines, **kwargs)
 
 
+@modify_plot_functions_doc(SurfaceOver2DRangeSeries, replace=_repl)
 def plot3d(*args, **kwargs):
     """
     Plots a 3D surface plot.
@@ -237,28 +242,6 @@ def plot3d(*args, **kwargs):
     Note: it is important to specify at least the ``range_x``, otherwise the
     function might create a rotated plot.
 
-    Refer to :func:`~spb.graphics.functions_3d.surface` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
-
     Examples
     ========
 
@@ -268,19 +251,23 @@ def plot3d(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi, exp
-       >>> from spb import plot3d
+       >>> from spb import plot3d, multiples_of_pi_over_2
        >>> x, y = symbols('x y')
 
-    Single plot with Matplotlib:
+    Single plot with Matplotlib, with ticks formatted as multiples of `pi/2`.
 
     .. plot::
        :context: close-figs
        :format: doctest
        :include-source: True
 
-       >>> plot3d(cos((x**2 + y**2)), (x, -3, 3), (y, -3, 3))
+       >>> plot3d(
+       ...     cos((x**2 + y**2)), (x, -pi, pi), (y, -pi, pi),
+       ...     x_ticks_formatter=multiples_of_pi_over_2(),
+       ...     y_ticks_formatter=multiples_of_pi_over_2(),
+       ... )
        Plot object containing:
-       [0]: cartesian surface: cos(x**2 + y**2) for x over (-3.0, 3.0) and y over (-3.0, 3.0)
+       [0]: cartesian surface: cos(x**2 + y**2) for x over (-pi, pi) and y over (-pi, pi)
 
 
     Single plot with Plotly, illustrating how to apply:
@@ -315,8 +302,8 @@ def plot3d(*args, **kwargs):
 
        >>> plot3d(x*y, -x*y, (x, -5, 5), (y, -5, 5), use_cm=True)
        Plot object containing:
-       [0]: cartesian surface: x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
-       [1]: cartesian surface: -x*y for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x*y for x over (-5, 5) and y over (-5, 5)
+       [1]: cartesian surface: -x*y for x over (-5, 5) and y over (-5, 5)
 
     Multiple plots with different ranges and solid colors.
 
@@ -329,8 +316,8 @@ def plot3d(*args, **kwargs):
        >>> plot3d((f, (x, -3, 3), (y, -3, 3)),
        ...     (-f, (x, -5, 5), (y, -5, 5)))
        Plot object containing:
-       [0]: cartesian surface: x**2 + y**2 for x over (-3.0, 3.0) and y over (-3.0, 3.0)
-       [1]: cartesian surface: -x**2 - y**2 for x over (-5.0, 5.0) and y over (-5.0, 5.0)
+       [0]: cartesian surface: x**2 + y**2 for x over (-3, 3) and y over (-3, 3)
+       [1]: cartesian surface: -x**2 - y**2 for x over (-5, 5) and y over (-5, 5)
 
     Single plot with a polar discretization, a color function mapping a
     colormap to the radius. Note that the same result can be achieved with
@@ -396,9 +383,11 @@ def plot3d(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list, plot_contour
 
     """
+    kwargs["plot_function"] = True
     return _plot3d_plot_contour_helper(True, *args, **kwargs)
 
 
+@modify_plot_functions_doc(ParametricSurfaceSeries, replace=_repl)
 def plot3d_parametric_surface(*args, **kwargs):
     """
     Plots a 3D parametric surface plot.
@@ -432,28 +421,6 @@ def plot3d_parametric_surface(*args, **kwargs):
 
     Note: it is important to specify both the ranges.
 
-    Refer to :func:`~spb.graphics.functions_3d.surface_parametric` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
-    Parameters
-    ==========
-
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
-
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
-
     Examples
     ========
 
@@ -478,7 +445,7 @@ def plot3d_parametric_surface(*args, **kwargs):
        ...     (u, 0, pi), (v, 0, 2*pi),
        ...     use_cm=False, title="Sinusoidal Cone")
        Plot object containing:
-       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0.0, 3.141592653589793) and v over (0.0, 6.283185307179586)
+       [0]: parametric cartesian surface: (u*cos(v), u*sin(v), u*cos(4*v)/2) for u over (0, pi) and v over (0, 2*pi)
 
     Customize the appearance of the surface by changing the colormap. Apply a
     color function mapping the `v` values. Activate the wireframe to better
@@ -500,7 +467,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
            backend=KB,
            use_cm=True, color_func=lambda u, v: u,
-           title=r"Möbius \, strip",
+           title="Möbius \\, strip",
            wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004})
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
@@ -568,7 +535,7 @@ def plot3d_parametric_surface(*args, **kwargs):
                up: (1, 0, 2),
                vp: (2, 0, 2),
            },
-           title=r"Catenoid \, to \, Right \, Helicoid \, Transformation")
+           title="Catenoid \\, to \\, Right \\, Helicoid \\, Transformation")
 
     Interactive-widget plot. Refer to the interactive sub-module documentation
     to learn more about the ``params`` dictionary. Note that the plot's
@@ -590,7 +557,7 @@ def plot3d_parametric_surface(*args, **kwargs):
            },
            backend=KB,
            use_cm=True,
-           title=r"Plücker's \, conoid",
+           title="Plücker's \\, conoid",
            wireframe=True,
            wf_rendering_kw={"width": 0.004},
            wf_n1=75, wf_n2=6, imodule="panel"
@@ -603,6 +570,7 @@ def plot3d_parametric_surface(*args, **kwargs):
     plot3d_revolution, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     args = _plot_sympify(args)
     plot_expr = _check_arguments(args, 3, 2, **kwargs)
     global_labels = kwargs.pop("label", [])
@@ -621,6 +589,12 @@ def plot3d_parametric_surface(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(
+    ParametricSurfaceSeries,
+    replace=_repl,
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"],
+    priority=["r", "range_theta", "range_phi"]
+)
 def plot3d_spherical(*args, **kwargs):
     """
     Plots a radius as a function of the spherical coordinates theta and phi.
@@ -651,27 +625,26 @@ def plot3d_spherical(*args, **kwargs):
 
     Note: it is important to specify both the ranges.
 
-    Refer to :func:`~spb.graphics.functions_3d.surface_spherical` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
-
     Parameters
     ==========
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
+    r : Expr or callable
+        Expression representing the radius. It can be a:
 
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
+        * Symbolic expression.
+        * Numerical function of two variable, f(theta, phi), supporting
+          vectorization. In this case the following keyword arguments are
+          not supported: ``params``.
+    range_theta : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the polar angle,
+        which is limited in [0, pi]. Consider a sphere:
+
+        * ``theta=0`` indicates the north pole.
+        * ``theta=pi/2`` indicates the equator.
+        * ``theta=pi`` indicates the south pole.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle,
+        which is limited in [0, 2*pi].
 
     Examples
     ========
@@ -694,7 +667,7 @@ def plot3d_spherical(*args, **kwargs):
 
        >>> plot3d_spherical(1, (theta, 0, 0.7 * pi), (phi, 0, 1.8 * pi))
        Plot object containing:
-       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0.0, 2.199114857512855) and phi over (0.0, 5.654866776461628)
+       [0]: parametric cartesian surface: (sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta)) for theta over (0, 0.7*pi) and phi over (0, 1.8*pi)
 
     Plot real spherical harmonics, highlighting the regions in which the
     real part is positive and negative, using Plotly:
@@ -761,6 +734,7 @@ def plot3d_spherical(*args, **kwargs):
     plot_expr = _check_arguments(args, 1, 2, **kwargs)
     global_labels = kwargs.pop("label", [])
     global_rendering_kw = kwargs.pop("rendering_kw", None)
+    kwargs["plot_function"] = True
     surfaces = []
     indeces = []
 
@@ -774,6 +748,7 @@ def plot3d_spherical(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(Implicit3DSeries, replace=_repl)
 def plot3d_implicit(*args, **kwargs):
     """
     Plots an isosurface of a function.
@@ -804,13 +779,6 @@ def plot3d_implicit(*args, **kwargs):
             (expr1, range_x1, range_y1, range_z1, rendering_kw1 [opt]),
             (expr2, range_x2, range_y2, range_z2, rendering_kw2 [opt]),
             **kwargs)`
-
-    Refer to :func:`~spb.graphics.functions_3d.implicit_3d` for a full
-    list of keyword arguments to customize the appearances of surfaces.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Notes
     =====
@@ -864,6 +832,7 @@ def plot3d_implicit(*args, **kwargs):
     plot3d_spherical, plot3d_revolution, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     if kwargs.pop("params", None) is not None:
         raise NotImplementedError(
             "plot3d_implicit doesn't support interactive widgets.")
@@ -885,11 +854,20 @@ def plot3d_implicit(*args, **kwargs):
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(
+    ParametricSurfaceSeries,
+    replace=_repl,
+    exclude=["expr_x", "expr_y", "expr_z", "range_u", "range_v"],
+    priority=[
+        "curve", "range_t", "range_phi", "axis", "parallel_axis", "show_curve"
+    ]
+)
 def plot3d_revolution(
     curve, range_t, range_phi=None, axis=(0, 0),
     parallel_axis="z", show_curve=False, curve_kw={}, **kwargs
 ):
-    """Generate a surface of revolution by rotating a curve around an axis of
+    """
+    Generate a surface of revolution by rotating a curve around an axis of
     rotation.
 
     Refer to :func:`~spb.graphics.functions_3d.surface_revolution` for a full
@@ -902,17 +880,40 @@ def plot3d_revolution(
     Parameters
     ==========
 
-    label : str or list/tuple, optional
-        The label to be shown in the legend. If not provided, the string
-        representation of expr will be used. The number of labels must be
-        equal to the number of expressions.
+    curve : Expr, list ortuple of 2 or 3 elements
+        The curve to be revolved, which can be either:
 
-    rendering_kw : dict or list of dicts, optional
-        A dictionary of keywords/values which is passed to the backend's
-        function to customize the appearance of lines. Refer to the plotting
-        library (backend) manual for more informations. If a list of
-        dictionaries is provided, the number of dictionaries must be equal
-        to the number of expressions.
+        * a symbolic expression
+        * a 2-tuple representing a parametric curve in 2D space
+        * a 3-tuple representing a parametric curve in 3D space
+    range_t : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the parameter of
+        the curve.
+    range_phi : tuple
+        A 3-tuple (symbol, min, max) denoting the range of the azimuthal angle
+        where the curve will be revolved. Default to ``(phi, 0, 2*pi)``.
+    axis : tuple
+        A 2-tuple (coord1, coord2) that specifies the position of the rotation
+        axis. Depending on the value of ``parallel_axis``:
+
+        * ``"x"``: the rotation axis intersects the YZ plane at
+          (coord1, coord2).
+        * ``"y"``: the rotation axis intersects the XZ plane at
+          (coord1, coord2).
+        * ``"z"``: the rotation axis intersects the XY plane at
+          (coord1, coord2).
+
+        Default to ``(0, 0)``.
+    parallel_axis : str
+        Specify the axis parallel to the axis of rotation. Must be one of the
+        following options: "x", "y" or "z". Default to "z".
+    show_curve : bool
+        Add the initial curve to the plot. Default to False.
+    curve_kw : dict
+        A dictionary of options that will be passed to
+        ``plot3d_parametric_line`` if ``show_curve=True`` in order to customize
+        the appearance of the initial curve. Refer to its documentation for
+        more information.
 
     Examples
     ========
@@ -939,7 +940,7 @@ def plot3d_revolution(
        ...     use_cm=True, color_func=lambda t, phi: phi,
        ...     rendering_kw={"alpha": 0.6, "cmap": "twilight"},
        ...     # indicates the azimuthal angle on the colorbar label
-       ...     label=r"$\phi$ [rad]",
+       ...     label="$\\phi$ [rad]",
        ...     show_curve=True,
        ...     # this dictionary will be passes to plot3d_parametric_line in
        ...     # order to draw the initial curve
@@ -1026,6 +1027,7 @@ def plot3d_revolution(
     plot3d_spherical, plot3d_implicit, plot3d_list
 
     """
+    kwargs["plot_function"] = True
     surfaces = surface_revolution(
         curve, range_t, range_phi,
         axis=axis, parallel_axis=parallel_axis, show_curve=show_curve,
@@ -1033,8 +1035,10 @@ def plot3d_revolution(
     return graphics(*surfaces, **kwargs)
 
 
+@modify_plot_functions_doc(List3DSeries, replace=_repl)
 def plot3d_list(*args, **kwargs):
-    """Plots lists of coordinates (ie, lists of numbers) in 3D space.
+    """
+    Plots lists of coordinates (ie, lists of numbers) in 3D space.
 
     Typical usage examples are in the followings:
 
@@ -1053,13 +1057,6 @@ def plot3d_list(*args, **kwargs):
             (x1, y1, z1, label1 [opt], rendering_kw1 [opt]),
             (x2, y2, z1, label2 [opt], rendering_kw2 [opt]),
             ..., **kwargs)
-
-    Refer to :func:`~spb.graphics.functions_3d.list_3d` for a full
-    list of keyword arguments to customize the appearances of lines.
-
-    Refer to :func:`~spb.graphics.graphics.graphics` for a full list of
-    keyword arguments to customize the appearances of the figure (title,
-    axis labels, ...).
 
     Examples
     ========
@@ -1131,6 +1128,7 @@ def plot3d_list(*args, **kwargs):
     plot3d_spherical, plot3d_revolution, plot3d_implicit
 
     """
+    kwargs["plot_function"] = True
     g_labels = kwargs.pop("label", [])
     g_rendering_kw = kwargs.pop("rendering_kw", None)
     series = []

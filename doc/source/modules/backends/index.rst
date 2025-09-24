@@ -1,18 +1,13 @@
 Backends
 --------
 
+Supported plotting libraries
+============================
 
-.. toctree::
-   :maxdepth: 1
-
-   plot.rst
-   matplotlib.rst
-   bokeh.rst
-   plotly.rst
-   k3d.rst
-
-This module allows the user to chose between 4 different backends.
-The use case is summarized in the following table.
+In the context of this plotting module, a backend represents the machinery
+that allows symbolic expressions to be visualized with a particular plotting
+library. 4 plotting libraries are supported. The use case is summarized in
+the following table.
 
 +------------------------+-----------+-------+--------+------+
 |                        | Matplolib | Bokeh | Plotly |  K3D |
@@ -56,16 +51,47 @@ In particular:
      approximates a contour plot.
 
 * K3D only supports 3D plots but, compared to Matplotlib, it offers amazing 3D
-  performance: we can increase significantly the number of discretization
-  points obtaining smoother plots. It can only be used with Jupyter Notebook,
-  whereas the other backends can also be used with IPython or a simple Python
-  interpreter. This backends use an aspect ratio of 1 on all axis: it doesn't
-  scale the visualization. What you see is the object as you would see it in
-  reality.
+  performance: the number of discretization points can be increased
+  significantly, thus obtaining smoother plots. It can only be used with
+  Jupyter Notebook, whereas the other backends can also be used with IPython
+  or a simple Python interpreter. This backends use an aspect ratio of 1 on
+  all axis: it doesn't scale the visualization. What you see is the object as
+  you would see it in reality.
 
-We can choose the appropriate backend for our use case at runtime by setting the keyword argument ``backend=`` in the function call. We can also
+The appropriate backend for a particular job can be selected at runtime by
+setting the keyword argument ``backend=`` in the function call. We can also
 set the default backends for 2D and 3D plots in a configuration file by using
 the :doc:`Defaults module <../defaults>` .
 
+Shuld we need to retrieve the actual figure from a backend we can use the
+``.fig`` attribute. Should we need to perform some other processing to the
+figure before showing it to the screen, we can use the ``hooks`` attribute.
+
 Please, read the documentation associated to each backend to find out more
 customization options.
+
+.. toctree::
+   :maxdepth: 1
+
+   matplotlib.rst
+   bokeh.rst
+   plotly.rst
+   k3d.rst
+   utils.rst
+
+
+About the Implementation
+========================
+
+Why different backends inheriting from the ``Plot`` class? Why not using
+something like `holoviews <https://holoviews.org/>`_, which allows to plot
+numerical data with different plotting libraries using a common interface?
+In short:
+
+* Holoviews only support Matplotlib, Bokeh, Plotly. This would make
+  impossible to add support for further libraries, such as K3D, ...
+* Not all needed features might be implemented on Holoviews. Think for example
+  to plotting a gradient-colored line. Matplotlib and Bokeh are able to
+  visualize it correctly, Plotly doesn't support this functionality. By not
+  using Holoviews, work-arounds can be implemented more easily.
+

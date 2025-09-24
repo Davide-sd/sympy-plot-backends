@@ -11,7 +11,7 @@ def _draw_geometry_helper(renderer, data):
     p, s = renderer.plot, renderer.series
     x, y = data
     lkw = dict(
-        name=s.get_label(p._use_latex), mode="lines",
+        name=s.get_label(p.use_latex), mode="lines",
         fill="toself", line_color=next(p._cl)
     )
     kw = p.merge({}, lkw, s.rendering_kw)

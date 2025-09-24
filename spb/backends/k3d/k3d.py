@@ -1,5 +1,7 @@
+import param
 import os
 from spb.defaults import cfg
+from spb.doc_utils.ipython import modify_parameterized_doc
 from spb.backends.base_backend import Plot
 from spb.backends.k3d.renderers import (
     Line3DRenderer, Vector3DRenderer,
@@ -12,68 +14,16 @@ from spb.series import (
     RiemannSphereSeries, Implicit3DSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    PlaneSeries, GeometrySeries, Arrow3DSeries
+    PlaneSeries, Geometry3DSeries, Arrow3DSeries
 )
 from spb.utils import get_environment
 from sympy.external import import_module
 import warnings
 
 
+@modify_parameterized_doc()
 class K3DBackend(Plot):
     """A backend for plotting SymPy's symbolic expressions using K3D-Jupyter.
-
-    Parameters
-    ==========
-
-    camera : list, optional
-        A list of 9 numbers, namely:
-
-        * ``x_cam, y_cam, z_cam``:  the position of the camera in the scene
-        * ``x_tar, y_tar, z_tar``: the position of the target of the camera
-        * ``x_up, y_up, z_up``: components of the up vector
-
-    rendering_kw : dict, optional
-        A dictionary of keywords/values which is passed to Matplotlib's plot
-        functions to customize the appearance of lines, surfaces, images,
-        contours, quivers, streamlines...
-        To learn more about customization:
-
-        * Default options for line plots:
-          ``dict(width=0.1, shader="mesh")``.
-          Set ``use_cm=False`` to switch to a solid color.
-
-        * Default options for quiver plots:
-          ``dict(scale = 1, pivot = "mid")``. The keys to this
-          dictionary are:
-
-          - ``scale``: a float number acting as a scale multiplier.
-          - ``pivot``: indicates the part of the arrow that is anchored to the
-            X, Y, Z grid. It can be ``"tail", "mid", "middle", "tip"``.
-          - ``color``: set a solid color by specifying an integer color, or
-            a colormap by specifying one of k3d's colormaps.
-            If this key is not provided, a default color or colormap is used,
-            depending on the value of ``use_cm``.
-
-          Set ``use_cm=False`` to switch to a default solid color.
-
-        * Default options for streamline plots:
-          ``dict( width=0.1, shader='mesh' )``.
-          Refer to k3d.line for more options.
-          Set ``use_cm=False`` to switch to a solid color.
-
-        * To customize surface plots, refers to:
-
-          - k3d.mesh function for 3D surface and parametric surface plots.
-          - k3d.marching_cubes function for 3D implicit plots.
-
-    show_label : boolean, optional
-        Show/hide labels of the expressions. Default to False (labels not
-        visible).
-
-    use_cm : boolean, optional
-        If True, apply a color map to the meshes/surface. If False, solid
-        colors will be used instead. Default to True.
-
 
     Notes
     =====
@@ -100,8 +50,6 @@ class K3DBackend(Plot):
     Plot, MatplotlibBackend, PlotlyBackend, BokehBackend, plot3d
     """
 
-    _library = "k3d"
-
     wireframe_color = 0x000000
     colormaps = []
     cyclic_colormaps = []
@@ -109,8 +57,6 @@ class K3DBackend(Plot):
 
     # quivers-pivot offsets
     _qp_offset = {"tail": 0, "mid": 0.5, "middle": 0.5, "tip": 1}
-
-    _allowed_keys = Plot._allowed_keys + ["show_label", "camera"]
 
     renderers_map = {
         Parametric3DLineSeries: Line3DRenderer,
@@ -125,9 +71,13 @@ class K3DBackend(Plot):
         SurfaceOver2DRangeSeries: SurfaceRenderer,
         ParametricSurfaceSeries: SurfaceRenderer,
         PlaneSeries: SurfaceRenderer,
-        GeometrySeries: GeometryRenderer,
+        Geometry3DSeries: GeometryRenderer,
         Arrow3DSeries: Arrow3DRenderer
     }
+
+    show_label = param.Boolean(default=False, doc="""
+        Show/hide labels of the expressions on the K3D-Jupyter's
+        user interface.""")
 
     def __init__(self, *args, **kwargs):
         self.np = import_module('numpy')
@@ -148,8 +98,9 @@ class K3DBackend(Plot):
             catch=(RuntimeError,))
         cm = self.matplotlib.cm
 
-        self.colorloop = cm.tab10.colors
-        self.colormaps = [
+        kwargs["_library"] = "k3d"
+        kwargs.setdefault("colorloop", cm.tab10.colors)
+        kwargs.setdefault("colormaps", [
             k3d.basic_color_maps.CoolWarm,
             k3d.matplotlib_color_maps.Plasma,
             k3d.matplotlib_color_maps.Winter,
@@ -157,24 +108,25 @@ class K3DBackend(Plot):
             k3d.paraview_color_maps.Haze,
             k3d.matplotlib_color_maps.Summer,
             k3d.paraview_color_maps.Blue_to_Yellow,
-        ]
-        self.cyclic_colormaps = [
-            cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H]
+        ])
+        kwargs.setdefault("cyclic_colormaps", [
+            cc.colorwheel, k3d.paraview_color_maps.Erdc_iceFire_H])
 
-        self._init_cyclers()
+        kwargs.setdefault("use_latex", cfg["k3d"]["use_latex"])
+        kwargs.setdefault("grid", cfg["k3d"]["grid"])
+
         super().__init__(*args, **kwargs)
         if (not self.skip_notebook_check) and (get_environment() != 0):
             warnings.warn(
                 "K3DBackend only works properly within Jupyter Notebook")
-        self._use_latex = kwargs.get("use_latex", cfg["k3d"]["use_latex"])
+
         self._set_labels("%s")
         self._set_title("%s")
+        self._init_cyclers()
 
-        self._show_label = kwargs.get("show_label", False)
         self._bounds = []
         self._clipping = []
         self._title_handle = None
-        self.grid = kwargs.get("grid", cfg["k3d"]["grid"])
 
         kw = dict(
             grid_visible=self.grid,
@@ -189,16 +141,21 @@ class K3DBackend(Plot):
         if cfg["k3d"]["camera_mode"]:
             kw["camera_mode"] = cfg["k3d"]["camera_mode"]
 
-        self._use_existing_figure = kwargs.get("fig", False)
-        if self._use_existing_figure:
-            self._fig = kwargs["fig"]
-            self._use_existing_figure = True
-        else:
+        self._use_existing_figure = "fig" in kwargs
+        if not self._use_existing_figure:
             self._fig = k3d.plot(**kw)
+
         if (self.xscale == "log") or (self.yscale == "log"):
             warnings.warn(
-                "K3D-Jupyter doesn't support log scales. We will "
-                + "continue with linear scales."
+                "K3D-Jupyter doesn't support log scales. Linear scales"
+                " will be used instead.",
+                stacklevel=1
+            )
+
+        if self.x_ticks_formatter or self.y_ticks_formatter:
+            warnings.warn(
+                "K3D-Jupyter doesn't support tick formatting",
+                stacklevel=1
             )
 
         self._create_renderers()
@@ -214,7 +171,7 @@ class K3DBackend(Plot):
             )
         ):
             # if the backend was created without showing it
-            self._process_renderers()
+            self.draw()
         return self._fig
 
     def draw(self):
@@ -224,14 +181,13 @@ class K3DBackend(Plot):
         # this is necessary in order for the series to be added even if
         # show=False
         self._process_renderers()
-
-    # process_series = draw
+        self._execute_hooks()
 
     @staticmethod
     def _do_sum_kwargs(p1, p2):
         kw = p1._copy_kwargs()
-        sl1 = False if not hasattr(p1, "_show_label") else p1._show_label
-        sl2 = False if not hasattr(p2, "_show_label") else p2._show_label
+        sl1 = False if not hasattr(p1, "show_label") else p1.show_label
+        sl2 = False if not hasattr(p2, "show_label") else p2.show_label
         kw["show_label"] = sl1 or sl2
         return kw
 
@@ -367,7 +323,8 @@ class K3DBackend(Plot):
             self._bounds.append([mx, Mx, my, My, self.zlim[0], self.zlim[1]])
 
     def update_interactive(self, params):
-        """Implement the logic to update the data generated by
+        """
+        Implement the logic to update the data generated by
         interactive-widget plots.
 
         Parameters
@@ -384,13 +341,16 @@ class K3DBackend(Plot):
             self.draw()
 
         for r in self.renderers:
-            if r.series.is_interactive:
+            if (
+                r.series.is_interactive
+                or hasattr(r.series, "_interactive_app_controls")
+            ):
                 r.update(params)
 
         self._set_axes_texts()
         self._new_camera_position()
         self._add_clipping_planes()
-        # self._fig.auto_rendering = True
+        self._execute_hooks()
 
     def _new_camera_position(self):
         if self.camera is None:
@@ -415,7 +375,7 @@ class K3DBackend(Plot):
     def show(self):
         """Visualize the plot on the screen."""
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
-            self._process_renderers()
+            self.draw()
         self._fig.display()
 
     def _add_clipping_planes(self):
@@ -439,7 +399,8 @@ class K3DBackend(Plot):
             self._fig.clipping_planes = clipping_planes
 
     def save(self, path, **kwargs):
-        """Export the plot to a static picture or to an interactive html file.
+        """
+        Export the plot to a static picture or to an interactive html file.
 
         Notes
         =====

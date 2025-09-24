@@ -4,14 +4,22 @@ Implements interactive-widgets plotting with Holoviz Panel using
 """
 
 from spb.defaults import TWO_D_B, THREE_D_B, cfg
-from spb.utils import _validate_kwargs
+from spb.doc_utils.docstrings import _PARAMS
+from spb.doc_utils.ipython import (
+    modify_parameterized_doc,
+    modify_graphics_series_doc
+)
+from spb.utils import _check_misspelled_kwargs
 from spb.interactive import _tuple_to_dict, IPlot
 from spb.interactive.bootstrap_spb import SymPyBootstrapTemplate
 from spb.plotgrid import PlotGrid
+from spb.series import ComplexDomainColoringSeries, Parametric3DLineSeries
 from spb.utils import _aggregate_parameters
 from sympy import latex
 from sympy.external import import_module
 import warnings
+from collections import defaultdict
+
 
 param = import_module(
     'param',
@@ -73,7 +81,18 @@ class DynamicParam(param.Parameterized):
             delattr(type(self), p)
 
         # this must be present in order to assure correct behaviour
-        super().__init__(name="", **kwargs)
+        super().__init__(**kwargs)
+
+        if current_param.owner is not None:
+            t = type(current_param)
+            current_param = t(**{
+                k: getattr(current_param, k) for k in dir(current_param)
+                if (k[0] != "_") and (k not in [
+                    "name", "watchers", "rx", "crop_to_bounds", "serialize",
+                    "deserialize", "get_soft_bounds", "owner", "schema",
+                    "set_in_bounds", "time_dependent", "time_fn",
+                    "compute_default", "get_range", "names", ])
+            })
 
         self.param.add_parameter("dyn_param_0", current_param)
 
@@ -81,13 +100,6 @@ class DynamicParam(param.Parameterized):
 class PanelCommon(IPlot):
     """Common code for interactive applications with Holoviz Panel.
     """
-
-    @property
-    def pane_kw(self):
-        """Return the keyword arguments used to customize the wrapper to the
-        plot.
-        """
-        return self._pane_kw
 
     def _init_pane(self):
         """Here we wrap the figure exposed by the backend with a Pane, which
@@ -98,13 +110,13 @@ class PanelCommon(IPlot):
         from spb import KB, MB, BB, PB
 
         default_kw = {}
-        if isinstance(self._backend, PB):
+        if isinstance(self.backend, PB):
             pane_func = pn.pane.Plotly
         elif (
-            isinstance(self._backend, MB) or        # vanilla MB
+            isinstance(self.backend, MB) or        # vanilla MB
             (
-                hasattr(self._backend, "is_matplotlib_fig") and
-                self._backend.is_matplotlib_fig     # plotgrid with all MBs
+                hasattr(self.backend, "is_matplotlib_fig") and
+                self.backend.is_matplotlib_fig     # plotgrid with all MBs
             )
         ):
             # since we are using Jupyter and interactivity, it is useful to
@@ -115,9 +127,9 @@ class PanelCommon(IPlot):
             # example outputs to become visible on Sphinx.
             default_kw["interactive"] = False
             pane_func = pn.pane.Matplotlib
-        elif isinstance(self._backend, BB):
+        elif isinstance(self.backend, BB):
             pane_func = pn.pane.Bokeh
-        elif isinstance(self._backend, KB):
+        elif isinstance(self.backend, KB):
             # TODO: for some reason, panel is going to set width=0
             # if K3D-Jupyter is used.
             # Temporary workaround: create a Pane with a default width.
@@ -131,7 +143,7 @@ class PanelCommon(IPlot):
             # but not with plotgrids of MB
             self._init_pane_for_plotgrid()
             return
-        kw = self.merge({}, default_kw, self._pane_kw)
+        kw = self.merge({}, default_kw, self.pane_kw)
         self.pane = pane_func(self._binding, **kw)
 
     @property
@@ -142,16 +154,16 @@ class PanelCommon(IPlot):
     def show(self):
         self._init_pane()
 
-        if not self._servable:
-            if self._layout == "tb":
+        if not self.servable:
+            if self.layout == "tb":
                 content = pn.Column(self.layout_controls, self.pane)
-            elif self._layout == "bb":
+            elif self.layout == "bb":
                 content = pn.Column(self.pane, self.layout_controls)
-            elif self._layout == "sbl":
+            elif self.layout == "sbl":
                 content = pn.Row(
                     pn.Column(self.layout_controls),
                     pn.Column(self.pane), width_policy="max")
-            elif self._layout == "sbr":
+            elif self.layout == "sbr":
                 content = pn.Row(
                     pn.Column(self.pane),
                     pn.Column(self.layout_controls))
@@ -179,26 +191,26 @@ class PanelCommon(IPlot):
         theme = submodule.DarkTheme
         if cfg["interactive"]["theme"] != "dark":
             theme = submodule.DefaultTheme
-        default_template_kw = dict(title=self._name, theme=theme)
+        default_template_kw = dict(title=self.name, theme=theme)
 
-        if (self._template is None) or isinstance(self._template, dict):
-            kw = self._template if isinstance(self._template, dict) else {}
+        if (self.template is None) or isinstance(self.template, dict):
+            kw = self.template if isinstance(self.template, dict) else {}
             kw = self.merge(default_template_kw, kw)
-            kw["sidebar_location"] = self._layout
-            if len(self._name.strip()) == 0:
+            kw["sidebar_location"] = self.layout
+            if len(self.name.strip()) == 0:
                 kw.setdefault("show_header", False)
             template = SymPyBootstrapTemplate(**kw)
-        elif isinstance(self._template, pn.template.base.BasicTemplate):
-            template = self._template
-        elif (isinstance(self._template, type) and
-            issubclass(self._template, pn.template.base.BasicTemplate)):
-            template = self._template(**default_template_kw)
+        elif isinstance(self.template, pn.template.base.BasicTemplate):
+            template = self.template
+        elif (isinstance(self.template, type) and
+            issubclass(self.template, pn.template.base.BasicTemplate)):
+            template = self.template(**default_template_kw)
         else:
             raise TypeError("`template` not recognized. It can either be a "
                 "dictionary of keyword arguments to be passed to the default "
                 "template, an instance of pn.template.base.BasicTemplate "
                 "or a subclass of pn.template.base.BasicTemplate. Received: "
-                "type(template) = %s" % type(self._template))
+                "type(template) = %s" % type(self.template))
 
         self._populate_template(template)
 
@@ -207,229 +219,9 @@ class PanelCommon(IPlot):
         return template
 
 
+@modify_parameterized_doc()
 class InteractivePlot(PanelCommon):
-
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
-
-    def __init__(self, *series, name="", params=None, **kwargs):
-        """
-        Parameters
-        ==========
-            args : tuple
-                The usual plot arguments
-            name : str
-                Name of the interactive application
-            params : dict
-                In the keys there will be the symbols, in the values there
-                will be parameters to create the slider associated to
-                a symbol.
-            kwargs : dict
-                Usual keyword arguments to be used by the backends and series.
-        """
-        original_kwargs = kwargs.copy()
-        mergedeep = import_module('mergedeep')
-        self.merge = mergedeep.merge
-
-        layout = kwargs.pop("layout", "tb").lower()
-        available_layouts = ["tb", "bb", "sbl", "sbr"]
-        if layout not in available_layouts:
-            warnings.warn(
-                "`layout` must be one of the following: %s\n"
-                "Falling back to layout='tb'." % available_layouts
-            )
-            layout = "tb"
-        self._layout = layout
-        self._ncols = kwargs.pop("ncols", 2)
-        self._throttled = kwargs.pop("throttled", cfg["interactive"]["throttled"])
-        self._servable = kwargs.pop("servable", cfg["interactive"]["servable"])
-        self._use_latex = kwargs.pop("use_latex", cfg["interactive"]["use_latex"])
-        self._pane_kw = kwargs.pop("pane_kw", dict())
-        self._custom_css = kwargs.pop("custom_css", "")
-        self._template = kwargs.pop("template", None)
-        self._name = name
-
-        params = _aggregate_parameters(params, series)
-        self._original_params = params
-
-        # The following dictionary will be used to create the appropriate
-        # lambda function arguments:
-        #    key: the provided symbol
-        #    val: widget
-        self.mapping = create_widgets(params, self._use_latex)
-
-        plotgrid = kwargs.get("plotgrid", None)
-        if plotgrid:
-            self._backend = plotgrid
-            self._binding = pn.bind(self._update, *self._widgets_for_binding())
-        else:
-            # assure that each series has the correct values associated
-            # to parameters
-            series = list(series)
-            for s in series:
-                if s.is_interactive:
-                    s.params = self.read_parameters()
-
-            is_3D = all([s.is_3D for s in series])
-            Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "panel"
-            self._backend = Backend(*series, **kwargs)
-            _validate_kwargs(self._backend, **original_kwargs)
-
-            from spb import PB
-            if Backend is PB:
-                self._binding = pn.bind(
-                    self._update_plotly, *self._widgets_for_binding())
-            else:
-                self._binding = pn.bind(
-                    self._update, *self._widgets_for_binding())
-
-    def _widgets_for_binding(self):
-        """Select the appropriate things to return for the `pn.bind` function.
-        """
-        widgets = list(self.mapping.values())
-        if self._throttled:
-            def is_panel_slider(t):
-                if not isinstance(t, pn.widgets.base.Widget):
-                    return False
-                if "Slider" in type(t).__name__:
-                    return True
-                return False
-            widgets = [
-                w if not is_panel_slider(w) else w.param.value_throttled
-                for w in widgets
-            ]
-        return widgets
-
-    def read_parameters(self):
-        return {symb: widget.value for symb, widget in self.mapping.items()}
-
-    def _update(self, *values):
-        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
-        self.backend.update_interactive(d)
-        return self.fig
-
-    def _update_plotly(self, *values):
-        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
-        self.backend.update_interactive(d)
-        # NOTE: while pn.pane.Plotly can receive an instance of go.Figure,
-        # the update will be extremely slow, because after each trace
-        # is updated with new data, it will trigger an update event on the
-        # javascript side. Instead, by providing the following dictionary,
-        # first the traces are updated, then the pane creates the figure
-        # (with only one single javascript update).
-        # TODO: can the backend be modified by adding data and layout
-        # attributes, avoiding the creation of the figure? The figure could
-        # be created inside the fig getter.
-        return self.fig.to_dict()
-
-    def _get_iplot_kw(self):
-        return {
-            "backend": type(self._backend),
-            "layout": self._layout,
-            "template": self._template,
-            "ncols": self._ncols,
-            "throttled": self._throttled,
-            "use_latex": self._use_latex,
-            "params": self._original_params,
-            "pane_kw": self._pane_kw
-        }
-
-    def _init_pane_for_plotgrid(self):
-        # First, set the necessary data to create bindings for each subplot
-        self._backend.pre_set_bindings(
-            list(self.mapping.keys()),
-            self._widgets_for_binding()
-        )
-        # Then, create the pn.GridSpec figure
-        self.pane = self._backend.fig
-
-    def _populate_template(self, template):
-        template.main.append(self.pane)
-        template.sidebar.append(self.layout_controls)
-
-    @property
-    def layout_controls(self):
-        widgets = list(self.mapping.values())
-        return pn.GridBox(*widgets, ncols=self._ncols)
-
-
-def iplot(*series, show=True, **kwargs):
-    """Create an interactive application containing widgets and charts in order
-    to study symbolic expressions, using Holoviz's Panel for the user interace.
-
-    This function is already integrated with many of the usual
-    plotting functions: since their documentation is more specific, it is
-    highly recommended to use those instead.
-
-    However, the following documentation explains in details the main features
-    exposed by the interactive module, which might not be included on the
-    documentation of those other functions.
-
-    Parameters
-    ==========
-
-    series : BaseSeries
-        Instances of :py:class:`spb.series.BaseSeries`, representing the
-        symbolic expression to be plotted.
-
-    params : dict
-        A dictionary mapping the symbols to a parameter. The parameter can be:
-
-        1. An instance of :py:class:`panel.widgets.base.Widget`, something like
-           :py:class:`panel.widgets.FloatSlider`.
-        2. An instance of :py:class:`param.parameterized.Parameter`.
-        3. A tuple with the form:
-           `(default, min, max, N, tick_format, label, spacing)`,
-           which will instantiate a :py:class:`panel.widgets.FloatSlider` or
-           a :py:class:`panel.widgets.DiscreteSlider`, depending on the
-           spacing strategy. In particular:
-
-           - default, min, max : float
-                Default value, minimum value and maximum value of the slider,
-                respectively. Must be finite numbers. The order of these 3
-                numbers is not important: the module will figure it out
-                which is what.
-           - N : int, optional
-                Number of steps of the slider.
-           - tick_format : TickFormatter or None, optional
-                Provide a formatter for the tick value of the slider. If None,
-                `panel` will automatically apply a default formatter.
-                Alternatively, an instance of
-                :py:class:`bokeh.models.formatters.TickFormatter` can be used.
-                Default to None.
-           - label: str, optional
-                Custom text associated to the slider.
-           - spacing : str, optional
-                Specify the discretization spacing. Default to ``"linear"``,
-                can be changed to ``"log"``.
-
-        Note that the parameters cannot be linked together (ie, one parameter
-        cannot depend on another one).
-
-    layout : str, optional
-        The layout for the controls/plot. Possible values:
-
-        - ``'tb'``: controls in the top bar.
-        - ``'bb'``: controls in the bottom bar.
-        - ``'sbl'``: controls in the left side bar.
-        - ``'sbr'``: controls in the right side bar.
-
-        If ``servable=False`` (plot shown inside Jupyter Notebook), then
-        the default value is ``'tb'``. If ``servable=True`` (plot shown on a
-        new browser window) then the default value is ``'sbl'``.
-        Note that side bar layouts may not work well with some backends.
-
-    ncols : int, optional
-        Number of columns to lay out the widgets. Default to 2.
-
-    name : str, optional
-        The name to be shown on top of the interactive application, when
-        served on a new browser window. Refer to ``servable`` to learn more.
-        Default to an empty string.
-
-    pane_kw : dict, optional
+    pane_kw = param.Dict(default={}, doc="""
         A dictionary of keyword/values which is passed to the pane containing
         the chart in order to further customize the output (read the Notes
         section to understand how the interactive plot is built).
@@ -446,20 +238,12 @@ def iplot(*series, show=True, **kwargs):
 
         * If Bokeh is used, the figure is wrapped by
           :py:class:`panel.pane.plot.Bokeh`.
-
-    servable : bool, optional
-        Default to False, which will show the interactive application on the
-        output cell of a Jupyter Notebook. If True, the application will be
-        served on a new browser window.
-
-    show : bool, optional
-        Default to True.
-        If True, it will return an object that will be rendered on the
-        output cell of a Jupyter Notebook. If False, it returns an instance
-        of ``InteractivePlot``, which can later be be shown by calling the
-        ``show()`` method.
-
-    template : optional
+        """)
+    name = param.String(default="", doc="""
+        The name to be shown on top of the interactive application, when
+        served on a new browser window. Refer to ``servable`` to learn more.
+        """)
+    template = param.Parameter(default=None, doc="""
         Specify the template to be used to build the interactive application
         when ``servable=True``. It can be one of the following options:
 
@@ -477,7 +261,226 @@ def iplot(*series, show=True, **kwargs):
 
         * an instance of :py:class:`panel.template.base.BasicTemplate`.
         * a subclass of :py:class:`panel.template.base.BasicTemplate`.
+        """)
+    throttled = param.Boolean(default=False, doc="""
+        If True, the recompute will be done at mouse-up event on sliders.
+        If False, every slider tick will force a recompute.""")
+    servable = param.Boolean(default=False, doc="""
+        If False, shows the interactive application on the output cell of
+        a Jupyter Notebook. If True, the application will be served on a new
+        browser window.""")
 
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
+
+    def __init__(self, *series, name="", params=None, **kwargs):
+        mergedeep = import_module('mergedeep')
+        self.merge = mergedeep.merge
+
+        kwargs.setdefault("ncols", 2)
+        kwargs.setdefault("throttled", cfg["interactive"]["throttled"])
+        kwargs.setdefault("servable", cfg["interactive"]["servable"])
+
+        # remove keyword arguments that are not parameters of this backend
+        kwargs_for_init = {k: v for k, v in kwargs.items() if k in list(self.param)}
+
+        super().__init__(**kwargs_for_init)
+
+        params = _aggregate_parameters(params, series)
+        self._original_params = params
+
+        # The following dictionary will be used to create the appropriate
+        # lambda function arguments:
+        #    key: the provided symbol
+        #    val: widget
+        self.mapping = create_widgets(params, self.use_latex_on_widgets)
+        self._additional_widgets = {}
+
+        plotgrid = kwargs.get("plotgrid", None)
+        if plotgrid:
+            self.backend = plotgrid
+            self._binding = pn.bind(self._update, *self._widgets_for_binding())
+        else:
+            series = list(series)
+            param_values = self.read_parameters()
+            # in this dict: keys represents names of the data series
+            # whose ui controls need to be shown on the screen. The values
+            # are the instances of param.Parameter
+            additional_params = defaultdict(list)
+
+            for i, s in enumerate(series):
+                if (
+                    self.app
+                    and hasattr(s, "_interactive_app_controls")
+                    # do not "waste" precious screen space for
+                    # wireframe lines
+                    and not (
+                        isinstance(s, Parametric3DLineSeries)
+                        and s._is_wireframe_line
+                    )
+                ):
+                    name = f"{type(s).__name__}-{i}"
+                    for k in s._interactive_app_controls:
+                        additional_params[name].append(s.param[k])
+
+                if s.is_interactive:
+                    # assure that each series has the correct values associated
+                    # to parameters
+                    s.params = param_values
+
+            # convert the ui controls parameters to widgets by inserting
+            # them into a panel container
+            self._additional_widgets = {
+                k: pn.Card(*v, title=k, collapsed=True)
+                for k, v in additional_params.items()
+            }
+
+            is_3D = all([s.is_3D for s in series])
+            Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
+            kwargs["_imodule"] = self.imodule
+            self.backend = Backend(*series, **kwargs)
+
+            from spb import PB
+            if Backend is PB:
+                self._binding = pn.bind(
+                    self._update_plotly, *self._widgets_for_binding())
+            else:
+                self._binding = pn.bind(
+                    self._update, *self._widgets_for_binding())
+
+    def _widgets_for_binding(self):
+        """Select the appropriate things to return for the `pn.bind` function.
+        """
+        series_ui_widgets = []
+        # extract the ui controls of the data series
+        cards = list(self._additional_widgets.values())
+        for c in cards:
+            series_ui_widgets.extend(c.objects)
+
+        widgets = list(self.mapping.values()) + series_ui_widgets
+        if self.throttled:
+            def is_panel_slider(t):
+                if not isinstance(t, pn.widgets.base.Widget):
+                    return False
+                if "Slider" in type(t).__name__:
+                    return True
+                return False
+            widgets = [
+                w if not is_panel_slider(w) else w.param.value_throttled
+                for w in widgets
+            ]
+        return widgets
+
+    def read_parameters(self):
+        return {symb: widget.value for symb, widget in self.mapping.items()}
+
+    def _update_helper(self, *values):
+        # NOTE/TODO: for some unknown (to me) reason, this function receives
+        # updated values from all widgets (both parameters related to symbols,
+        # as well as data-series parameters). The problem is that data-series
+        # parameters are actually updated AFTER this function is executed.
+        # Unfortunately, I'm unable to recreate this problem on a toy-example
+        # in order to ask for help on forums, hence I have to implement this
+        # hack: update all data-series parameters with the values received
+        # from this function.
+
+        # update the values of the parameters on the data series
+        # c: number of processed values
+        c = len(self.mapping)
+        for name in self._additional_widgets:
+            idx = int(name.split("-")[1])
+            series = self.backend.series[idx]
+            n = len(series._interactive_app_controls)
+            keys = series._interactive_app_controls
+            d = {k: v for k, v in zip(keys, values[c:c+n])}
+            c += n
+            series.param.update(d)
+
+        d = {symb: v for symb, v in zip(list(self.mapping.keys()), values)}
+        self.backend.update_interactive(d)
+
+    def _update(self, *values):
+        self._update_helper(*values)
+        return self.fig
+
+    def _update_plotly(self, *values):
+        self._update_helper(*values)
+        # NOTE: while pn.pane.Plotly can receive an instance of go.Figure,
+        # the update will be extremely slow, because after each trace
+        # is updated with new data, it will trigger an update event on the
+        # javascript side. Instead, by providing the following dictionary,
+        # first the traces are updated, then the pane creates the figure
+        # (with only one single javascript update).
+        # TODO: can the backend be modified by adding data and layout
+        # attributes, avoiding the creation of the figure? The figure could
+        # be created inside the fig getter.
+        return self.fig.to_dict()
+
+    def _get_iplot_kw(self):
+        params = {}
+        # copy all parameters into the dictionary
+        for k in list(self.param):
+            params[k] = getattr(self, k)
+        return params
+
+    def _init_pane_for_plotgrid(self):
+        # First, set the necessary data to create bindings for each subplot
+        self.backend.pre_set_bindings(
+            list(self.mapping.keys()),
+            self._widgets_for_binding()
+        )
+        # Then, create the pn.GridSpec figure
+        self.pane = self.backend.fig
+
+    def _populate_template(self, template):
+        template.main.append(self.pane)
+        template.sidebar.append(self.layout_controls)
+
+    @property
+    def layout_controls(self):
+        widgets = list(self.mapping.values())
+        widgets += list(self._additional_widgets.values())
+        return pn.GridBox(*widgets, ncols=self.ncols)
+
+
+@modify_graphics_series_doc(InteractivePlot, replace={"params": _PARAMS})
+def iplot(*series, show=True, **kwargs):
+    """
+    Create an interactive application containing widgets and charts in order
+    to study symbolic expressions, using Holoviz's Panel for the user interace.
+
+    This function is already integrated with many of the usual
+    plotting functions: since their documentation is more specific, it is
+    highly recommended to use those instead.
+
+    However, the following documentation explains in details the main features
+    exposed by the interactive module, which might not be included on the
+    documentation of those other functions.
+
+    Parameters
+    ==========
+
+    series : BaseSeries
+        Instances of :py:class:`spb.series.BaseSeries`, representing the
+        symbolic expression to be plotted.
+    layout : str, optional
+        The layout for the controls/plot. Possible values:
+
+        - ``'tb'``: controls in the top bar.
+        - ``'bb'``: controls in the bottom bar.
+        - ``'sbl'``: controls in the left side bar.
+        - ``'sbr'``: controls in the right side bar.
+
+        If ``servable=False`` (plot shown inside Jupyter Notebook), then
+        the default value is ``'tb'``. If ``servable=True`` (plot shown on a
+        new browser window) then the default value is ``'sbl'``.
+        Note that side bar layouts may not work well with some backends.
+    show : bool, optional
+        Default to True.
+        If True, it will return an object that will be rendered on the
+        output cell of a Jupyter Notebook. If False, it returns an instance
+        of ``InteractivePlot``, which can later be be shown by calling the
+        ``show()`` method.
     title : str or tuple
         The title to be shown on top of the figure. To specify a parametric
         title, write a tuple of the form:``(title_str, param_symbol1, ...)``,
@@ -488,17 +491,6 @@ def iplot(*series, show=True, **kwargs):
         * ``param_symbol1, ...`` must be a symbol or a symbolic expression
           whose free symbols are contained in the ``params`` dictionary.
 
-    throttled : boolean, optional
-        Default to False. If True the recompute will be done at mouse-up event
-        on sliders. If False, every slider tick will force a recompute.
-
-    use_latex : bool, optional
-        Default to True.
-        If True, the latex representation of the symbols will be used in the
-        labels of the parameter-controls. If False, the string
-        representation will be used instead.
-
-
     See also
     ========
 
@@ -508,37 +500,40 @@ def iplot(*series, show=True, **kwargs):
     Notes
     =====
 
-    1. This function is specifically designed to work within Jupyter Notebook.
+    1. ``iplot`` is already integrated into plotting functions exposed
+       by this module. There is no need to call this function directly.
+
+    2. This function is specifically designed to work within Jupyter Notebook.
        It is also possible to use it from a regular Python console,
        by executing: ``iplot(..., servable=True)``, which will create a server
        process loading the interactive plot on the browser.
        However, :py:class:`spb.backends.k3d.K3DBackend` is not supported
        in this mode of operation.
 
-    2. The interactive application consists of two main containers:
+    3. The interactive application consists of two main containers:
 
        * a pane containing the widgets.
        * a pane containing the chart, which can be further customize
          by setting the ``pane_kw`` dictionary. Please, read its documentation
          to understand the available options.
 
-    3. Some examples use an instance of
+    4. Some examples use an instance of
        :py:class:`bokeh.models.PrintfTickFormatter` to format the
        value shown by a slider. This class is exposed by Bokeh, but can be
        used in interactive plots with any backend.
 
-    4. It has been observed that Dark Reader (or other night-mode-enabling
+    5. It has been observed that Dark Reader (or other night-mode-enabling
        browser extensions) might interfere with the correct behaviour of
        the output of  interactive plots. Please, consider adding ``localhost``
        to the exclusion list of such browser extensions.
 
-    5. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
+    6. :py:class:`spb.backends.matplotlib.MatplotlibBackend` can be used,
        but the resulting figure is just a PNG image without any interactive
        frame. Thus, data exploration is not great. Therefore, the use of
        :py:class:`spb.backends.plotly.PlotlyBackend` or
        :py:class:`spb.backends.bokeh.BokehBackend` is encouraged.
 
-    6. When ``BokehBackend`` is used:
+    7. When ``BokehBackend`` is used:
 
        * rendering of gradient lines is slow.
        * color bars might not update their ranges.
@@ -734,7 +729,7 @@ def iplot(*series, show=True, **kwargs):
     return i
 
 
-def create_widgets(params, use_latex=True, **kwargs):
+def create_widgets(params, use_latex_on_widgets=True, **kwargs):
     """ Create panel's widgets starting from parameters.
 
     Parameters
@@ -771,7 +766,7 @@ def create_widgets(params, use_latex=True, **kwargs):
         Note that the parameters cannot be linked together (ie, one parameter
         cannot depend on another one).
 
-    use_latex : bool, optional
+    use_latex_on_widgets : bool, optional
         Default to True.
         If True, the latex representation of the symbols will be used in the
         labels of the parameter-controls. If False, the string representation
@@ -820,8 +815,8 @@ def create_widgets(params, use_latex=True, **kwargs):
         if isinstance(v, (pn.widgets.base.Widget)):
             if hasattr(v, "name") and len(v.name) == 0:
                 # show the symbol if no label was set to the widget
-                wrapper = "$$%s$$" if use_latex else "%s"
-                func = latex if use_latex else str
+                wrapper = "$$%s$$" if use_latex_on_widgets else "%s"
+                func = latex if use_latex_on_widgets else str
                 v.name = wrapper % func(symb)
             results[symb] = v
         elif isinstance(v, param.parameterized.Parameter):
@@ -829,7 +824,7 @@ def create_widgets(params, use_latex=True, **kwargs):
             tmp_panel = pn.Param(dyn_param)
             results[symb] = tmp_panel.widget("dyn_param_0")
         elif isinstance(v, (list, tuple)):
-            d = _tuple_to_dict(symb, v, use_latex, "$$%s$$")
+            d = _tuple_to_dict(symb, v, use_latex_on_widgets, "$$%s$$")
             results[symb] = _dict_to_slider(d)
         else:
             raise TypeError(

@@ -46,7 +46,7 @@ def _draw_implicit2d_helper(renderer, data):
         c = p._ax.fill(x, y, **kw)
         proxy_artist = p.Rectangle(
             (0, 0), 1, 1,
-            color=kw["color"], label=s.get_label(p._use_latex)
+            color=kw["color"], label=s.get_label(p.use_latex)
         )
     else:
         # use contourf or contour depending on whether it is
@@ -60,7 +60,7 @@ def _draw_implicit2d_helper(renderer, data):
                 xarray, yarray, zarray, [0.0], **kw)
             proxy_artist = p.Line2D(
                 [], [],
-                color=color, label=s.get_label(p._use_latex)
+                color=color, label=s.get_label(p.use_latex)
             )
         else:
             colormap = p.ListedColormap(["#ffffff00", color])
@@ -72,7 +72,7 @@ def _draw_implicit2d_helper(renderer, data):
             c = p._ax.contourf(xarray, yarray, zarray, **kw)
             proxy_artist = p.Rectangle(
                 (0, 0), 1, 1,
-                color=color, label=s.get_label(p._use_latex)
+                color=color, label=s.get_label(p.use_latex)
             )
 
     if s.show_in_legend:

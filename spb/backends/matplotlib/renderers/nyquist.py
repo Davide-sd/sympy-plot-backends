@@ -133,7 +133,7 @@ def _draw_nyquist_helper(renderer, data):
         p, s.primary_style, primary_style, "primary_style", color)
     mirror_style = _create_line_style(
         p, s.mirror_style, mirror_style, "mirror_style", color)
-    primary_style[0]["label"] = s.get_label(p._use_latex)
+    primary_style[0]["label"] = s.get_label(p.use_latex)
 
     # Set the arrow style
     arrow_style = mpl.patches.ArrowStyle('simple', head_width=6, head_length=6)
@@ -158,7 +158,7 @@ def _draw_nyquist_helper(renderer, data):
     arrows_handles = []
     arrows1 = _draw_arrows_helper(
         ax, invisible_primary_line,
-        s.arrow_locs,
+        s._arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -181,7 +181,7 @@ def _draw_nyquist_helper(renderer, data):
         arrows2 = _draw_arrows_helper(
             ax,
             invisible_secondary_line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )
@@ -231,7 +231,7 @@ def _update_nyquist_helper(renderer, data, handles):
     arrows1 = _draw_arrows_helper(
         ax,
         invisible_primary_line,
-        s.arrow_locs,
+        s._arrow_locs,
         arrowstyle=arrow_style,
         dir=1
     )
@@ -246,7 +246,7 @@ def _update_nyquist_helper(renderer, data, handles):
         invisible_secondary_line.set_data(x_inv2, -y_inv2)
         arrows2 = _draw_arrows_helper(
             ax, invisible_secondary_line,
-            s.arrow_locs,
+            s._arrow_locs,
             arrowstyle=arrow_style,
             dir=-1
         )
