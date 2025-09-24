@@ -23,8 +23,7 @@ class Animation(BaseAnimation, IPlot):
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "ipywidgets"
+            kwargs["_imodule"] = "ipywidgets"
             self.backend = Backend(*series, **kwargs)
             self._post_init_plot(**kwargs)
 

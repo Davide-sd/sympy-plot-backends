@@ -141,7 +141,7 @@ class PlotlyBackend(Plot):
 
         if not self._use_existing_figure:
             if (
-                (self.is_iplot and (self.imodule == "ipywidgets"))
+                (self._imodule == "ipywidgets")
                 or self.update_event
             ):
                 self._fig = self.go.FigureWidget()
@@ -313,7 +313,7 @@ class PlotlyBackend(Plot):
         if len(self.renderers) > 0 and len(self.renderers[0].handles) == 0:
             self.draw()
 
-        if self.imodule == "ipywidgets":
+        if self._imodule == "ipywidgets":
             with self._fig.batch_update():
                 self._update_interactive_helper(params)
         else:

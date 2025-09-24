@@ -36,8 +36,7 @@ class Animation(BaseAnimation, PanelCommon):
         else:
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "panel"
+            kwargs["_imodule"] = "panel"
             self.backend = Backend(*series, **kwargs)
             self._post_init_plot(**kwargs)
 

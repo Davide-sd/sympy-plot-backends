@@ -338,8 +338,7 @@ class InteractivePlot(PanelCommon):
 
             is_3D = all([s.is_3D for s in series])
             Backend = kwargs.pop("backend", THREE_D_B if is_3D else TWO_D_B)
-            kwargs["is_iplot"] = True
-            kwargs["imodule"] = "panel"
+            kwargs["_imodule"] = self.imodule
             self.backend = Backend(*series, **kwargs)
 
             from spb import PB
@@ -835,28 +834,3 @@ def create_widgets(params, use_latex=True, **kwargs):
                 "of type %s" % (v, type(v))
             )
     return results
-
-
-class DomainColoring(param.Parameterized):
-
-    def __init__(self, expr, range_c, **params):
-        from spb import MB
-        s = ComplexDomainColoringSeries(expr, range_c, _is_interactive=True, **params)
-        params["is_iplot"] = True
-        params["show"] = False
-        self.plot = MB(s, **params)
-
-    def show(self):
-        import panel as pn
-
-        return pn.Row(
-            pn.Column(
-                self.plot[0].param.n1,
-                self.plot[0].param.n2,
-                self.plot[0].param.coloring,
-                self.plot[0].param.phaseres,
-                self.plot[0].param.phaseoffset,
-                self.plot[0].param.blevel,
-            ),
-            pn.pane.Matplotlib(self.plot.fig, interactive=False, dpi=96)
-        )

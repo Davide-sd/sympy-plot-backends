@@ -267,7 +267,7 @@ class graphics(PlotAttributes, param.ParameterizedFunction):
             # this enables animations
             "animation",
             # these enable interactive widgets plotting
-            "pane_kw", "ncols", "layout", "template", "servable",
+            "imodule", "pane_kw", "ncols", "layout", "template", "servable",
             "plot_function"
         ]
         # remove keyword arguments that are not parameters of this backend

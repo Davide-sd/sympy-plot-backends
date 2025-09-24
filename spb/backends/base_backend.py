@@ -262,12 +262,6 @@ class PlotAttributes(param.Parameterized):
         :py:class:`spb.backends.matplotlib.MatplotlibBackend`, the user can
         also retrieve the axes in which data was added with ``p.ax``.
         """)
-    # NOTE: The backend might need to create different types of figure
-    # depending on the interactive module being used.
-    imodule = param.Selector(
-        default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
-        Chose the interactive module to be used with parametric widgets
-        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.""")
     legend = param.Boolean(default=None, doc="""
         Toggle the visibility of the legend. If None, the backend will
         automatically determine if it is appropriate to show it.""")
@@ -441,12 +435,14 @@ class Plot(PlotAttributes):
         specified plotting library.""")
     _fig = param.Parameter(default=None, doc="""
         The figure in which symbolic expressions will be plotted into.""")
-    is_iplot = param.Boolean(False, constant=True, doc="""
+    _imodule = param.Parameter(default=False, constant=True, doc="""
+        Store the interactive module's name that will use this plot instance.
         NOTE: matplotlib is not designed to be interactive, therefore it
         needs a way to detect where its figure is going to be displayed.
         For regular plots, plt.figure can be used. For interactive-parametric
         plots with holoviz panel, matplotlib.figure.Figure must be used.
-        """)
+        Similarly, Plotly must use go.FigureWidgets with holoviz panel,
+        instead of the regular go.Figure.""")
     invert_x_axis = param.Boolean(doc="""
         Allow to invert x-axis if the range is given as (symbol, max, min)
         instead of (symbol, min, max).""")

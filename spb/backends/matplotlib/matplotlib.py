@@ -225,7 +225,7 @@ class MatplotlibBackend(Plot):
             self._fig = self._plotgrid_fig
             self._ax = self._plotgrid_ax
         else:
-            if self.is_iplot and (self.imodule == "panel"):
+            if self._imodule == "panel":
                 self._fig = self.matplotlib.figure.Figure(figsize=self.size)
             else:
                 self._fig = self.plt.figure(figsize=self.size)

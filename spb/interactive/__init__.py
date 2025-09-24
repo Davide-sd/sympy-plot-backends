@@ -110,12 +110,15 @@ def _tuple_to_dict(k, v, use_latex=False, latex_wrapper="$%s$"):
 
 
 def create_interactive_plot(*series, **kwargs):
-    """Select which interactive module to use.
     """
-    imodule = kwargs.pop("imodule", cfg["interactive"]["module"])
+    Select which interactive module to use.
+    """
+    # sanitize `imodule`
+    imodule = kwargs.get("imodule", cfg["interactive"]["module"])
     if imodule is None:
         imodule = cfg["interactive"]["module"]
     imodule = imodule.lower()
+    kwargs["imodule"] = imodule
 
     animation = kwargs.get("animation", False)
 
@@ -144,6 +147,10 @@ class IPlot(param.Parameterized):
     methods.
     """
 
+    imodule = param.Selector(
+        default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
+        Chose the interactive module to be used with parametric widgets
+        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.""")
     app = param.Boolean(default=False, doc="""
         If True, shows interactive widgets useful to customize the numerical
         data computation for each series. Related parameters: ``imodule``.""")

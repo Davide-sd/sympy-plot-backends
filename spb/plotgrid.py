@@ -152,10 +152,11 @@ def _get_plots_imodule(plots):
     imodules = set()
     for plot in plots:
         if isinstance(plot, IPlot):
-            imodules.add(plot.backend.imodule)
+            imodules.add(plot.backend._imodule)
         else:
-            imodules.add(plot.imodule)
+            imodules.add(plot._imodule)
 
+    print("_get_plots_imodule", imodules)
     if None in imodules:
         imodules.remove(None)
 
