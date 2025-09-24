@@ -146,8 +146,7 @@ class IPlotAttributes(param.Parameterized):
     imodule = param.Selector(
         default="ipywidgets", objects=["panel", "ipywidgets"], doc="""
         Chose the interactive module to be used with parametric widgets
-        plots. Possible options are ``'panel'`` or ``'ipywidgets'``.
-        Related parameters: ``app``, ``ncols``, ``layout``.""")
+        plots. Related parameters: ``app``, ``ncols``, ``layout``.""")
     app = param.Boolean(default=False, doc="""
         If True, shows interactive widgets useful to customize the numerical
         data computation for each series.

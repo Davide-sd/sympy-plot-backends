@@ -14,7 +14,7 @@ v4.0.0
     each attributes is now very well documented.
   * Automatic and complete generation of the documentation when the
     module is imported, on all classes and plotting function.
-    The documentaion is shown when the user executes
+    The documentation is shown when the user executes
     `help(plot_function)` or `plot_function?`. All available
     parameters will be shown.
   * Capability of adding widgets related to attributes of data series.
@@ -22,7 +22,7 @@ v4.0.0
 * Improvements to the function ``graphics()`` and the backends:
 
   * Improved the handling of grid lines thanks to the keyword arguments ``grid``
-    and ``minor_grid``. This parameters can be:
+    and ``minor_grid``. These parameters can be:
 
     * boolean: toggle the visibility of major and minor grid lines.
     * dict: keyword arguments used to customize the grid lines.
@@ -52,7 +52,7 @@ v4.0.0
   * Improved evaluation of symbolic expressions producing very large numbers.
   * Improved logic dealing with lambdification in order minimize the time
     spent in this stage.
-  * Removed the adaptive algorithm from
+  * BREAKING: Removed the adaptive algorithm from
     ``line, line_parametric_2d, line_parametric_3d, surface`` (and their
     respective counterpars, ``plot, plot_parametric, plot3d_parametric, plot3d``).
     Main motivations were:
@@ -63,7 +63,7 @@ v4.0.0
     3. easier to implement new features (interactive ones), that only works
        with the uniform evaluation strategy.
 
-  * Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
+  * BREAKING: Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
     ``Geometry3DSeries`` for better code separation.
   * Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
     ``Line2D`` in the specified range along the x-axis.
@@ -71,7 +71,7 @@ v4.0.0
     which is a dictionary of keyword arguments passed to the specific plotting
     library renderer in order to customize the appearance of vertical lines
     representing essential discontinuities.
-  * Changed the init signature of ``NicholsLineSeries``.
+  * BREAKING: Changed the init signature of ``NicholsLineSeries``.
   * Fixed bugs:
 
     * with the numerical algorithm about singularities detection of
@@ -79,7 +79,7 @@ v4.0.0
     * with the algorithm used to insert exclusion points through the
       ``exclude`` keyword argument.
 
-* remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
+* BREAKING: remove ``tp`` keyword argument from ``step_response``, ``ramp_response``,
   ``impulse_response``.
 
 
