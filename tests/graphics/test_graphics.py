@@ -12,10 +12,12 @@ from spb.series import (
 )
 from sympy import symbols, cos, sin, pi, exp
 from sympy.external import import_module
-from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
 from spb.interactive.ipywidgets import InteractivePlot as IPYInteractivePlot
 
 pn = import_module("panel")
+
+if pn is not None:
+    from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
 
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
