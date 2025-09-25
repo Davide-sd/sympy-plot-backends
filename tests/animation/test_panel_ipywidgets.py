@@ -5,12 +5,12 @@ import pytest
 ipywidgets = pytest.importorskip("ipywidgets")
 from spb import (
     plot, line, graphics, MB, PB, BB, KB, surface, plotgrid, plot3d,
-    prange
+    prange, plot_parametric
 )
 from spb.animation.ipywidgets import Animation as IPYAnimation
 from spb.animation.panel import Animation as PanelAnimation
 from spb.plotgrid import PlotGrid
-from sympy import cos, sin, exp, pi
+from sympy import cos, sin, exp, pi, symbols, cos
 from sympy.abc import a, b, c, x, y
 from tempfile import TemporaryDirectory
 
@@ -262,3 +262,17 @@ def test_plotgrid_mode_2_matplotlib(imodule, expected_type):
 
         p.save(os.path.join(tmpdir, "animation.mp4"), save_frames=True)
         assert len(os.listdir(tmpdir)) == 1 + int(fps * time) + 1
+
+
+def test_panel_animation_show():
+    a, b, x = symbols("a b x")
+    max_r = 30
+    p = plot_parametric(
+        x * cos(x), x * sin(x), prange(x, a, b),
+        aspect="equal", use_cm=False,
+        animation=True, params={a: (10, 0), b: (20, max_r)},
+        title=("a={:.2f}; b={:.2f}", a, b),
+        xlim=(-max_r, max_r), ylim=(-max_r, max_r),
+        imodule="panel", show=False
+    )
+    p.show()

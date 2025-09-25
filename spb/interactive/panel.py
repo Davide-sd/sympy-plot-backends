@@ -97,6 +97,56 @@ class DynamicParam(param.Parameterized):
 class PanelCommon(IPlot):
     """Common code for interactive applications with Holoviz Panel.
     """
+    # NOTE: these parameters are here because I also need it for animations
+
+    name = param.String(default="", doc="""
+        The name to be shown on top of the interactive application, when
+        served on a new browser window. Refer to ``servable`` to learn more.
+        """)
+    template = param.Parameter(default=None, doc="""
+        Specify the template to be used to build the interactive application
+        when ``servable=True``. It can be one of the following options:
+
+        * None: the default template will be used.
+        * dictionary of keyword arguments to customize the default template.
+          Among the options:
+
+          * ``full_width`` (boolean): use the full width of the browser page.
+            Default to True.
+          * ``sidebar_width`` (str): CSS value of the width of the sidebar
+            in pixel or %. Applicable only when ``layout='sbl'`` or
+            ``layout='sbr'``.
+          * ``show_header`` (boolean): wheter to show the header of the
+            application. Default to True.
+
+        * an instance of :py:class:`panel.template.base.BasicTemplate`.
+        * a subclass of :py:class:`panel.template.base.BasicTemplate`.
+        """)
+    throttled = param.Boolean(default=False, doc="""
+        If True, the recompute will be done at mouse-up event on sliders.
+        If False, every slider tick will force a recompute.""")
+    servable = param.Boolean(default=False, doc="""
+        If False, shows the interactive application on the output cell of
+        a Jupyter Notebook. If True, the application will be served on a new
+        browser window.""")
+    pane_kw = param.Dict(default={}, doc="""
+        A dictionary of keyword/values which is passed to the pane containing
+        the chart in order to further customize the output (read the Notes
+        section to understand how the interactive plot is built).
+        The following web pages shows the available options:
+
+        * If Matplotlib is used, the figure is wrapped by
+          :py:class:`panel.pane.plot.Matplotlib`. Two interesting options are:
+
+          * ``interactive``: wheter to activate the ipympl interactive backend.
+          * ``dpi``: set the dots per inch of the output png. Default to 96.
+
+        * If Plotly is used, the figure is wrapped by
+          :py:class:`panel.pane.plotly.Plotly`.
+
+        * If Bokeh is used, the figure is wrapped by
+          :py:class:`panel.pane.plot.Bokeh`.
+        """)
 
     def _init_pane(self):
         """Here we wrap the figure exposed by the backend with a Pane, which
@@ -221,55 +271,6 @@ class PanelCommon(IPlot):
 
 @modify_parameterized_doc()
 class InteractivePlot(PanelCommon):
-    pane_kw = param.Dict(default={}, doc="""
-        A dictionary of keyword/values which is passed to the pane containing
-        the chart in order to further customize the output (read the Notes
-        section to understand how the interactive plot is built).
-        The following web pages shows the available options:
-
-        * If Matplotlib is used, the figure is wrapped by
-          :py:class:`panel.pane.plot.Matplotlib`. Two interesting options are:
-
-          * ``interactive``: wheter to activate the ipympl interactive backend.
-          * ``dpi``: set the dots per inch of the output png. Default to 96.
-
-        * If Plotly is used, the figure is wrapped by
-          :py:class:`panel.pane.plotly.Plotly`.
-
-        * If Bokeh is used, the figure is wrapped by
-          :py:class:`panel.pane.plot.Bokeh`.
-        """)
-    name = param.String(default="", doc="""
-        The name to be shown on top of the interactive application, when
-        served on a new browser window. Refer to ``servable`` to learn more.
-        """)
-    template = param.Parameter(default=None, doc="""
-        Specify the template to be used to build the interactive application
-        when ``servable=True``. It can be one of the following options:
-
-        * None: the default template will be used.
-        * dictionary of keyword arguments to customize the default template.
-          Among the options:
-
-          * ``full_width`` (boolean): use the full width of the browser page.
-            Default to True.
-          * ``sidebar_width`` (str): CSS value of the width of the sidebar
-            in pixel or %. Applicable only when ``layout='sbl'`` or
-            ``layout='sbr'``.
-          * ``show_header`` (boolean): wheter to show the header of the
-            application. Default to True.
-
-        * an instance of :py:class:`panel.template.base.BasicTemplate`.
-        * a subclass of :py:class:`panel.template.base.BasicTemplate`.
-        """)
-    throttled = param.Boolean(default=False, doc="""
-        If True, the recompute will be done at mouse-up event on sliders.
-        If False, every slider tick will force a recompute.""")
-    servable = param.Boolean(default=False, doc="""
-        If False, shows the interactive application on the output cell of
-        a Jupyter Notebook. If True, the application will be served on a new
-        browser window.""")
-
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
