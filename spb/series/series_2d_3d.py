@@ -1029,7 +1029,13 @@ class ParametricLineBaseSeries(
 
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
-        nargs = arity(color_func)
+        try:
+            nargs = arity(color_func)
+        except ValueError:
+            # TODO: remove this catch in the future.
+            # Currently, this is needd in order to pass tests with Python 3.10
+            nargs = 1
+
         if nargs is None:
             # this is the case when a function(*args) is given,
             # for example np.rad2deg
