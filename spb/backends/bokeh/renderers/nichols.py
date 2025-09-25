@@ -19,7 +19,7 @@ def _draw_nichols_helper(renderer, data):
             else next(p._cm)
         )
 
-        if not s.is_point:
+        if not s.is_scatter:
             ol_phase, ol_mag, omega, cl_phase, cl_mag = p._get_segments(
                 ol_phase, ol_mag, omega,
                 cl_phase, cl_mag
@@ -33,7 +33,7 @@ def _draw_nichols_helper(renderer, data):
         ds, line, cb, kw = p._create_gradient_line(
             "ol_p", "ol_m", "o", source,
             colormap, s.get_label(p.use_latex),
-            s.rendering_kw, s.is_point)
+            s.rendering_kw, s.is_scatter)
         h = p._fig.add_glyph(ds, line)
         handles.append(h)
 
@@ -51,7 +51,7 @@ def _draw_nichols_helper(renderer, data):
             legend_label=s.get_label(p.use_latex)
         )
         arrows = None
-        if not s.is_point:
+        if not s.is_scatter:
             kw = p.merge({}, lkw, s.rendering_kw)
             handles.append(p._fig.line("ol_p", "ol_m", source=source, **kw))
 
@@ -97,7 +97,7 @@ def _update_nichols_helper(renderer, data, handles):
     omega, ol_phase, ol_mag, cl_phase, cl_mag = data
 
     if s.use_cm:
-        if not s.is_point:
+        if not s.is_scatter:
             ol_phase, ol_mag, omega, cl_phase, cl_mag = p._get_segments(
                 ol_phase, ol_mag, omega,
                 cl_phase, cl_mag

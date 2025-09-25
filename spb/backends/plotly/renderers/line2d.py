@@ -16,8 +16,8 @@ def _draw_line2d_helper(renderer, data):
     if s.is_parametric:
         x, y, param = data
         # hides/show the colormap depending on s.use_cm
-        mode = "lines+markers" if not s.is_point else "markers"
-        if (not s.is_point) and (not s.use_cm):
+        mode = "lines+markers" if not s.is_scatter else "markers"
+        if (not s.is_scatter) and (not s.use_cm):
             mode = "lines"
         if s.get_label(False) != "__k__":
             color = next(p._cl) if s.line_color is None else s.line_color
@@ -76,11 +76,11 @@ def _draw_line2d_helper(renderer, data):
         color = next(p._cl) if s.line_color is None else s.line_color
         lkw = dict(
             name=s.get_label(p.use_latex),
-            mode="lines" if not s.is_point else "markers",
+            mode="lines" if not s.is_scatter else "markers",
             line_color=color,
             showlegend=s.show_in_legend
         )
-        if s.is_point:
+        if s.is_scatter:
             lkw["marker"] = dict(size=8)
             if not s.is_filled:
                 lkw["marker"] = dict(

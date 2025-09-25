@@ -1113,11 +1113,11 @@ def plot3d_list(*args, **kwargs):
        x = z * np.cos(z)
        y = z * np.sin(z)
        p1 = plot3d_list(x, y, z,
-           show=False, scatter=False)
+           show=False, is_scatter=False)
        p2 = plot3d_list(
            [t * cos(t)], [t * sin(t)], [t],
            params={t: (3*pi, 0, 6*pi)},
-           backend=PB, show=False, scatter=True,
+           backend=PB, show=False, is_scatter=True,
            imodule="panel")
        (p2 + p1).show()
 

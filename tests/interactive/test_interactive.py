@@ -176,7 +176,7 @@ def test_iplot_sum_1(
         sin(x) * cos(x), (x, -5, 5),
         backend=backend,
         n=50,
-        is_point=True,
+        is_scatter=True,
         is_filled=True,
         line_kw=dict(marker="^"),
         **options

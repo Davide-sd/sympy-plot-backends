@@ -10,7 +10,7 @@ def _draw_line3d_helper(renderer, data):
         param = p.np.ones_like(x)
     lkw = dict()
 
-    if not s.is_point:
+    if not s.is_scatter:
         if s.use_cm:
             segments = p.get_segments(x, y, z)
             lkw["cmap"] = next(p._cm)

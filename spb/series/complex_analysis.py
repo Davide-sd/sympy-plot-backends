@@ -111,9 +111,11 @@ class ComplexPointSeries(Line2DBaseSeries):
         elif isinstance(numbers, Expr):
             numbers = Tuple(numbers)
         self._block_lambda_functions(*numbers)
+        kwargs.setdefault(
+            "is_scatter",
+            kwargs.get("scatter", kwargs.get("is_point", True)))
         super().__init__(numbers=numbers, label=label, **kwargs)
 
-        self.is_point = kwargs.get("scatter", kwargs.get("is_point", True))
         if self.use_cm and self.color_func:
             self.is_parametric = True
 

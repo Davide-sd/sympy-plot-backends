@@ -1175,9 +1175,9 @@ def list_3d(
        x = z * np.cos(z)
        y = z * np.sin(z)
        graphics(
-           list_3d(x, y, z, scatter=False),
+           list_3d(x, y, z, is_scatter=False),
            list_3d(t * cos(t), t * sin(t), t,
-               params={t: (3*pi, 0, 6*pi)}, scatter=True),
+               params={t: (3*pi, 0, 6*pi)}, is_scatter=True),
            backend=PB
        )
 

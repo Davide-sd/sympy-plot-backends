@@ -8,7 +8,7 @@ def _draw_line3d_helper(renderer, data):
     if s.is_2Dline:
         raise NotImplementedError
 
-    if s.is_point:
+    if s.is_scatter:
         if s.is_parametric:
             x, y, z, param = data
         else:
@@ -62,7 +62,7 @@ def _update_line3d_helper(renderer, data, handle):
     p, s = renderer.plot, renderer.series
     np = p.np
 
-    if s.is_3Dline and s.is_point:
+    if s.is_3Dline and s.is_scatter:
         if s.is_parametric:
             x, y, z, _ = data
         else:

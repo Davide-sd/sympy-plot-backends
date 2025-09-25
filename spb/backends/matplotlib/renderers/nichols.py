@@ -10,7 +10,7 @@ def _draw_nichols_helper(renderer, data):
 
     if s.use_cm:
         colormap = next(p._cm)
-        if not s.is_point:
+        if not s.is_scatter:
             lkw = dict(array=omega, cmap=colormap)
             kw = p.merge({}, lkw, s.rendering_kw)
             segments = p.get_segments(ol_phase, ol_mag)
@@ -32,7 +32,7 @@ def _draw_nichols_helper(renderer, data):
             color=color
         )
 
-        if s.is_point:
+        if s.is_scatter:
             lkw["marker"] = "o"
             lkw["linestyle"] = "None"
             if not s.is_filled:
@@ -61,7 +61,7 @@ def _update_nichols_helper(renderer, data, handles):
     if s.use_cm:
         line, kw, is_cb_added, cax = handles
 
-        if not s.is_point:
+        if not s.is_scatter:
             segments = p.get_segments(ol_phase, ol_mag)
             line.set_segments(segments)
         else:

@@ -238,7 +238,7 @@ def plot(*args, **kwargs):
 
        >>> expr = Sum(1 / x, (x, 1, y))
        >>> plot(expr, (y, 2, 10),
-       ...     scatter=True, is_filled=True, title="$%s$" % latex(expr))
+       ...     is_scatter=True, is_filled=True, title="$%s$" % latex(expr))
        Plot object containing:
        [0]: cartesian line: Sum(1/x, (x, 1, y)) for y over (2, 10)
 
@@ -1605,7 +1605,7 @@ def plot_list(*args, **kwargs):
 
        >>> plot_list(
        ...     ([0], [0], "A"), ([1], [1], "B"), ([2], [0], "C"),
-       ...     scatter=True, is_filled=True)
+       ...     is_scatter=True, is_filled=True)
        Plot object containing:
        [0]: 2D list plot
        [1]: 2D list plot
@@ -1625,7 +1625,7 @@ def plot_list(*args, **kwargs):
        >>> plot_list(
        ...     (xx, yy1, "cos"),
        ...     (xx, yy2, "sin", {"marker": "*", "markerfacecolor": None}),
-       ...     scatter=True)
+       ...     is_scatter=True)
        Plot object containing:
        [0]: 2D list plot
        [1]: 2D list plot
@@ -1651,7 +1651,7 @@ def plot_list(*args, **kwargs):
            ([cos(t)], [sin(t)], "A"),
            ([cos(2 * t) / 2], [sin(2 * t) / 2], "B"),
            rendering_kw={"marker": "s", "markerfacecolor": None},
-           params=params, scatter=True, show=False)
+           params=params, is_scatter=True, show=False)
        (p1 + p2).show()
 
     See Also

@@ -14,7 +14,7 @@ def _draw_line2d_helper(renderer, data):
             if p._use_cyclic_cm(param, s.is_complex)
             else next(p._cm)
         )
-        if not s.is_point:
+        if not s.is_scatter:
             lkw = dict(array=param, cmap=colormap)
             kw = p.merge({}, lkw, s.rendering_kw)
             segments = p.get_segments(x, y)
@@ -39,7 +39,7 @@ def _draw_line2d_helper(renderer, data):
             label=s.get_label(p.use_latex) if s.show_in_legend else "_nolegend_",
             color=color
         )
-        if s.is_point:
+        if s.is_scatter:
             lkw["marker"] = "o"
             lkw["linestyle"] = "None"
             if not s.is_filled:
@@ -72,7 +72,7 @@ def _update_line2d_helper(renderer, data, handles):
     if s.is_parametric and s.use_cm:
         line, kw, colorbar, cax = line_handles
 
-        if not s.is_point:
+        if not s.is_scatter:
             segments = p.get_segments(x, y)
             line.set_segments(segments)
         else:

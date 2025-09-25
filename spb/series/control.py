@@ -1089,7 +1089,6 @@ class PoleZeroCommon(param.Parameterized):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_point = True
 
     def __str__(self):
         return self._str_helper("poles" if self.return_poles else "zeros ")
@@ -1111,8 +1110,7 @@ class PoleZeroWithSympySeries(PoleZeroCommon, List2DSeries):
     # use the values stored in them to appropriately represent the data.
 
     _exclude_params_from_doc = [
-        "color_func", "colorbar", "use_cm", "steps", "unwrap",
-        "line_color", "is_point"]
+        "color_func", "colorbar", "use_cm", "steps", "unwrap", "line_color"]
 
     def __init__(self, list_x, list_y, label="", **kwargs):
         super().__init__(list_x, list_y, label=label, **kwargs)
@@ -1135,8 +1133,7 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
     logic to show or hide the legend.
     """
     _exclude_params_from_doc = [
-        "colorbar", "use_cm", "steps", "unwrap", "line_color", "is_point",
-        "expr"]
+        "colorbar", "use_cm", "steps", "unwrap", "line_color", "expr"]
 
     def __init__(self, system, label="", **kwargs):
         super().__init__(system, label=label, **kwargs)

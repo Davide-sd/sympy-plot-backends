@@ -758,7 +758,7 @@ def test_update_interactive():
         n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
-        is_point=False,
+        is_scatter=False,
     )
     p.backend.draw()
     p.backend.update_interactive({u: 2})
@@ -768,7 +768,7 @@ def test_update_interactive():
         n=5, backend=BB, show=False,
         params={u: (1, 0, 2)},
         use_cm=True,
-        is_point=True,
+        is_scatter=True,
     )
     p.backend.draw()
     p.backend.update_interactive({u: 2})

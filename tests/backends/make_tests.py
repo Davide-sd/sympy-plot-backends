@@ -419,7 +419,7 @@ def make_test_plot_list_is_filled(B, is_filled):
         [1, 2, 3],
         [1, 2, 3],
         backend=B,
-        is_point=True,
+        is_scatter=True,
         is_filled=is_filled,
         show=False,
         use_latex=False,
@@ -435,7 +435,7 @@ def make_test_plot_list_color_func(B):
         use_cm=True,
         show=False,
         use_latex=False,
-        is_point=True,
+        is_scatter=True,
     )
 
 
@@ -662,9 +662,9 @@ def make_test_plot3d_list(B, is_filled, cf):
     x1 = z1 * c
     y1 = z1 * s
 
-    p1 = plot3d_list(x1, y1, z1, show=False, backend=B, is_point=False,
+    p1 = plot3d_list(x1, y1, z1, show=False, backend=B, is_scatter=False,
         use_cm=False)
-    p2 = plot3d_list(x1, y1, z1, show=False, backend=B, is_point=True,
+    p2 = plot3d_list(x1, y1, z1, show=False, backend=B, is_scatter=True,
         is_filled=is_filled, use_cm=False)
     p3 = plot3d_list(
         [t * coeff1*coeff2 for coeff1, coeff2 in zip(c, z1)],
@@ -673,7 +673,7 @@ def make_test_plot3d_list(B, is_filled, cf):
         params={t: (1, 0, 6 * pi)},
         backend=B,
         show=False,
-        is_point=True,
+        is_scatter=True,
         is_filled=is_filled,
         use_cm=True,
         color_func=cf,
@@ -1016,7 +1016,7 @@ def make_test_tick_formatter_polar_axis(B, x_ticks_formatter):
         0.8660254037844386, 0.0, -1.3907628849860991, 1.3907628849860991
     ]
     return graphics(
-        list_2d(x, y, is_point=True),
+        list_2d(x, y, is_scatter=True),
         backend=B, polar_axis=True, show=False,
         x_ticks_formatter=x_ticks_formatter
     )

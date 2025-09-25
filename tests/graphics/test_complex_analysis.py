@@ -33,7 +33,7 @@ def test_complex_points_1(label, rkw, scatter, params):
     s = series[0]
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == ("" if label is None else label)
-    assert s.is_point is scatter
+    assert s.is_scatter is scatter
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == ({} if not params else params)
@@ -58,7 +58,7 @@ def test_complex_points_2(label, rkw, scatter, params):
     assert len(series) == 1
     assert isinstance(s, ComplexPointSeries)
     assert s.get_label(False) == ("" if label is None else label)
-    assert s.is_point is scatter
+    assert s.is_scatter is scatter
     assert s.rendering_kw == ({} if not rkw else rkw)
     assert s.is_interactive == (len(s.params) > 0)
     assert s.params == ({} if not params else params)

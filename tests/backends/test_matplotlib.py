@@ -1268,14 +1268,14 @@ def test_min_install():
 
     p = plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi),
-        use_cm=True, is_point=False, **options
+        use_cm=True, is_scatter=False, **options
     )
     p.draw()
     p.close()
 
     p = plot_parametric(
         cos(x), sin(x), (x, 0, 2 * pi),
-        use_cm=True, is_point=True, **options
+        use_cm=True, is_scatter=True, **options
     )
     p.draw()
     p.close()
@@ -1297,7 +1297,7 @@ def test_min_install():
     # points
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=True, **options
+        is_scatter=True, **options
     )
     p.draw()
     p.close()
@@ -1305,7 +1305,7 @@ def test_min_install():
     # line with colormap
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=False, use_cm=True, **options
+        is_scatter=False, use_cm=True, **options
     )
     p.draw()
     p.close()
@@ -1313,14 +1313,14 @@ def test_min_install():
     # line with solid color
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=False, use_cm=False, **options
+        is_scatter=False, use_cm=False, **options
     )
     p.draw()
     p.close()
 
     p = plot3d_parametric_line(
         cos(x), sin(x), x, (x, -pi, pi),
-        is_point=False, use_cm=True, **options
+        is_scatter=False, use_cm=True, **options
     )
     p.draw()
     p.close()
@@ -1731,7 +1731,7 @@ def test_legend_plot_sum():
         [1],
         "point",
         legend=True,
-        is_point=True,
+        is_scatter=True,
         xlim=(-1.2, 1.2),
         ylim=(-1.2, 1.5),
         aspect="equal",

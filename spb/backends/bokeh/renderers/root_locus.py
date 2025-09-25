@@ -31,7 +31,7 @@ def _draw_root_locus_helper(renderer, data):
     lkw = dict(
         line_color=color, line_width=2, legend_label=s.get_label(p.use_latex)
     )
-    if s.is_point:
+    if s.is_scatter:
         lkw["marker"] = "o"
 
     kw = p.merge({}, lkw, s.rendering_kw)

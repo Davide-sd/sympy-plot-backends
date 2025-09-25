@@ -655,7 +655,7 @@ def test_update_interactive():
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi),
         backend=KB,
-        is_point=True,
+        is_scatter=True,
         show=False,
         n=5,
         params={u: (1, 0, 2)},
@@ -667,7 +667,7 @@ def test_update_interactive():
     p = plot3d_parametric_line(
         cos(u * x), sin(x), x, (x, -pi, pi),
         backend=KB,
-        is_point=False,
+        is_scatter=False,
         show=False,
         n=5,
         params={u: (1, 0, 2)},

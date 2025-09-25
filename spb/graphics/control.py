@@ -261,12 +261,12 @@ def _pole_zero_helper(
     prk, zrk, p_label, z_label = _pole_zero_common_keyword_arguments(kwargs)
     z_series = PoleZeroWithSympySeries(
         zeros_re, zeros_im, z_label, return_poles=False,
-        scatter=True, is_filled=True, rendering_kw=zrk,
+        is_scatter=True, is_filled=True, rendering_kw=zrk,
         zero_markersize=zero_markersize, **kwargs
     )
     p_series = PoleZeroWithSympySeries(
         poles_re, poles_im, p_label, return_poles=True,
-        scatter=True, is_filled=True, rendering_kw=prk,
+        is_scatter=True, is_filled=True, rendering_kw=prk,
         pole_markersize=pole_markersize, **kwargs
     )
     return [p_series, z_series]

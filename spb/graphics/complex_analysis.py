@@ -19,7 +19,7 @@ from sympy import I, cos, sin, symbols, pi, re, im, Dummy, Expr
 
 @modify_graphics_series_doc(ComplexPointSeries, replace={"params": _PARAMS})
 def complex_points(
-    *numbers, label="", rendering_kw=None, scatter=True, **kwargs
+    *numbers, label="", rendering_kw=None, is_scatter=True, **kwargs
 ):
     """
     Plot complex points.
@@ -128,6 +128,9 @@ def complex_points(
            legend=True, xlim=(-1.5, 2), ylim=(-2, 1))
 
     """
+    # back-compatibility
+    is_scatter = kwargs.pop("scatter", is_scatter)
+
     if len(numbers) == 0:
         raise ValueError("At least one complex number must be provided.")
     if len(numbers) > 1 and any(isinstance(n, (tuple, list)) for n in numbers):
@@ -138,7 +141,7 @@ def complex_points(
     if len(numbers) == 1 and isinstance(numbers, (list, tuple)):
         numbers = numbers[0]
     s = ComplexPointSeries(
-        numbers, label, scatter=scatter, rendering_kw=rendering_kw, **kwargs)
+        numbers, label, is_scatter=is_scatter, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 

@@ -330,13 +330,13 @@ def test_complexpointseries():
 
     s = ComplexPointSeries([1 + 2 * I, 3 + 4 * I])
     xx, yy = s.get_data()
-    assert s.is_point and (not s.is_parametric) and (not s.color_func)
+    assert s.is_scatter and (not s.is_parametric) and (not s.color_func)
     assert np.allclose(xx, [1, 3])
     assert np.allclose(yy, [2, 4])
 
     s = ComplexPointSeries([1 + x * I, 1 + x + 4 * I], params={x: 2})
     xx, yy = s.get_data()
-    assert s.is_point and (not s.is_parametric) and (not s.color_func)
+    assert s.is_scatter and (not s.is_parametric) and (not s.color_func)
     assert np.allclose(xx, [1, 3])
     assert np.allclose(yy, [2, 4])
 
@@ -1086,59 +1086,59 @@ def test_vector_data_shape():
     assert all(t.shape == (10, 15, 20) for t in s.get_data())
 
 
-@pytest.mark.parametrize("is_filled, is_point", [
+@pytest.mark.parametrize("is_filled, is_scatter", [
     (True, True),
     (True, False),
     (False, True),
     (False, False),
 ])
-def test_is_point_is_filled(is_filled, is_point):
-    # verify that `is_point` and `is_filled` are attributes and that they
+def test_is_scatter_is_filled(is_filled, is_scatter):
+    # verify that `is_scatter` and `is_filled` are attributes and that they
     # they receive the correct values
 
     x, u = symbols("x, u")
 
     s = LineOver1DRangeSeries(
         cos(x), (x, -5, 5), "",
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = AbsArgLineSeries(
         cos(x), (x, -5, 5), "",
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = List2DSeries(
         [0, 1, 2], [3, 4, 5],
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = List3DSeries(
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = Parametric2DLineSeries(
         cos(x), sin(x), (x, -5, 5),
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = Parametric3DLineSeries(
         cos(x), sin(x), x, (x, -5, 5),
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
     s = ComplexPointSeries(
         [1 + 2 * I, 3 + 4 * I],
-        is_point=is_point, is_filled=is_filled
+        is_scatter=is_scatter, is_filled=is_filled
     )
-    assert (s.is_filled is is_filled) and (s.is_point is is_point)
+    assert (s.is_filled is is_filled) and (s.is_scatter is is_scatter)
 
 
 @pytest.mark.parametrize("is_filled", [True, False])

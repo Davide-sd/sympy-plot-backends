@@ -84,14 +84,14 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                     correct_list = series if _set.left_open else filled_series
                     correct_list.append(
                         List2DSeries(
-                            [xx[0]], [yy[0]], scatter=True,
+                            [xx[0]], [yy[0]], is_scatter=True,
                             fill=not _set.left_open, **kwargs)
                     )
                 if not _range[2].equals(xx[-1]):
                     correct_list = series if _set.right_open else filled_series
                     correct_list.append(
                         List2DSeries(
-                            [xx[-1]], [yy[-1]], scatter=True,
+                            [xx[-1]], [yy[-1]], is_scatter=True,
                             fill=not _set.right_open, **kwargs)
                     )
         elif isinstance(_set, FiniteSet):
@@ -100,7 +100,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 loc.append(float(_loc))
                 val.append(float(expr.evalf(subs={_range[0]: _loc})))
             filled_series.append(
-                List2DSeries(loc, val, scatter=True, fill=True, **kwargs))
+                List2DSeries(loc, val, is_scatter=True, fill=True, **kwargs))
             if not from_union:
                 c += 1
         elif isinstance(_set, Union):
@@ -228,7 +228,7 @@ def line(expr, range_x=None, label=None, rendering_kw=None, **kwargs):
 
        >>> expr = Sum(1 / x, (x, 1, y))
        >>> graphics(
-       ...     line(expr, (y, 2, 10), scatter=True),
+       ...     line(expr, (y, 2, 10), is_scatter=True),
        ...     title="$%s$" % latex(expr)
        ... )
        Plot object containing:
@@ -1144,9 +1144,9 @@ def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
        :include-source: True
 
        >>> graphics(
-       ...     list_2d(0, 0, "A", scatter=True),
-       ...     list_2d(1, 1, "B", scatter=True),
-       ...     list_2d(2, 0, "C", scatter=True),
+       ...     list_2d(0, 0, "A", is_scatter=True),
+       ...     list_2d(1, 1, "B", is_scatter=True),
+       ...     list_2d(2, 0, "C", is_scatter=True),
        ... )
        Plot object containing:
        [0]: 2D list plot
@@ -1165,9 +1165,9 @@ def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
        >>> yy1 = [cos(x).evalf(subs={x: t}) for t in xx]
        >>> yy2 = [sin(x).evalf(subs={x: t}) for t in xx]
        >>> graphics(
-       ...     list_2d(xx, yy1, "cos", scatter=True),
+       ...     list_2d(xx, yy1, "cos", is_scatter=True),
        ...     list_2d(xx, yy2, "sin", {"marker": "*", "markerfacecolor": None},
-       ...             scatter=True),
+       ...             is_scatter=True),
        ... )
        Plot object containing:
        [0]: 2D list plot
@@ -1193,11 +1193,11 @@ def list_2d(list_x, list_y, label=None, rendering_kw=None, **kwargs):
            list_2d(
                cos(t), sin(t), "A",
                rendering_kw={"marker": "s", "markerfacecolor": None},
-               params=params, scatter=True),
+               params=params, is_scatter=True),
            list_2d(
                cos(2 * t) / 2, sin(2 * t) / 2, "B",
                rendering_kw={"marker": "s", "markerfacecolor": None},
-               params=params, scatter=True),
+               params=params, is_scatter=True),
            aspect="equal"
        )
 

@@ -247,7 +247,7 @@ class BokehBackend(Plot):
         if "color" not in s.rendering_kw:
             # only set the color if the user didn't do that already
             s.rendering_kw["color"] = color
-            if s.is_point and (not s.is_filled):
+            if s.is_scatter and (not s.is_filled):
                 s.rendering_kw["fill_color"] = "white"
 
     @staticmethod
@@ -348,7 +348,7 @@ class BokehBackend(Plot):
 
     def _create_gradient_line(
         self, x_key, y_key, p_key, source, colormap, name, line_kw,
-        is_point=False
+        is_scatter=False
     ):
         param = source[p_key]
         color_mapper = self.bokeh.models.LinearColorMapper(
@@ -361,7 +361,7 @@ class BokehBackend(Plot):
             line_color={"field": p_key, "transform": color_mapper},
         )
         kw = self.merge({}, lkw, line_kw)
-        if not is_point:
+        if not is_scatter:
             glyph = self.bokeh.models.MultiLine(xs=x_key, ys=y_key, **kw)
         else:
             glyph = self.bokeh.models.Scatter(x=x_key, y=y_key, **kw)

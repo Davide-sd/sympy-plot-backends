@@ -8,7 +8,7 @@ def _draw_line2d_helper(renderer, data):
 
     if s.is_parametric and s.use_cm:
         x, y, param = data
-        if not s.is_point:
+        if not s.is_scatter:
             x, y, param = p._get_segments(x, y, param)
         colormap = (
             next(p._cyccm)
@@ -18,7 +18,7 @@ def _draw_line2d_helper(renderer, data):
         source = {"xs": x, "ys": y, "us": param}
         ds, line, cb, kw = p._create_gradient_line(
             "xs", "ys", "us", source, colormap, s.get_label(p.use_latex),
-            s.rendering_kw, s.is_point)
+            s.rendering_kw, s.is_scatter)
         h = p._fig.add_glyph(ds, line)
         handle.append(h)
         tooltips = [("x", "@xs"), ("y", "@ys"), ("u", "@us")]
@@ -46,7 +46,7 @@ def _draw_line2d_helper(renderer, data):
             line_width=2, color=color,
             legend_label=s.get_label(p.use_latex)
         )
-        if not s.is_point:
+        if not s.is_scatter:
             kw = p.merge({}, lkw, s.rendering_kw)
             handle = [p._fig.line("xs", "ys", source=source, **kw)]
         else:
@@ -84,7 +84,7 @@ def _update_line2d_helper(renderer, data, handles):
 
     if s.is_2Dline and s.is_parametric and s.use_cm:
         x, y, param = data
-        if not s.is_point:
+        if not s.is_scatter:
             xs, ys, us = p._get_segments(x, y, param)
         else:
             xs, ys, us = x, y, param

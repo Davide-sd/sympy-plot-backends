@@ -27,7 +27,7 @@ def _draw_root_locus_helper(renderer, data):
     lkw = dict(
         color=color
     )
-    if s.is_point:
+    if s.is_scatter:
         lkw["marker"] = "o"
         lkw["linestyle"] = "None"
         if not s.is_filled:

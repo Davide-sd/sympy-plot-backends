@@ -115,9 +115,8 @@ def _check_steps(steps):
 
 
 class LineBaseMixin(param.Parameterized):
-    # TODO: replace is_point with is_scatter or scatter
-    is_point = param.Boolean(False, doc="""
-        Whether to create a scatter or a continuous line.""")
+    is_scatter = param.Boolean(False, doc="""
+        If True it represent a scatter plot, otherwise a continuous line.""")
     is_filled = param.Boolean(True, doc="""
         Whether scatter's markers are filled or void.""")
     line_color = param.Parameter(default=None, doc="""
@@ -139,6 +138,24 @@ class LineBaseMixin(param.Parameterized):
     @param.depends("line_color", watch=True, on_init=True)
     def _update_line_color(self):
         self._line_surface_color("_line_color", self.line_color)
+
+    def _deprecates_is_point(self):
+        warnings.warn(
+            "`is_point` is deprecated and will be removed on a future release."
+            " Please, use `is_scatter` instead.",
+            DeprecationWarning,
+            stacklevel=1
+        )
+
+    @property
+    def is_point(self):
+        self._deprecates_is_point()
+        return self.is_scatter
+
+    @is_point.setter
+    def is_point(self, value):
+        self._deprecates_is_point()
+        self.is_scatter = value
 
 
 class _LineWithRangeMixin:
@@ -237,8 +254,10 @@ class Line2DBaseSeries(LineBaseMixin, BaseSeries):
         """)
 
     def __init__(self, *args, **kwargs):
+        if "is_point" in kwargs:
+            kwargs.setdefault("is_scatter", kwargs.pop("is_point"))
         if "scatter" in kwargs:
-            kwargs.setdefault("is_point", kwargs.pop("scatter"))
+            kwargs.setdefault("is_scatter", kwargs.pop("scatter"))
         if "fill" in kwargs:
             kwargs.setdefault("is_filled", kwargs.pop("fill"))
         if "label" in kwargs:
@@ -2490,7 +2509,7 @@ class Geometry2DSeries(Line2DBaseSeries, _NMixin):
         if isinstance(geom, (Polygon, Circle, Ellipse)):
             self.is_2Dline = not self.is_filled
         elif isinstance(geom, Point2D):
-            self.is_point = True
+            self.is_scatter = True
             self.is_2Dline = True
 
     def get_data(self):
@@ -2616,7 +2635,7 @@ class Geometry3DSeries(Line2DBaseSeries):
             )
 
         if isinstance(geom, Point3D):
-            self.is_point = True
+            self.is_scatter = True
 
     def get_data(self):
         """

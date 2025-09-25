@@ -16,7 +16,7 @@ def _draw_line3d_helper(renderer, data):
         x, y, z = data
         param = np.ones_like(x)
 
-    if not s.is_point:
+    if not s.is_scatter:
         lkw = dict(
             name=s.get_label(p.use_latex),
             mode="lines",
@@ -73,7 +73,7 @@ def _draw_line3d_helper(renderer, data):
                 s.get_label(p.use_latex), p._scale_down_colorbar)
 
         if not s.is_filled:
-            # TODO: how to show a colorscale if is_point=True
+            # TODO: how to show a colorscale if is_scatter=True
             # and is_filled=False?
             lkw["marker"] = dict(
                 color="#E5ECF6",

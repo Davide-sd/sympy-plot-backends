@@ -65,13 +65,15 @@ v4.0.0
 
   * BREAKING: Split the ``GeometrySeries`` into ``Geometry2DSeries`` and
     ``Geometry3DSeries`` for better code separation.
+  * BREAKING: Changed the init signature of ``NicholsLineSeries``.
   * Added attribute ``Geometry2DSeries.range_x`` which allows to plot a
     ``Line2D`` in the specified range along the x-axis.
   * Added attribute ``LineOver1DRangeSeries.poles_rendering_kw``,
     which is a dictionary of keyword arguments passed to the specific plotting
     library renderer in order to customize the appearance of vertical lines
     representing essential discontinuities.
-  * BREAKING: Changed the init signature of ``NicholsLineSeries``.
+  * Renamed attribute ``is_point`` to ``is_scatter`` to better represent
+    its intention.
   * Fixed bugs:
 
     * with the numerical algorithm about singularities detection of
