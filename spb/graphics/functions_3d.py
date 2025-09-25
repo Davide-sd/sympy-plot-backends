@@ -110,8 +110,7 @@ def line_parametric_3d(
        fz = lambda t: t + 2 * np.sin(75 * t)
        graphics(
            line_parametric_3d(fx, fy, fz, ("t", 0, 6 * np.pi),
-               rendering_kw={"line": {"colorscale": "bluered"}},
-               adaptive=False, n=1e04),
+               rendering_kw={"line": {"colorscale": "bluered"}}, n=1e04),
            title="Helical Toroid", backend=PB)
 
     Interactive-widget plot of the parametric line over a tennis ball.
