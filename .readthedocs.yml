@@ -37,7 +37,7 @@ build:
          - rm ~/chromedriver_linux64.zip
       post_install:
          - pip install --no-cache-dir slycot
-         - plotly_get_chrome
+         - plotly_get_chrome -y
       # post_build:
       #    - cat $HOME/selenium/sphinx_k3d_screenshot.log
 
