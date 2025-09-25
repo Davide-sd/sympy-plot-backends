@@ -12,13 +12,8 @@ from spb.series import (
 )
 from sympy import symbols, cos, sin, pi, exp
 from sympy.external import import_module
-from spb.interactive.ipywidgets import InteractivePlot as IPYInteractivePlot
 
 pn = import_module("panel")
-
-if pn is not None:
-    from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
-
 
 @pytest.mark.skipif(pn is None, reason="panel is not installed")
 @pytest.mark.filterwarnings(
@@ -75,6 +70,9 @@ def test_graphics_multiple_series(backend):
     ],
 )
 def test_graphics_single_series_interactive(backend, imodule):
+    from spb.interactive.ipywidgets import InteractivePlot as IPYInteractivePlot
+    from spb.interactive.panel import InteractivePlot as PanelInteractivePlot
+
     x, u = symbols("x, u")
     graphics_options = {"show": False, "backend": backend, "imodule": imodule}
 

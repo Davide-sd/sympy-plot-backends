@@ -4929,6 +4929,11 @@ def test_evaluate_big_numbers_1():
         assert f(xx[-1]).is_finite
 
 
+# NOTE: why skip if scipy is not installed?
+# `factorial` is implemented by scipy, not numpy. So, if scipy is not
+# installed, then s3 will be evaluated by sympy, producing the same data
+# as s4
+@pytest.mark.skipif(scipy is None, reason="scipy is not installed")
 @pytest.mark.filterwarnings("ignore::RuntimeWarning")
 def test_evaluate_big_numbers_2():
     # similarly to the previous test, the following expressions

@@ -2788,6 +2788,7 @@ def test_number_discretization_points():
     assert p[0].n[:2] == [50, 100]
 
 
+@pytest.mark.skipif(pn is None, reason="panel is not installed")
 def test_plot_real_imag_wireframe_true(pi_options):
     # verify that wireframe lines also work with plot_real_imag
 

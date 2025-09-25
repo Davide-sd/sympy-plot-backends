@@ -30,6 +30,7 @@ import pytest
 import numpy as np
 
 ipy = import_module("ipywidgets")
+sci = import_module("scipy")
 
 # NOTE:
 #
@@ -954,6 +955,7 @@ def test_plot_and_save_2(paf_options):
         p.close()
 
 
+@pytest.mark.skipif(sci is None, reason="scipy is not installed")
 def test_plot_and_save_4(paf_options):
     x, y = symbols("x, y")
     paf_options.update({"n": 10})
