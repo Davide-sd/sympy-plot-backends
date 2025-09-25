@@ -36,9 +36,8 @@ build:
          - unzip ~/chromedriver_linux64.zip -d $HOME/selenium/drivers
          - rm ~/chromedriver_linux64.zip
       post_install:
-         - pip install "panel==1.3.8" # NOTE: remove it when this is solved: https://github.com/holoviz/panel/issues/6643
          - pip install --no-cache-dir slycot
-      #    - pip install "matplotlib<3.6.0"
+         - plotly_get_chrome
       # post_build:
       #    - cat $HOME/selenium/sphinx_k3d_screenshot.log
 
