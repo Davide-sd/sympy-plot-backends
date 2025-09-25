@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v2
@@ -35,32 +35,32 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Set up SLYCOT build tools
       run: |
         sudo apt-get install build-essential
         sudo apt-get install python3-dev gcc gfortran libopenblas-dev python3-pip cmake
         sudo apt-get install libopenblas-dev
-  
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install --upgrade setuptools
         python -m pip install flake8 pytest coverage pytest-mock
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-  
+
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  
+
     - name: Test with pytest
       uses: GabrielBB/xvfb-action@v1  # needed for Mayavi headless tests
       with:
         run: coverage run -m pytest
-  
+
     - name: Coverage Badge
       uses: tj-actions/coverage-badge-py@v1.8
 
