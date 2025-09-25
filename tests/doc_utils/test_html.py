@@ -341,6 +341,7 @@ graphics(
     assert "imodule='panel'" in new_code
     assert "template={" in new_code
     assert "panelplot = graphics" in s[3]
-    assert "for k, card in panelplot._additional_widgets.items():" in s[-3]
+    assert ("for k, card" in s[-3]) or ("for (k, card)" in s[-3])
+    assert "in panelplot._additional_widgets.items():" in s[-3]
     assert "card.collapsed = False" in s[-2]
     assert "create_template" in s[-1]
