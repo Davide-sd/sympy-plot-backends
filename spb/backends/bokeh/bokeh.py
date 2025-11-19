@@ -309,15 +309,22 @@ class BokehBackend(Plot):
                     (s.is_2Dline or s.is_geometry) and
                     (not s.use_cm)
                 ):
+                    bokeh_renderer = None
                     if hasattr(r.handles[0][0], "__iter__"):
                         bokeh_renderer = r.handles[0][0][0]
                     else:
-                        bokeh_renderer = r.handles[0][0]
-                    legend_items.append(
-                        self.bokeh.models.LegendItem(
-                            label=s.get_label(self.use_latex),
-                            renderers=[bokeh_renderer])
-                    )
+                        if isinstance(s, HVLineSeries):
+                            if len(r.handles[0]) > 1:
+                                bokeh_renderer = r.handles[0][1]
+                        else:
+                            bokeh_renderer = r.handles[0][0]
+
+                    if bokeh_renderer:
+                        legend_items.append(
+                            self.bokeh.models.LegendItem(
+                                label=s.get_label(self.use_latex),
+                                renderers=[bokeh_renderer])
+                        )
             if self.legend and (len(legend_items) > 0):
                 legend = self.bokeh.models.Legend(items=legend_items)
                 # interactive legend

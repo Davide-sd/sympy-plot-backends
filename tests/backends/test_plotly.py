@@ -90,7 +90,8 @@ from .make_tests import (
     make_test_tick_formatters_3d,
     make_test_tick_formatter_polar_axis,
     make_test_hooks_2d,
-    make_test_surface_use_cm_cmin_cmax_zlim
+    make_test_surface_use_cm_cmin_cmax_zlim,
+    make_test_hline_vline_label,
 )
 
 
@@ -1912,3 +1913,16 @@ def test_update_interactive_surface_use_cm_cmin_cmax_zlim_2():
     p2.backend.update_interactive({a: 1, b: 2})
     assert np.isclose(fig2.data[0].cmin, -2187)
     assert np.isclose(fig2.data[0].cmax, 2241)
+
+
+def test_hline_vline_label():
+    p = make_test_hline_vline_label(PB)
+    assert len(p.fig.data) == 2
+    assert len(p.fig.layout.shapes) == 3
+    assert p.fig.data[0].showlegend
+    assert p.fig.data[1].showlegend
+    assert p.fig.data[0].name == "line"
+    assert p.fig.data[1].name == "hline"
+    assert p.fig.layout.shapes[0].name ==  "hline"
+    assert p.fig.layout.shapes[1].name == "hline2"
+    assert p.fig.layout.shapes[2].name is None

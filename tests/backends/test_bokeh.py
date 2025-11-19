@@ -79,7 +79,8 @@ from .make_tests import (
     make_test_hvlines,
     make_test_grid_minor_grid,
     make_test_tick_formatters_2d,
-    make_test_hooks_2d
+    make_test_hooks_2d,
+    make_test_hline_vline_label,
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -1657,3 +1658,12 @@ def test_hooks():
     cb = p.fig.right[0]
     assert isinstance(cb.ticker, SingleIntervalTicker)
     assert np.isclose(cb.ticker.interval, np.pi / 4)
+
+
+def test_hline_vline_label():
+    p = make_test_hline_vline_label(BB)
+    assert len(p.fig.renderers) == 2
+    assert len([t for t in p.fig.center if isinstance(t, Span)]) == 3
+    assert len(p.fig.legend[0].items) == 2
+    assert p.fig.legend[0].items[0].label["value"] == "line"
+    assert p.fig.legend[0].items[1].label["value"] == "hline"

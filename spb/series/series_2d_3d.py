@@ -2759,6 +2759,7 @@ class HVLineSeries(BaseSeries):
     Represent an horizontal or vertical line series.
     In Matplotlib, this will be rendered by axhline or axvline.
     """
+    is_2Dline = True
     _exclude_params_from_doc = ["colorbar", "use_cm"]
 
     _expr = param.ClassSelector(class_=Expr, doc="""
@@ -2772,9 +2773,13 @@ class HVLineSeries(BaseSeries):
         expr = sympify(expr)
         kwargs["_expr"] = expr
         kwargs["is_horizontal"] = is_horizontal
-        kwargs["_label_str"] = str(expr) if label is None else label
-        kwargs["_label_latex"] = latex(expr) if label is None else label
         super().__init__(**kwargs)
+        if label:
+            # only show actively set labels. If label is not set, we
+            # should not use the latex/str representation, because it
+            # is just a number, which would look weird on the legend.
+            self._label_str = label
+            self._label_latex = label
 
     @property
     def expr(self):

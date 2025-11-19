@@ -9,9 +9,9 @@ from spb.series import (
     ComplexPointSeries, Geometry2DSeries, Geometry3DSeries,
     PlaneSeries, List2DSeries, List3DSeries, AbsArgLineSeries,
     ColoredLineOver1DRangeSeries,
-    HVLineSeries, Arrow2DSeries, Arrow3DSeries, RootLocusSeries,
-    SGridLineSeries, ZGridLineSeries, PoleZeroSeries, SystemResponseSeries,
-    ColoredSystemResponseSeries, NyquistLineSeries,
+    HVLineSeries, HLineSeries, VLineSeries, Arrow2DSeries, Arrow3DSeries,
+    RootLocusSeries, SGridLineSeries, ZGridLineSeries, PoleZeroSeries,
+    SystemResponseSeries, ColoredSystemResponseSeries, NyquistLineSeries,
     NicholsLineSeries, NyquistLineSeries, SystemResponseSeries
 )
 from spb.series.base import _set_discretization_points
@@ -4993,3 +4993,18 @@ def test_ComplexDomainColoringSeries_cast_to_float():
     z = symbols("z")
     s = ComplexDomainColoringSeries(z, (z, -2-2j, 2+2j), phaseoffset=pi)
     assert isinstance(s.phaseoffset, float) and np.isclose(s.phaseoffset, np.pi)
+
+
+@pytest.mark.parametrize("cls_", [HLineSeries, VLineSeries])
+def test_HVLineSeries_label(cls_):
+    # no label is provided: no label should be shown
+    s = cls_(0.1)
+    assert s.label == ""
+    assert s.get_label(True) == ""
+    assert s.get_label(False) == ""
+
+    label = "test"
+    s = cls_(0.1, label=label)
+    assert s.label == label
+    assert s.get_label(True) == label
+    assert s.get_label(False) == label

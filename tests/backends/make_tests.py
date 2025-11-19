@@ -6,7 +6,7 @@ from spb import (
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
-    root_locus, contour, list_2d, line_parametric_2d
+    root_locus, contour, list_2d, line_parametric_2d, hline, vline
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -1051,4 +1051,14 @@ def make_test_surface_use_cm_cmin_cmax_zlim(B, zlim, color_func=None):
             params=params, use_cm=True, label="z", n=10, **kwargs
         ),
         backend=B, zlim=zlim, show=False
+    )
+
+
+def make_test_hline_vline_label(B):
+    return graphics(
+        line(cos(x), (x, -2, 2), label="line"),
+        hline(0.5, label="hline"),
+        hline(0.5, label="hline2", show_in_legend=False),
+        vline(0.75),
+        show=False, backend=B
     )

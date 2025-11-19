@@ -104,7 +104,8 @@ from .make_tests import (
     make_test_tick_formatters_2d,
     make_test_tick_formatters_3d,
     make_test_tick_formatter_polar_axis,
-    make_test_hooks_2d
+    make_test_hooks_2d,
+    make_test_hline_vline_label
 )
 
 ct = import_module("control")
@@ -2771,3 +2772,11 @@ def test_hooks(case, expected_positions, expected_labels):
     labels = [t.get_text() for t in ticks]
     assert np.allclose(positions, expected_positions)
     assert labels == expected_labels
+
+
+def test_hline_vline_label():
+    p = make_test_hline_vline_label(MB)
+    ax = p.ax
+    assert len(ax.get_legend().legend_handles) == 2
+    assert ax.get_legend().legend_handles[0].get_label() == "line"
+    assert ax.get_legend().legend_handles[1].get_label() == "hline"
