@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v4.0.1
+======
+
+* Fixed bug with z-order of 2D arrows.
+* Fixed bug with missing legend entry of horizontal and vertical lines.
+
+
 v4.0.0
 ======
 
