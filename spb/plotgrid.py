@@ -155,7 +155,6 @@ def _get_plots_imodule(plots):
         else:
             imodules.add(plot._imodule)
 
-    print("_get_plots_imodule", imodules)
     if None in imodules:
         imodules.remove(None)
 
