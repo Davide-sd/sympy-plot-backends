@@ -712,7 +712,8 @@ class NyquistLineSeries(ArrowsMixin, ControlBaseSeries):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self.system = tf_to_control(tf)
+            with param.edit_constant(self):
+                self.system = tf_to_control(tf)
 
         control_kw = {}
         sym, start, end = self.range_omega
@@ -921,7 +922,8 @@ class RootLocusSeries(ControlBaseSeries):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self.system = tf_to_control(tf)
+            with param.edit_constant(self):
+                self.system = tf_to_control(tf)
 
         self._zeros = self.system.zeros()
         self._poles = self.system.poles()
@@ -995,7 +997,8 @@ class SystemResponseSeries(ControlBaseSeries, _NMixin):
 
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self.system = tf_to_control(tf)
+            with param.edit_constant(self):
+                self.system = tf_to_control(tf)
 
         # create (or update) the discretized domain
         _, start, end = self.range_t
@@ -1154,7 +1157,8 @@ class PoleZeroSeries(PoleZeroCommon, ControlBaseSeries):
         np = import_module("numpy")
         if self.is_interactive:
             tf = self.expr.subs(self.params)
-            self.system = tf_to_control(tf)
+            with param.edit_constant(self):
+                self.system = tf_to_control(tf)
         if self.return_poles:
             points = self.system.poles()
         else:
