@@ -21,7 +21,10 @@ def _draw_arrow_2d(renderer, data):
         mutation_scale=2,
         arrowstyle=arrowstyle,
         shrinkA=0, shrinkB=0,
-        color=next(p._cl)
+        color=next(p._cl),
+        # NOTE: this appears to solve this issue:
+        # https://github.com/Davide-sd/sympy-plot-backends/issues/54
+        zorder=2
     )
     kw = p.merge({}, pkw, s.rendering_kw)
     arrow = mpatches.FancyArrowPatch((x1, y1), (x2, y2), **kw)
