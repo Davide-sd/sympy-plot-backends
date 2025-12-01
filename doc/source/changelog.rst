@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v4.0.2
+======
+
+* Fixed bug with ``MatplotlibBackend`` and priority of ``rcParams``.
+
+
 v4.0.1
 ======
 
