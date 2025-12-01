@@ -154,7 +154,7 @@ class MatplotlibBackend(Plot):
             "use_latex", cfg["matplotlib"]["use_latex"])
         kwargs.setdefault("grid", cfg["matplotlib"]["grid"])
         kwargs.setdefault("minor_grid", cfg["matplotlib"]["show_minor_grid"])
-        kwargs.setdefault("theme", "default")
+        kwargs.setdefault("theme", "")
         super().__init__(*args, **kwargs)
 
         # set labels
@@ -634,9 +634,20 @@ class MatplotlibBackend(Plot):
         # create the figure from scratch every time, otherwise if the plot was
         # previously shown, it would not be possible to show it again. This
         # behaviour is specific to Matplotlib
-        with self.plt.style.context(self.theme):
+        def func():
             self._create_figure()
             self._process_renderers()
+
+        # NOTE: when applying a theme, plt.rcParams is not considered.
+        # So, any user settings to plt.rcParams will be disregarded.
+        # The following if/else assures that if no theme is provided, then
+        # plt.rcParams are going to be considered.
+
+        if self.theme:
+            with self.plt.style.context(self.theme):
+                func()
+        else:
+            func()
 
     process_series = draw
 
