@@ -750,11 +750,28 @@ class tick_formatter_multiples_of(param.Parameterized):
         if self.quantity:
             self.quantity = float(self.quantity)
 
+    @param.depends("label", watch=True, on_init=True)
+    def _preprocess_label(self):
+        # users might be passing in latex labels wrapped in $...$.
+        # Remove the dollar sign.
+        label = self.label.strip()
+        if len(label) > 1:
+            if (label[0] == "$") and (label[-1] == "$"):
+                label = label[1:-1]
+        label = label.strip()
+        # if the label is a latex white space, remove it
+        if label == r"\,":
+            label = ""
+
+        with param.discard_events(self):
+            self.label = label
+
     def MB_func_formatter(self):
         """
         Return a function to be used by matplotlib's ``FuncFormatter``
         in order to customize the tick labels.
         """
+
         def formatter(value, tick_number):
             N = abs(int(self.np.round(value / (self.quantity / self.n))))
             if N == 0:
@@ -765,7 +782,9 @@ class tick_formatter_multiples_of(param.Parameterized):
             if N % self.n == 0:
                 # whole multiples of pi / n
                 num = int(N / self.n)
-                num = "" if (num == 1) else num
+                if (num == 1) and len(self.label) > 0:
+                    num = ""
+                # num = "" if (num == 1) else num
                 return r"$%s%s%s$" % (sign, num, self.label)
             else:
                 f = Fraction(N, self.n)
@@ -812,8 +831,8 @@ class tick_formatter_multiples_of(param.Parameterized):
             const den = N / g;    // denominator reduced
 
             if (den === 1) {{
-                if (num === 1)  return "{self.label}";
-                if (num === -1) return "-{self.label}";
+                if (num === 1)  return "{self.label if self.label else 1}";
+                if (num === -1) return "-{self.label if self.label else 1}";
                 return `${{num}}{self.label}`;
             }} else {{
                 if (Math.abs(num) === 1)
@@ -857,7 +876,7 @@ class tick_formatter_multiples_of(param.Parameterized):
                 if den == 1:
                     # whole multiples of pi
                     if num == 1:
-                        content = f"{sign}{self.label}"
+                        content = f"{sign}{self.label if self.label else 1}"
                         ticktext.append(wrapper % content)
                     else:
                         content = f"{sign}{num}{self.label}"

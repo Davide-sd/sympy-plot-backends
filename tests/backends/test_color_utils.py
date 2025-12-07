@@ -174,7 +174,7 @@ def test_tick_formatter_MB_1():
     assert isinstance(tf.MB_minor_locator(), plt.MultipleLocator)
 
 
-@pytest.mark.parametrize("q, l, n, t, out", [
+@pytest.mark.parametrize("qantity, label, n, tick, out", [
     [np.pi, "\\pi", 0.5, 0, "$0$"],
     [np.pi, "\\pi", 0.5, 2*np.pi, "$2\\pi$"],
     [np.pi, "\\pi", 0.5, -2*np.pi, "$-2\\pi$"],
@@ -217,11 +217,20 @@ def test_tick_formatter_MB_1():
     [np.e, "e", 2, -np.e/2, "$-\\frac{e}{2}$"],
     [np.e, "e", 2, 3*np.e/2, "$\\frac{3e}{2}$"],
     [np.e, "e", 2, -3*np.e/2, "$-\\frac{3e}{2}$"],
+    # from issue 57
+    [1, "", 1, 1, "$1$"],       # one tick for each unit, no label
+    [1, "", 1, -1, "$-1$"],
+    [1, " ", 1, 1, "$1$"],      # strip trailing whitespace
+    [1, " ", 1, -1, "$-1$"],
+    [1, "\\,", 1, 1, "$1$"],    # remove single latex whitespace
+    [1, "\\,", 1, -1, "$-1$"],
+    [np.pi, "$\\pi$", 4, 5*np.pi/4, "$\\frac{5\\pi}{4}$"], # strip $ from label
+    [np.pi, "$\\pi$", 4, -5*np.pi/4, "$-\\frac{5\\pi}{4}$"],
 ])
-def test_tick_formatter_MB_2(q, l, n, t, out):
-    tf = tick_formatter_multiples_of(quantity=q, label=l, n=n)
+def test_tick_formatter_MB_2(qantity, label, n, tick, out):
+    tf = tick_formatter_multiples_of(quantity=qantity, label=label, n=n)
     f = tf.MB_func_formatter()
-    assert f(t, 0) == out
+    assert f(tick, 0) == out
 
 
 def test_tick_formatter_BB_1():
@@ -276,6 +285,36 @@ def test_tick_formatter_PB_1():
     vals, texts = tf.PB_ticks(-np.e, np.e, latex=True)
     assert np.allclose(vals, [-np.e, -np.e/2, 0, np.e/2, np.e])
     assert texts == ["$-e$", "$-\\frac{e}{2}$", "$0$", "$\\frac{e}{2}$", "$e$"]
+
+
+@pytest.mark.parametrize("label", [
+    "",     # empty label
+    "\\,",  # remove single latex whitespace
+    " "     # strip trailing whitespace
+])
+def test_tick_formatter_PB_2(label):
+    # fro issue 57
+
+    tf = tick_formatter_multiples_of(quantity=1, label=label, n=1)
+    vals, texts = tf.PB_ticks(-3, 3, latex=False)
+    assert np.allclose(vals, [-3, -2, -1, 0, 1, 2, 3])
+    assert texts == ["-3", "-2", "-1", "0", "1", "2", "3"]
+    vals, texts = tf.PB_ticks(-np.e, np.e, latex=True)
+    assert np.allclose(vals, [-3, -2, -1, 0, 1, 2, 3])
+    assert texts == ["$-3$", "$-2$", "$-1$", "$0$", "$1$", "$2$", "$3$"]
+
+
+def test_tick_formatter_PB_3():
+    # fro issue 57 - strip $ from label
+
+    tf = tick_formatter_multiples_of(quantity=np.pi, label="\\pi", n=2)
+    vals, texts = tf.PB_ticks(-np.pi, np.pi, latex=False)
+    assert np.allclose(vals, [-np.pi, -np.pi/2, 0, np.pi/2, np.pi])
+    assert texts == ["-\\pi", "-\\pi/2", "0", "\\pi/2", "\\pi"]
+    vals, texts = tf.PB_ticks(-np.pi, np.pi, latex=True)
+    assert np.allclose(vals, [-np.pi, -np.pi/2, 0, np.pi/2, np.pi])
+    assert texts == ["$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$"]
+
 
 
 @pytest.mark.parametrize("formatter_func, n, n_minor", [
