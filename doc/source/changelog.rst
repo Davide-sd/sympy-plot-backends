@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v4.0.3
+======
+
+* Fixed bug with label of ``tick_formatter_multiples_of``.
+* Fixed bug with label of ``Arrow2DSeries/Arrow3DSeries``.
+
+
 v4.0.2
 ======
 

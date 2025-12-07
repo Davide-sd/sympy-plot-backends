@@ -2588,6 +2588,20 @@ def test_series_labels():
     assert s2.get_label(False) == "test"
     assert s2.get_label(True) == "test"
 
+    s1 = Arrow2DSeries((0, 1), (2, 3))
+    assert s1.get_label(False) == "(0.0, 1.0) -> (2.0, 4.0)"
+    assert s1.get_label(True) == r"$\left(0.0, 1.0\right) \rightarrow \left(2.0, 4.0\right)$"
+    s2 = Arrow2DSeries((0, 1), (2, 3), "test")
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
+    s1 = Arrow3DSeries((0, 1, 2), (3, 4, 5))
+    assert s1.get_label(False) == "(0.0, 1.0, 2.0) -> (3.0, 5.0, 7.0)"
+    assert s1.get_label(True) == r"$\left(0.0, 1.0, 2.0\right) \rightarrow \left(3.0, 5.0, 7.0\right)$"
+    s2 = Arrow3DSeries((0, 1, 2), (3, 4, 5), "test")
+    assert s2.get_label(False) == "test"
+    assert s2.get_label(True) == "test"
+
 
 @pytest.mark.parametrize(
     "use_cm", [None, True, False]

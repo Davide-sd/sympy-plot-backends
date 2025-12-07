@@ -626,7 +626,13 @@ class Arrow2DSeries(BaseSeries):
         """
         if use_latex is False:
             return self._label_str
-        return self._get_wrapped_label(self._label_latex, wrapper)
+
+        # if the default label is shown, then it'll start with \left(...
+        label = self._label_latex
+        if label[0] == "\\":
+            return self._get_wrapped_label(self._label_latex, wrapper)
+        # if the user provided the label
+        return label
 
     def get_data(self):
         """

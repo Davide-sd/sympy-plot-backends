@@ -2079,7 +2079,7 @@ def test_arrow_2d():
     assert isinstance(ax, Axes)
     assert len(ax.patches) == 1
     assert len(ax.get_legend().legend_handles) == 1
-    assert ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert ax.get_legend().legend_handles[0].get_label() == "test"
     assert ax.get_legend().legend_handles[0].get_color() == "r"
     p.backend.update_interactive({a: 4, b: 5})
     p.backend.close()
@@ -2145,7 +2145,7 @@ def test_arrow_3d():
     assert isinstance(ax, mpl_toolkits.mplot3d.axes3d.Axes3D)
     assert len(ax.patches) == 1
     assert len(ax.get_legend().legend_handles) == 1
-    assert ax.get_legend().legend_handles[0].get_label() == "$test$"
+    assert ax.get_legend().legend_handles[0].get_label() == "test"
     assert ax.get_legend().legend_handles[0].get_color() == "r"
     # only way to test if it renders what it's supposed to
     assert np.allclose(ax.patches[0]._xyz, [1, 2, 3])
