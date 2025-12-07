@@ -4765,21 +4765,15 @@ def test_implicit_2d_series_boolean_and():
         s5.get_data()
         assert s5.adaptive is True
 
-    with warns(
-        UserWarning,
-        match="The provided expression contains Boolean functions."
-    ):
-        s6 = ImplicitSeries(cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=True)
-        assert s6.adaptive is True
-        s6.get_data()
-        assert s6.adaptive is True
 
-    with warns(
-        UserWarning,
-        match="The provided expression contains Boolean functions."
-    ):
-        s7 = ImplicitSeries(cond1 & cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
+    # no warning because adaptive=True is passed by the user
+    s6 = ImplicitSeries(cond2 & cond3, (x, -5, 5), (y, -10, 10), adaptive=True)
+    assert s6.adaptive is True
+    s6.get_data()
+    assert s6.adaptive is True
 
+    # no warning because adaptive=True is passed by the user
+    s7 = ImplicitSeries(cond1 & cond2, (x, -5, 5), (y, -10, 10), adaptive=True)
     assert s7.adaptive is True
     # because of Abs, the adaptive algorithm is going to fail, so the uniform
     # meshing algorithm takes over

@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v4.0.4
+======
+
+* Fixed logic to raise a warning in ``plot_implicit``.
+
+
 v4.0.3
 ======
 

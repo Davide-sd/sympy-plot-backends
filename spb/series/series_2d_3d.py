@@ -1845,8 +1845,8 @@ class ImplicitSeries(
         kwargs["_label_str"] = str(expr)
         kwargs["_label_latex"] = latex(expr)
 
-        adaptive = kwargs.get("adaptive", self.param.adaptive.default)
-        if isinstance(expr, (BooleanFunction, Ne)) and (not self.adaptive):
+        adaptive = kwargs.get("adaptive", self.adaptive)
+        if isinstance(expr, (BooleanFunction, Ne)) and (not adaptive):
             kwargs["adaptive"] = adaptive = True
             msg = "contains Boolean functions. "
             if isinstance(expr, Ne):
