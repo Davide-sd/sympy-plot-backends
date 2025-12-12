@@ -2,9 +2,12 @@
  Changelog
 ==========
 
-v4.0.4
+v4.1.0
 ======
 
+* Added :py:func:`spb.graphics.vector_transforms.express` which implements
+  curvilinear to cartesian transformations (and viceversa).
+* Added new example to :py:func:`spb.graphics.vectors.vector_field_3d`.
 * Fixed logic to raise a warning in ``plot_implicit``.
 
 

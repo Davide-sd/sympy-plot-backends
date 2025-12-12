@@ -356,7 +356,12 @@ def vector_field_3d(
     stream_kw=None, **kwargs
 ):
     """
-    Plot a 3D vector field.
+    Plot a 3D vector field in a cartesian coordinate system.
+
+    Note that while it is possible to define vectors in a curvilinear
+    coordinate system (spherical, cylindrical, etc.), the vector must first
+    be expressed in a Cartesian system. More about this in the Examples
+    section.
 
     Parameters
     ==========
@@ -445,7 +450,7 @@ def vector_field_3d(
     Examples
     ========
 
-    3D vector field.
+    Plot a 3D vector field defined in a Cartesian coordinate system:
 
     .. k3d-screenshot::
 
@@ -457,7 +462,7 @@ def vector_field_3d(
                n=8, quiver_kw={"scale": 0.5, "line_width": 0.1, "head_size": 10}),
            backend=KB, xlabel="x", ylabel="y", zlabel="z")
 
-    3D vector field with 3 orthogonal slice planes.
+    3D vector field over 3 orthogonal slice planes.
 
     .. k3d-screenshot::
        :camera: 18.45, -25.63, 14.10, 0.45, -1.02, -2.32, -0.25, 0.35, 0.9
@@ -476,7 +481,7 @@ def vector_field_3d(
            ),
            backend=KB, grid=False, xlabel="x", ylabel="y", zlabel="z",)
 
-    3D vector streamlines starting at a 300 random points:
+    3D streamlines starting at a 400 random points:
 
     .. k3d-screenshot::
        :camera: 3.7, -8.16, 2.8, -0.75, -0.51, -0.63, -0.16, 0.27, 0.96
@@ -534,14 +539,13 @@ def vector_field_3d(
 
     1. compute the normal vector to a circular cone surface. This will be the
        vector field to be plotted.
-    2. plot the cone surface for visualization purposes (use high number of
-       discretization points).
-    3. plot the cone surface that will be used to slice the vector field (use
-       a low number of discretization points). The data series associated to
-       this plot will be used in the ``slice`` keyword argument in the next
-       step.
-    4. plot the sliced vector field.
-    5. combine the plots of step 4 and 2 to get a nice visualization.
+    2. create a data series representing the cone surface for visualization
+       purposes (use high number of discretization points).
+    3. create a data series representing the cone surface that will be used
+       to slice the vector field (use a low number of discretization points).
+    4. create a data series for the normal vector, and assign step 3 to
+       the ``slice`` keyword.
+    5. Assemble the ``graphics`` command and get a nice visualization.
 
     .. k3d-screenshot::
        :camera: 4.5, -3.9, 2, 1.3, 0.04, -0.36, -0.25, 0.27, 0.93
@@ -576,6 +580,66 @@ def vector_field_3d(
                quiver_kw={"scale": 0.5, "pivot": "tail"}
            ),
            backend=KB)
+
+    Compute the normal vector and tangent vectors to a sphere using a
+    spherical coordinate system. Then, convert them to cartesian coordinates
+    for plotting. The conversion is performed with the ``express`` function
+    exposed by this module, which supports curvilinear to cartesian (and
+    viceversa) transformations:
+
+    .. k3d-screenshot::
+
+       from sympy import *
+       from spb import *
+       from spb.graphics.vector_transforms import express
+       from sympy.vector import CoordSys3D
+       C = CoordSys3D("C")
+       S = C.create_new("S", transformation="spherical")
+       x, y, z = C.base_scalars()
+       r, theta, phi = S.base_scalars()
+
+       # position vector for a point on the surface of a sphere of radius r
+       sphere = r * S.i
+       # get the parametric equation for a sphere
+       parameterization = express(sphere, C).to_matrix(C).subs(r, 7)
+
+       # normal and tangents to the sphere expressed in the cartesian frame,
+       # using spherical variables
+       n = express(sphere, C).normalize().simplify()
+       t_theta = n.diff(theta).normalize().simplify()
+       t_phi = n.diff(phi).normalize().simplify()
+
+       # normal and tangents to the sphere expressed in the cartesian frame,
+       # using cartesian variables
+       d = {k: v for k, v in zip([r, theta, phi], S.transformation_from_parent())}
+       n = n.subs(d)
+       t_theta = t_theta.subs(d)
+       t_phi = t_phi.subs(d)
+
+       phi_max = 3 * pi / 2
+       theta_max = pi / 2
+       sphere_series = surface_parametric(
+           *parameterization, (phi, 0, phi_max), (theta, 0, theta_max))
+       locations_for_vectors = surface_parametric(
+           *parameterization, (phi, 0, phi_max), (theta, 0, theta_max),
+           n1=15, n2=8)[0]
+       quiver_kw=dict(pivot="tail", head_size=2, line_width=0.03)
+       common_kws = dict(
+           # NOTE: dummy values for ranges. The important thing is
+           # to order them appropriately. For example, variable x must go
+           # on range_x, etc.
+           range_x=(x, -1, 1), range_y=(y, -1, 1), range_z=(z, -1, 1),
+           slice=locations_for_vectors, 
+           use_cm=False, 
+           quiver_kw=quiver_kw
+       )
+       graphics(
+           sphere_series[0],
+           vector_field_3d(t_theta, **common_kws),
+           vector_field_3d(t_phi, **common_kws),
+           vector_field_3d(n, **common_kws),
+           grid=False, backend=KB
+       )
 
     See Also
     ========
