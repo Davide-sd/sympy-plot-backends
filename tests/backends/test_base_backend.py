@@ -12,6 +12,9 @@ from sympy.external import import_module
 
 pn = import_module("panel")
 ipy = import_module("ipywidgets")
+bokeh = import_module("bokeh")
+plotly = import_module("plotly")
+k3d = import_module("k3d")
 
 KB.skip_notebook_check = True
 
@@ -244,6 +247,13 @@ def test_number_of_renderers():
 @pytest.mark.parametrize("backend", [ MB, BB, PB, KB ])
 @pytest.mark.parametrize("axis_scale", [ "linear", "log" ])
 def test_axis_scales(backend, axis_scale):
+    if (backend is BB) and (not bokeh):
+        return
+    if (backend is PB) and (not plotly):
+        return
+    if (backend is KB) and (not k3d):
+        return
+
     # by default, axis scales should be set to None: this allows users to
     # extend plot capabilities to create plots with categoricals axis.
     # See: https://github.com/Davide-sd/sympy-plot-backends/issues/29
