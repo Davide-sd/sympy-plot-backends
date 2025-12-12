@@ -9,6 +9,7 @@ v4.1.0
   curvilinear to cartesian transformations (and viceversa).
 * Added new example to :py:func:`spb.graphics.vectors.vector_field_3d`.
 * Fixed logic to raise a warning in ``plot_implicit``.
+* Fixed bug in ``MatplotlibBackend`` about setting axis scales.
 
 
 v4.0.3

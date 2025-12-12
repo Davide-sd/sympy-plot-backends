@@ -14,7 +14,7 @@ from spb import (
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
     plot_step_response, multiples_of_pi_over_3, multiples_of_pi_over_4,
-    tick_formatter_multiples_of
+    tick_formatter_multiples_of, line
 )
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
@@ -2780,3 +2780,23 @@ def test_hline_vline_label():
     assert len(ax.get_legend().legend_handles) == 2
     assert ax.get_legend().legend_handles[0].get_label() == "line"
     assert ax.get_legend().legend_handles[1].get_label() == "hline"
+
+
+def test_issue_57():
+    from matplotlib.ticker import MultipleLocator
+
+    fig, ax = matplotlib.pyplot.subplots()
+    ax.yaxis.set_major_locator(MultipleLocator(1))
+
+    assert not isinstance(ax.xaxis.get_major_locator(), MultipleLocator)
+    assert isinstance(ax.yaxis.get_major_locator(), MultipleLocator)
+
+    x = symbols("x")
+    p = graphics(
+        line(sin(x), (x, 0, 2), n=10),
+        line(cos(x), (x, 0, 2)), n=10,
+        backend=MB, show=False, ax=ax
+    )
+    assert not isinstance(p.ax.xaxis.get_major_locator(), MultipleLocator)
+    assert isinstance(p.ax.yaxis.get_major_locator(), MultipleLocator)
+

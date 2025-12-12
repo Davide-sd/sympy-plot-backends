@@ -223,7 +223,7 @@ def test_plot_functions_doc():
     assert "aspect : str, tuple, list" in doc
     assert "xlabel :" in doc
     assert "Label of the x-axis. It can be:" in doc
-    assert "xscale : str" in doc
+    assert "xscale : NoneType, str" in doc
     assert "If the backend supports it, the x-direction will use the specified" in doc
     assert "evaluator" not in doc
 

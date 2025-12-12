@@ -289,17 +289,17 @@ class PlotAttributes(param.Parameterized):
         Limit the figure's z-axis to the specified range. The tuple must be in
         the form `(min_val, max_val)`.""")
     xscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
+        default="linear", objects=["linear", "log", None], doc="""
         If the backend supports it, the x-direction will use the specified
         scale. Note that none of the backends support logarithmic scale
         for 3D plots.""")
     yscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
+        default="linear", objects=["linear", "log", None], doc="""
         If the backend supports it, the y-direction will use the specified
         scale. Note that none of the backends support logarithmic scale
         for 3D plots.""")
     zscale = param.Selector(
-        default="linear", objects=["linear", "log"], doc="""
+        default="linear", objects=["linear", "log", None], doc="""
         If the backend supports it, the z-direction will use the specified
         scale. Note that none of the backends support logarithmic scale
         for 3D plots.""")

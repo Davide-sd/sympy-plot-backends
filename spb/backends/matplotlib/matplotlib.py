@@ -155,6 +155,13 @@ class MatplotlibBackend(Plot):
         kwargs.setdefault("grid", cfg["matplotlib"]["grid"])
         kwargs.setdefault("minor_grid", cfg["matplotlib"]["show_minor_grid"])
         kwargs.setdefault("theme", "")
+        # NOTE: this is necessary in order for to guarantee that
+        # issues 29,57  don't afflicts us again. Turns out that when
+        # setting axis scales (even to "linear"), axis locators (and
+        # ticks) get reset to default
+        kwargs.setdefault("xscale", None)
+        kwargs.setdefault("yscale", None)
+        kwargs.setdefault("zscale", None)
         super().__init__(*args, **kwargs)
 
         # set labels
