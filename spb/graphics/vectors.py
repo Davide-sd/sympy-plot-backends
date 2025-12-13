@@ -588,6 +588,7 @@ def vector_field_3d(
     viceversa) transformations:
 
     .. k3d-screenshot::
+       :camera: 11.9, -17.9, 4.6, 0.025, -0.025, 3.4, 0, 0, 1
 
        from sympy import *
        from spb import *
