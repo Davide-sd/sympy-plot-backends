@@ -114,6 +114,14 @@ def _check_steps(steps):
     return steps
 
 
+def _get_number_of_positional_args(func):
+    nargs = arity(func)
+    if isinstance(nargs, tuple):
+        # some numpy function, like np.deg2rad, returns nargs=(0,1)
+        nargs = 1
+    return nargs
+
+
 class LineBaseMixin(param.Parameterized):
     is_scatter = param.Boolean(False, doc="""
         If True it represent a scatter plot, otherwise a continuous line.""")
@@ -645,7 +653,7 @@ class List2DSeries(Line2DBaseSeries):
 
     def _eval_color_func_helper(self, *data):
         if self.use_cm and callable(self.color_func):
-            nargs = arity(self.color_func)
+            nargs = _get_number_of_positional_args(self.color_func)
             if nargs == 0:
                 color = self.color_func()
             elif nargs == 2:
@@ -733,7 +741,7 @@ class List3DSeries(List2DSeries):
 
     def _eval_color_func_helper(self, *data):
         if self.use_cm and callable(self.color_func):
-            nargs = arity(self.color_func)
+            nargs = _get_number_of_positional_args(self.color_func)
             if nargs == 0:
                 color = self.color_func()
             elif nargs == 3:
@@ -921,7 +929,8 @@ class ColoredLineOver1DRangeSeries(LineOver1DRangeSeries):
 
     def _eval_color_func_helper(self, x, y):
         color_func = self.evaluator.request_color_func(self.modules)
-        nargs = arity(color_func)
+        nargs = _get_number_of_positional_args(color_func)
+
         if nargs == 1:
             color = color_func(x)
         elif nargs == 2:
@@ -1051,7 +1060,7 @@ class ParametricLineBaseSeries(
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
         try:
-            nargs = arity(color_func)
+            nargs = _get_number_of_positional_args(color_func)
         except ValueError:
             # TODO: remove this catch in the future.
             # Currently, this is needd in order to pass tests with Python 3.10
@@ -1485,7 +1494,7 @@ class SurfaceOver2DRangeSeries(SurfaceBaseSeries):
 
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
-        nargs = arity(color_func)
+        nargs = _get_number_of_positional_args(color_func)
         if nargs == 1:
             color = color_func(coords[0])
         elif nargs == 2:
@@ -1654,7 +1663,7 @@ class ParametricSurfaceSeries(SurfaceBaseSeries):
 
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
-        nargs = arity(color_func)
+        nargs = _get_number_of_positional_args(color_func)
         if nargs == 1:
             color = color_func(coords[3])
         elif nargs == 2:
@@ -2444,7 +2453,7 @@ class PlaneSeries(SurfaceBaseSeries):
 
     def _eval_color_func_helper(self, *coords):
         color_func = self.evaluator.request_color_func(self.modules)
-        nargs = arity(color_func)
+        nargs = _get_number_of_positional_args(color_func)
         if nargs == 3:
             color = color_func(*coords)
         else:
