@@ -64,7 +64,7 @@ jobs:
           coverage xml
 
     - name: Coverage Badge
-      run: \
+      run: |
         python -m pip install -U genbadge
         genbadge coverage -i  coverage.xml -o coverage.svg
 
