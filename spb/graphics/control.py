@@ -479,7 +479,18 @@ def _set_lower_upper_limits(system, lower_limit, upper_limit,
         ct = import_module("control")
         if ct and (not kwargs.get("params", None)):
             # this procedure requires the control module
-            control_sys = tf_to_control(system)
+            try:
+                control_sys = tf_to_control(system)
+            except TypeError:
+                # this is likely the case when complex coefficients are used.
+                w = Wild("w", properties=[lambda t: t.is_Number])
+                # TODO: of course, setting the imaginary part is going to alter
+                # the transfer function. We may not be able to extrapolate the
+                # correct initial_exp and final_exp. We need a better procedure
+                # for this case.
+                system = system.replace(w * I, 0)
+                # at this point new_system should have real coefficients
+                control_sys = tf_to_control(system)
             tfinal, _ = _ideal_tfinal_and_dt(control_sys, is_step=is_step)
         # if interactive widget plot, or control is not installed, use
         # default value of 10

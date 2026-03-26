@@ -10,7 +10,7 @@ from spb.graphics.control import (
 from spb.interactive import create_interactive_plot
 from spb.plotgrid import plotgrid
 from spb.utils import _instantiate_backend, is_siso, tf_to_sympy, tf_to_control
-from sympy import Expr
+from sympy import Expr, Wild, I
 from sympy.external import import_module
 
 
@@ -254,7 +254,18 @@ def _set_upper_limits(systems, upper_limit, is_step=True, **kwargs):
         # So, build a temporary MIMO transfer function including all systems
         # in order to compute an appropriate maximum time for the simulation.
         sympy_mimo_sys = TransferFunctionMatrix([all_sympy_systems])
-        control_mimo_sys = tf_to_control(sympy_mimo_sys)
+        try:
+            control_mimo_sys = tf_to_control(sympy_mimo_sys)
+        except TypeError:
+            # this is likely the case when complex coefficients are used.
+            w = Wild("w", properties=[lambda t: t.is_Number])
+            # TODO: of course, setting the imaginary part is going to alter
+            # the transfer function. We may not be able to extrapolate the
+            # correct initial_exp and final_exp. We need a better procedure
+            # for this case.
+            sympy_mimo_sys = sympy_mimo_sys.replace(w * I, 0)
+            # at this point new_system should have real coefficients
+            control_mimo_sys = tf_to_control(sympy_mimo_sys)
         tfinal, _ = _ideal_tfinal_and_dt(control_mimo_sys)
         if tfinal:
             upper_limit = tfinal

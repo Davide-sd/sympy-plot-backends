@@ -972,6 +972,21 @@ def test_bode_magnitude_complex_coefficients_1():
     assert not np.isnan(y).any()
 
 
+@pytest.mark.parametrize("func", [
+    impulse_response,
+    step_response,
+    ramp_response,
+])
+def test_responses_with_complex_coefficients(func):
+    tf = ((1 + I) * s + (2 - I)) / (s**2 + (3 + 2*I)*s + 1)
+    series = func(tf, n=20, control=False)
+    assert len(series) == 1
+    x, y = series[0].get_data()
+    # TODO: in reality, we should let user decide what to plot. Is it the real
+    # part? or the imaginary part? or the magnitude of the response?
+    assert np.isnan(y).all()
+
+
 def test_bode_magnitude_complex_coefficients_2_issue_29530():
     num = np.array([ 3.48799648e-03+0.00000000e+00j,  3.94714557e+00-3.27602726e+02j,
        -1.26370216e+07-8.62936992e+05j, -2.85822924e+10+2.68995812e+11j,
