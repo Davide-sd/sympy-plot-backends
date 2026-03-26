@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v4.1.1
+======
+
+* Fixed bug with plotting of transfer functions containing complex coefficients.
+
+
 v4.1.0
 ======
 
