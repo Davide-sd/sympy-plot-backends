@@ -19,7 +19,7 @@ from spb.utils import (
 from sympy import (
     roots, exp, Poly, degree, re, im, apart, Dummy, symbols,
     I, log, Abs, arg, sympify, S, Min, Max, Piecewise, sqrt,
-    floor, ceiling, frac, pi, Expr, inverse_laplace_transform,
+    floor, ceiling, frac, pi, Expr, inverse_laplace_transform, Wild
 )
 from sympy.external import import_module
 import warnings
@@ -1179,7 +1179,6 @@ def ramp_response(
 def _bode_common(system, label, initial_exp, final_exp, freq_unit, **kwargs):
     # NOTE: why use ``sympy`` and not ``control`` to compute bode plots?
     # Because I can easily deal with time delays.
-
     original_system = _preprocess_system(system, **kwargs)
     system = tf_to_sympy(original_system, skip_check_dt=True)
     _check_system(system, bypass_delay_check=True)
@@ -1210,14 +1209,26 @@ def _bode_common(system, label, initial_exp, final_exp, freq_unit, **kwargs):
             # affected by it.
             for d in tf_find_time_delay(new_system):
                 new_system = new_system.subs({d: 1})
-            tf = tf_to_control(new_system)
         else:
             new_system = system
             # assume any time delay is in cascade, so that only the phase is
             # affected by it.
             for d in tf_find_time_delay(new_system):
                 new_system = new_system.subs({d: 1})
+
+        try:
             tf = tf_to_control(new_system)
+        except TypeError:
+            # this is likely the case when complex coefficients are used.
+            w = Wild("w", properties=[lambda t: t.is_Number])
+            # TODO: of course, setting the imaginary part is going to alter
+            # the transfer function. We may not be able to extrapolate the
+            # correct initial_exp and final_exp. We need a better procedure
+            # for this case.
+            new_system = new_system.replace(w * I, 0)
+            # at this point new_system should have real coefficients
+            tf = tf_to_control(new_system)
+
         i, f = _default_frequency_exponent_range(tf, freq_unit == 'Hz', 1)
         initial_exp = i if initial_exp is None else initial_exp
         final_exp = f if final_exp is None else final_exp
@@ -1236,7 +1247,18 @@ def _bode_magnitude_helper(
 ):
     w_expr, _range = _bode_common(
         system, label, initial_exp, final_exp, freq_unit, **kwargs)
-    mag = 20*log(Abs(w_expr), 10)
+    # NOTE: we could use mag = Abs(w_expr) and it would work fine. However,
+    # if the polynomials have huge exponents, it could return complex results
+    # in which the imaginary part is large enough for the algorithm inside
+    # LineOver1DRangeSeries._get_data_helper to consider it a complex number,
+    # thus setting the result to NaN, even when using sympy/mpmath as
+    # evaluation modules. Instead, by separating the real and imaginary part
+    # it appears that the imaginary part is small enough to be considered zero,
+    # thus keeping the real part.
+    real = re(w_expr)
+    imag = im(w_expr)
+    mag = sqrt(real**2 + imag**2)
+    mag = 20*log(mag, 10)
     return LineOver1DRangeSeries(
         mag, _range, label, xscale='log', **kwargs)
 

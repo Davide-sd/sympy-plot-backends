@@ -1002,6 +1002,7 @@ def plot_bode(
     plot_bode_magnitude, plot_bode_phase, plot_nyquist, plot_nichols
 
     """
+
     kwargs["plot_function"] = True
     show = kwargs.pop("show", True)
     kwargs["show"] = False

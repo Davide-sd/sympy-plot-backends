@@ -878,6 +878,8 @@ class LineOver1DRangeSeries(
         if self._return is None:
             # The evaluation could produce complex numbers. Set real elements
             # to NaN where there are non-zero imaginary elements
+            # TODO: can we allow users to select an appropriate threshold
+            # for the is_close function?
             _re[np.invert(np.isclose(_im, np.zeros_like(_im)))] = np.nan
         elif self._return == "real":
             pass

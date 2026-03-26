@@ -14,7 +14,7 @@ from spb.series import (
     SystemResponseSeries, PoleZeroSeries, NGridLineSeries, MCirclesSeries
 )
 from sympy.abc import a, b, c, d, e, s
-from sympy import exp
+from sympy import exp, I
 from sympy.physics.control.lti import TransferFunction, TransferFunctionMatrix
 from sympy.external import import_module
 
@@ -962,3 +962,33 @@ def test_mcircles(arg, n_series, params):
     assert len(d) == n_series
     assert all(len(t) == 3 for t in d)
     assert series[0].is_interactive == (True if params else False)
+
+
+def test_bode_magnitude_complex_coefficients_1():
+    tf = ((1 + I) * s + (2 - I)) / (s**2 + (3 + 2*I)*s + 1)
+    series = bode_magnitude(tf, n=20)
+    assert len(series) == 1
+    x, y = series[0].get_data()
+    assert not np.isnan(y).any()
+
+
+def test_bode_magnitude_complex_coefficients_2_issue_29530():
+    num = np.array([ 3.48799648e-03+0.00000000e+00j,  3.94714557e+00-3.27602726e+02j,
+       -1.26370216e+07-8.62936992e+05j, -2.85822924e+10+2.68995812e+11j,
+        3.49538064e+15+3.72323599e+14j,  2.17691576e+18-2.86131354e+19j,
+       -1.47410187e+23-3.86894682e+21j,  1.76676107e+25+4.66860012e+26j,
+        8.63781663e+29-1.02652261e+29j, -1.90093975e+32-8.42072953e+32j,
+       -3.29925768e+35+1.22585000e+35j])
+    den = np.array([-9.19119158e+36-5.78774471e+36j])
+    num_poly = np.sum([num[i] * s**(int(len(num) - 1 - i)) for i in range(len(num))])
+    den_poly = np.sum([den[i] * s**(int(len(den) - 1 - i)) for i in range(len(den))])
+    tf = TransferFunction(num_poly, den_poly, s)
+    series = bode_magnitude(tf, n=20)
+    assert len(series) == 1
+    x, y = series[0].get_data()
+    # NOTE: if you are having problem with this tests, it means NaN is part
+    # of the computed results. That could happen because you changed the
+    # way magnitude is computed, or because you changed the threshold inside
+    # LineOver1DRangeSeries._get_data_helper in which NaN is set when imaginary
+    # parts are present in the result.
+    assert not np.isnan(y).any()
