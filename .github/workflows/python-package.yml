@@ -59,10 +59,14 @@ jobs:
     - name: Test with pytest
       uses: GabrielBB/xvfb-action@v1  # needed for Mayavi headless tests
       with:
-        run: coverage run -m pytest
+        run: |
+          coverage run -m pytest
+          coverage xml
 
     - name: Coverage Badge
-      uses: tj-actions/coverage-badge-py@v1.8
+      run: \
+        pip install -U genbadge
+        genbadge coverage -i  coverage.xml -o coverage.svg
 
     - name: Verify Changed files
       if: matrix.python-version == '3.9'
