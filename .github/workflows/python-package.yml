@@ -65,7 +65,7 @@ jobs:
 
     - name: Coverage Badge
       run: \
-        pip install -U genbadge
+        python -m pip install -U genbadge
         genbadge coverage -i  coverage.xml -o coverage.svg
 
     - name: Verify Changed files
