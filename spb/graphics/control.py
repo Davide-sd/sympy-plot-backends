@@ -1258,20 +1258,12 @@ def _bode_magnitude_helper(
 ):
     w_expr, _range = _bode_common(
         system, label, initial_exp, final_exp, freq_unit, **kwargs)
-    # NOTE: we could use mag = Abs(w_expr) and it would work fine. However,
-    # if the polynomials have huge exponents, it could return complex results
-    # in which the imaginary part is large enough for the algorithm inside
-    # LineOver1DRangeSeries._get_data_helper to consider it a complex number,
-    # thus setting the result to NaN, even when using sympy/mpmath as
-    # evaluation modules. Instead, by separating the real and imaginary part
-    # it appears that the imaginary part is small enough to be considered zero,
-    # thus keeping the real part.
-    real = re(w_expr)
-    imag = im(w_expr)
-    mag = sqrt(real**2 + imag**2)
-    mag = 20*log(mag, 10)
-    return LineOver1DRangeSeries(
-        mag, _range, label, xscale='log', **kwargs)
+
+    mag = 20*log(Abs(w_expr), 10)
+
+    kwargs["return"] = "real"
+    kwargs["xscale"] = "log"
+    return LineOver1DRangeSeries(mag, _range, label, **kwargs)
 
 
 @modify_graphics_series_doc(LineOver1DRangeSeries, replace=_replace_params_docstring)
