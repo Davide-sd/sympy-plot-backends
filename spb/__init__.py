@@ -38,6 +38,7 @@ from spb.backends.bokeh import BB
 from spb.backends.plotly import PB
 from spb.backends.k3d import KB
 from spb.backends.utils import (
+    convert_colormap,
     tick_formatter_multiples_of,
     multiples_of_2_pi,
     multiples_of_pi,
@@ -97,5 +98,5 @@ __all__ = [
     "arrow_2d", "arrow_3d", "root_locus", "sgrid", "plot_root_locus", "zgrid",
     "ngrid", "mcircles", "tick_formatter_multiples_of", "multiples_of_2_pi",
     "multiples_of_pi", "multiples_of_pi_over_2", "multiples_of_pi_over_3",
-    "multiples_of_pi_over_4"
+    "multiples_of_pi_over_4", "convert_colormap"
 ]

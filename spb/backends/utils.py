@@ -11,31 +11,53 @@ from sympy import (
 from spb.doc_utils.ipython import modify_parameterized_doc
 
 
-def convert_colormap(cm, to, n=256):
+def convert_colormap(cm, to, n=256, cyclic=False):
     """Convert the provided colormap to a format usable by the specified
     plotting library. The following plotting libraries are supported:
     matplotlib, plotly, bokeh, k3d.
 
     Parameters
     ==========
-        cm : Colormap, list, tuple, ndarray
-            The provided colormap. It can be:
-            * an instance of matplotlib.colors.Colormap
-            * a string with the name of a Plotly color scale
-            * a list of string HEX colors (colorcet colormaps)
-            * a list of float numbers between 0 and 1 (k3d colormaps)
-        to : str
-            Specify the plotting library.
-        n : int
-            Number of discretization points in the range [0, 1].
-            Default to 256.
-            This is only used if `cm` is an instance of Colormap or if `cm` is
-            a string with the name of a Plotly color scale.
+    cm : Colormap, list, tuple, ndarray
+        The colormap to be converted. It can be:
+
+        * an instance of matplotlib.colors.Colormap
+        * a string with the name of a Plotly color scale
+        * a list of string HEX colors (colorcet colormaps)
+        * a list of float numbers between 0 and 1 (k3d colormaps)
+    to : str
+        Specify the plotting library. Must be one of:
+        ["matplotlib", "plotly", "k3d", "bokeh"]
+    n : int
+        Number of discretization points in the range [0, 1].
+        Default to 256.
+        This is only used if `cm` is an instance of Colormap or if `cm` is
+        a string with the name of a Plotly color scale.
+    cyclic : boolean
+        Default to False. If True, takes the necessary measures to return
+        a proper cyclic color map in order to avoid rendering artifacts.
 
     Returns
     =======
-        A new colormap. Note that the conversion is not guardanteed.
-        The function returns the provided colormap if it cannot be converted.
+    new_cm :
+        A new colormap. If a colormap is to be converted to "matplotlib", then
+        an array of numerical values will be returned, with which the user
+        can buil the intended colormap using one of Matplotlib's classes.
+        Note that the conversion is not guardanteed. The function returns the
+        provided colormap if it cannot be converted.
+    
+    Examples
+    ========
+
+    >>> from spb import convert_colormap
+    >>> import colorcet as cc
+    >>> cyclic_cmap = cc.colorwheel
+    >>> cmap_plotly = convert_colormap(cyclic_cmap, "plotly", cyclic=True)
+    >>> cmap_plotly[0][1]
+    'rgb(46, 33, 234)'
+    >>> cmap_plotly[0][1] == cmap_plotly[-1][1]
+    True
+
     """
     np = import_module('numpy')
     matplotlib = import_module(
@@ -47,7 +69,7 @@ def convert_colormap(cm, to, n=256):
 
     assert isinstance(to, str)
     to = to.lower()
-    assert to in ["matplotlib", "plotly", "k3d", "bokeh", "mayavi"]
+    assert to in ["matplotlib", "plotly", "k3d", "bokeh"]
     if not isinstance(cm, (str, list, tuple, np.ndarray, Colormap)):
         raise ValueError(
             "`cm` must be either:\n"
@@ -57,16 +79,6 @@ def convert_colormap(cm, to, n=256):
             + "3. an instance of matplotlib.colors.Colormap.\n"
             + "4. an array of colors extracted from a matplotlib.colors.Colormap."
         )
-
-    if to == "mayavi":
-        # NOTE: Mayavi colormaps are based on look up tables.
-        # It is possible to modify a colormap after an object (mesh) has been
-        # created (see this example):
-        # https://docs.enthought.com/mayavi/mayavi/auto/example_custom_colormap.html
-        # However, it is not possible to pass a look up table to the colormap
-        # keyword argument of a Mayavi function. Hence, we cannot implement
-        # intercompatibility with other plotting libraries.
-        return cm
 
     r = []
     if to == "k3d":
@@ -141,6 +153,8 @@ def convert_colormap(cm, to, n=256):
             for loc, color in zip(np.linspace(0, 1, len(cm)), cm):
                 c = ImageColor.getcolor(color, "RGB")
                 r.append([loc, "rgb" + str(tuple(c))])
+            if cyclic:
+                r[-1][1] = r[0][1]
         elif all([isinstance(t, (float, int)) for t in cm]):
             # k3d color map
             cm = np.array(cm).reshape(-1, 4)

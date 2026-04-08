@@ -6,6 +6,7 @@ v4.1.2
 ======
 
 * Improved `K3DBackend` in order to better deal with cyclic color maps.
+* Exposed `convert_colormap` to the root of the module.
 
 
 v4.1.1

@@ -1,6 +1,6 @@
 import pytest
 panel = pytest.importorskip("panel")
-from spb.backends.utils import (
+from spb import (
     convert_colormap,
     tick_formatter_multiples_of,
     multiples_of_2_pi,
@@ -137,6 +137,15 @@ def test_convert_to_matplotlib():
     do_test(plotly_colorscales)
     do_test(matplotlib_cm, True)
     do_test(k3d_cms)
+
+
+def test_convert_cyclic_colormap():
+    cmap = cc.colorwheel
+    cmap1 = convert_colormap(cmap, "plotly", cyclic=False)
+    cmap2 = convert_colormap(cmap, "plotly", cyclic=True)
+    assert cmap1 != cmap2
+    assert cmap1[0][1] != cmap1[-1][1]
+    assert cmap2[0][1] == cmap2[-1][1]
 
 
 @pytest.mark.parametrize("q, expected_q", [
