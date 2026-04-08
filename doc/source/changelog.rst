@@ -2,6 +2,12 @@
  Changelog
 ==========
 
+v4.1.2
+======
+
+* Improved `K3DBackend` in order to better deal with cyclic color maps.
+
+
 v4.1.1
 ======
 
