@@ -6,7 +6,8 @@ from spb import (
     plot_vector, plot_complex, plot_real_imag, plot_riemann_sphere,
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
-    root_locus, contour, list_2d, line_parametric_2d, hline, vline
+    root_locus, contour, list_2d, line_parametric_2d, hline, vline,
+    line_parametric_3d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -1061,4 +1062,51 @@ def make_test_hline_vline_label(B):
         hline(0.5, label="hline2", show_in_legend=False),
         vline(0.75),
         show=False, backend=B
+    )
+
+
+def make_test_colorbar_ticks_surface(B, custom_ticks_on_cb, rkw={}):
+    r, theta = symbols("r theta")
+    return graphics(
+        surface_parametric(
+            r * cos(theta), r*sin(theta), theta,
+            (r, 0, 2), (theta, -4*pi, 4*pi),
+            n1 = 10, n2=10,
+            wireframe=False,
+            use_cm=True,
+            rendering_kw=rkw,
+            color_func=lambda x, y, z, r, t: t % (2 * np.pi),
+            label="theta [rad]",
+            colorbar_ticks_formatter=custom_ticks_on_cb
+        ),
+        backend=B, show=False
+    )
+
+
+def make_test_colorbar_ticks_line_parametric_2d(
+    B, custom_ticks_on_cb, rkw={}):
+    return graphics(
+        line_parametric_2d(
+            2 * cos(x) + 5 * cos(2 * x / 3),
+            2 * sin(x) - 5 * sin(2 * x / 3),
+            (x, 0, 6 * pi),
+            colorbar_ticks_formatter=custom_ticks_on_cb,
+            rendering_kw=rkw
+        ),
+        backend=B, show=False
+    )
+
+
+def make_test_colorbar_ticks_line_parametric_3d(
+    B, custom_ticks_on_cb, rkw={}):
+    return graphics(
+        line_parametric_3d(
+            3 * sin(t) + 2 * sin(3 * t),
+            cos(t) - 2 * cos(3 * t),
+            cos(5 * t),
+            (t, 0, 2 * pi),
+            colorbar_ticks_formatter=custom_ticks_on_cb,
+            rendering_kw=rkw
+        ),
+        backend=B, show=False
     )

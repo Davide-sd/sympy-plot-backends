@@ -14,7 +14,8 @@ from spb import (
     plot_parametric, plot_implicit, plot_list, plot_geometry,
     plot_complex_list, graphics, vector_field_2d, plot_nyquist, plot_nichols,
     plot_step_response, multiples_of_pi_over_3, multiples_of_pi_over_4,
-    tick_formatter_multiples_of, line
+    tick_formatter_multiples_of, line, multiples_of_pi_over_2,
+    multiples_of_pi
 )
 from spb.series import (
     RootLocusSeries, SGridLineSeries, ZGridLineSeries, ContourSeries,
@@ -105,7 +106,10 @@ from .make_tests import (
     make_test_tick_formatters_3d,
     make_test_tick_formatter_polar_axis,
     make_test_hooks_2d,
-    make_test_hline_vline_label
+    make_test_hline_vline_label,
+    make_test_colorbar_ticks_surface,
+    make_test_colorbar_ticks_line_parametric_2d,
+    make_test_colorbar_ticks_line_parametric_3d,
 )
 
 ct = import_module("control")
@@ -2800,3 +2804,74 @@ def test_issue_57():
     assert not isinstance(p.ax.xaxis.get_major_locator(), MultipleLocator)
     assert isinstance(p.ax.yaxis.get_major_locator(), MultipleLocator)
 
+
+def test_colorbar_ticks_surface():
+    p1 = make_test_colorbar_ticks_surface(MB, None)
+    p2 = make_test_colorbar_ticks_surface(
+        MB,
+        multiples_of_pi_over_2(label="π"),
+        {"cmap": "twilight", "vmin": 0, "vmax": 2*np.pi})
+
+    expected_tick_vals = [
+        0.0, 1.5707963267948966, 3.141592653589793,
+        4.71238898038469, 6.283185307179586]
+    expected_tick_lbls = [
+        '$0$', '$\\frac{π}{2}$', '$π$', '$\\frac{3π}{2}$', '$2π$']
+
+    ticks1 = p1.fig.axes[-1].get_yticklabels()
+    val1 = [t.get_position()[1] for t in ticks1]
+    lbl1 = [t.get_text() for t in ticks1]
+    assert len(val1) != len(expected_tick_vals)
+    assert len(lbl1) != len(expected_tick_lbls)
+
+    ticks2 = p2.fig.axes[-1].get_yticklabels()
+    val2 = [t.get_position()[1] for t in ticks2]
+    lbl2 = [t.get_text() for t in ticks2]
+    assert np.allclose(val2, expected_tick_vals)
+    assert lbl2 == expected_tick_lbls
+
+
+def test_colorbar_ticks_line_parametric_2d():
+    p1 = make_test_colorbar_ticks_line_parametric_2d(MB, None)
+    p2 = make_test_colorbar_ticks_line_parametric_2d(
+        MB, multiples_of_pi())
+
+    expected_tick_vals = np.pi * np.array([
+        0, 1, 2, 3, 4, 5, 6])
+    expected_tick_lbls = [
+        '$0$', '$\\pi$', '$2\\pi$', '$3\\pi$', '$4\\pi$', '$5\\pi$', '$6\\pi$']
+
+    ticks1 = p1.fig.axes[-1].get_yticklabels()
+    val1 = [t.get_position()[1] for t in ticks1]
+    lbl1 = [t.get_text() for t in ticks1]
+    assert len(val1) != len(expected_tick_vals)
+    assert len(lbl1) != len(expected_tick_lbls)
+
+    ticks2 = p2.fig.axes[-1].get_yticklabels()
+    val2 = [t.get_position()[1] for t in ticks2]
+    lbl2 = [t.get_text() for t in ticks2]
+    assert np.allclose(val2, expected_tick_vals)
+    assert lbl2 == expected_tick_lbls
+
+
+def test_colorbar_ticks_line_parametric_3d():
+    p1 = make_test_colorbar_ticks_line_parametric_3d(MB, None)
+    p2 = make_test_colorbar_ticks_line_parametric_3d(
+        MB, multiples_of_pi_over_2())
+
+    expected_tick_vals = np.pi * np.array([
+        0, 0.5, 1, 1.5, 2])
+    expected_tick_lbls = [
+        '$0$', '$\\frac{\\pi}{2}$', '$\\pi$', '$\\frac{3\\pi}{2}$', '$2\\pi$']
+
+    ticks1 = p1.fig.axes[-1].get_yticklabels()
+    val1 = [t.get_position()[1] for t in ticks1]
+    lbl1 = [t.get_text() for t in ticks1]
+    assert len(val1) != len(expected_tick_vals)
+    assert len(lbl1) != len(expected_tick_lbls)
+
+    ticks2 = p2.fig.axes[-1].get_yticklabels()
+    val2 = [t.get_position()[1] for t in ticks2]
+    lbl2 = [t.get_text() for t in ticks2]
+    assert np.allclose(val2, expected_tick_vals)
+    assert lbl2 == expected_tick_lbls

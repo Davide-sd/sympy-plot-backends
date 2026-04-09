@@ -1,5 +1,6 @@
 import param
 from spb.doc_utils.ipython import modify_parameterized_doc
+from spb.backends.utils import tick_formatter_multiples_of
 from spb.utils import (
     _correct_shape,
     extract_solution,
@@ -123,6 +124,11 @@ def _get_number_of_positional_args(func):
 
 
 class LineBaseMixin(param.Parameterized):
+    colorbar_ticks_formatter = param.ClassSelector(
+        default=None, class_=tick_formatter_multiples_of, doc="""
+        An object of type ``tick_formatter_multiples_of`` which will be used
+        to place tick values on the colorbar at each multiple of a specified
+        quantity. This only works when `use_cm=True`.""")
     is_scatter = param.Boolean(False, doc="""
         If True it represent a scatter plot, otherwise a continuous line.""")
     is_filled = param.Boolean(True, doc="""
@@ -1270,6 +1276,11 @@ class SurfaceBaseSeries(
 
     is_3Dsurface = True
 
+    colorbar_ticks_formatter = param.ClassSelector(
+        default=None, class_=tick_formatter_multiples_of, doc="""
+        An object of type ``tick_formatter_multiples_of`` which will be used
+        to place tick values on the colorbar at each multiple of a specified
+        quantity. This only works when `use_cm=True`.""")
     surface_color = param.Parameter(default=None, doc="""
         For back-compatibility with old sympy.plotting. Use ``rendering_kw``
         in order to fully customize the appearance of the surface.""")

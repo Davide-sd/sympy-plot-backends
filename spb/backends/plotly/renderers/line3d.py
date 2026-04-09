@@ -41,6 +41,12 @@ def _draw_line3d_helper(renderer, data):
                 color=param,
                 showscale=s.colorbar,
             )
+
+            if s.colorbar_ticks_formatter:
+                tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+                    min(param), max(param))
+                lkw["line"]["colorbar"]["tickvals"] = tickvals
+                lkw["line"]["colorbar"]["ticktext"] = ticktext
         else:
             lkw["line"] = dict(
                 width=4,
@@ -71,6 +77,12 @@ def _draw_line3d_helper(renderer, data):
         if s.use_cm:
             lkw["marker"]["colorbar"] = p._create_colorbar(
                 s.get_label(p.use_latex), p._scale_down_colorbar)
+
+            if s.colorbar_ticks_formatter:
+                tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+                    min(param), max(param))
+                lkw["marker"]["colorbar"]["tickvals"] = tickvals
+                lkw["marker"]["colorbar"]["ticktext"] = ticktext
 
         if not s.is_filled:
             # TODO: how to show a colorscale if is_scatter=True
@@ -105,6 +117,12 @@ def _update_line3d_helper(renderer, data, idx):
     handle["z"] = z
     if s.use_cm:
         handle["line"]["color"] = param
+    _type = "marker" if s.is_scatter else "line"
+    if s.colorbar_ticks_formatter:
+        tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+            min(param), max(param))
+        handle[_type]["colorbar"]["tickvals"] = tickvals
+        handle[_type]["colorbar"]["ticktext"] = ticktext
 
 
 class Line3DRenderer(Renderer):

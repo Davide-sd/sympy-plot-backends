@@ -13,7 +13,8 @@ import numpy as np
 from spb import (
     BB, plot, plot_complex, plot_vector, plot_contour,
     plot_parametric, plot_geometry, plot_nyquist, plot_nichols,
-    multiples_of_pi_over_4, tick_formatter_multiples_of
+    multiples_of_pi_over_4, tick_formatter_multiples_of,
+    multiples_of_pi
 )
 from spb.series import RootLocusSeries, SGridLineSeries, ZGridLineSeries
 from sympy import (
@@ -81,6 +82,7 @@ from .make_tests import (
     make_test_tick_formatters_2d,
     make_test_hooks_2d,
     make_test_hline_vline_label,
+    make_test_colorbar_ticks_line_parametric_2d,
 )
 ipy = import_module("ipywidgets")
 ct = import_module("control")
@@ -1667,3 +1669,17 @@ def test_hline_vline_label():
     assert len(p.fig.legend[0].items) == 2
     assert p.fig.legend[0].items[0].label["value"] == "line"
     assert p.fig.legend[0].items[1].label["value"] == "hline"
+
+
+def test_colorbar_ticks_line_parametric_2d():
+    p1 = make_test_colorbar_ticks_line_parametric_2d(BB, None)
+    p2 = make_test_colorbar_ticks_line_parametric_2d(
+        BB, multiples_of_pi())
+
+    cb1 = p1.fig.right[0]
+    assert cb1.ticker == "auto"
+    assert cb1.formatter == "auto"
+
+    cb2 = p2.fig.right[0]
+    assert isinstance(cb2.ticker, SingleIntervalTicker)
+    assert np.isclose(cb2.ticker.interval, np.pi)

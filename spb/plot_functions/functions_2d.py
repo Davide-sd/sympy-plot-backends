@@ -434,7 +434,7 @@ def plot_parametric(*args, **kwargs):
        >>> t, u, v = symbols('t, u, v')
 
     A parametric plot of a single expression (a Hypotrochoid using an equal
-    aspect ratio):
+    aspect ratio), showing colorbar's ticks at multiple of pi:
 
     .. plot::
        :context: close-figs
@@ -444,7 +444,8 @@ def plot_parametric(*args, **kwargs):
        >>> plot_parametric(
        ...      2 * cos(u) + 5 * cos(2 * u / 3),
        ...      2 * sin(u) - 5 * sin(2 * u / 3),
-       ...      (u, 0, 6 * pi), aspect="equal")
+       ...      (u, 0, 6 * pi), aspect="equal",
+       ...      colorbar_ticks_formatter=multiples_of_pi())
        Plot object containing:
        [0]: parametric cartesian line: (5*cos(2*u/3) + 2*cos(u), -5*sin(2*u/3) + 2*sin(u)) for u over (0, 6*pi)
 

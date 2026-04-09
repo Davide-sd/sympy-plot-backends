@@ -5,6 +5,13 @@
 v4.1.2
 ======
 
+* Added capability to set colorbar ticks to multiple of some quantity
+  (for example `pi/2`) thanks to the keyword arguments
+  ``colorbar_ticks_formatter`` of the functions:
+  :py:func:`spb.graphics.functions_2d.line_parametric_2d`,
+  :py:func:`spb.graphics.functions_3d.line_parametric_3d`,
+  :py:func:`spb.graphics.functions_3d.surface`,
+  :py:func:`spb.graphics.functions_3d.surface_parametric`.
 * Improved `K3DBackend` in order to better deal with cyclic color maps.
 * Exposed `convert_colormap` to the root of the module.
 

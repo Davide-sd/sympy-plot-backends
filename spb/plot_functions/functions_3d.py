@@ -99,7 +99,7 @@ def plot3d_parametric_line(*args, **kwargs):
        [0]: 3D parametric cartesian line: (cos(t), sin(t), t) for t over (-5, 5)
 
     Customize the appearance by setting a label to the colorbar, changing the
-    colormap and the line width.
+    colormap, the line width, and the ticks on the colorbar.
 
     .. plot::
        :context: close-figs
@@ -109,7 +109,8 @@ def plot3d_parametric_line(*args, **kwargs):
        >>> plot3d_parametric_line(
        ...     3 * sin(t) + 2 * sin(3 * t), cos(t) - 2 * cos(3 * t), cos(5 * t),
        ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
-       ...     aspect="equal")
+       ...     aspect="equal",
+       ...     colorbar_ticks_formatter=multiples_of_pi_over_2()))
        Plot object containing:
        [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0, 2*pi)
 
@@ -451,12 +452,12 @@ def plot3d_parametric_surface(*args, **kwargs):
     color function mapping the `v` values. Activate the wireframe to better
     visualize the parameterization.
 
-    .. k3d-screenshot::
-       :camera: 2.215, -2.945, 2.107, 0.06, -0.374, -0.459, -0.365, 0.428, 0.827
+    .. plotly::
+       :context: reset
+       :camera: 1.25, -1.25, 1.25, 0, 0, -0.3, 0, 0, 1
 
        from sympy import *
        from spb import *
-       import k3d
        var("u, v")
 
        x = (1 + v / 2 * cos(u / 2)) * cos(u)
@@ -464,11 +465,12 @@ def plot3d_parametric_surface(*args, **kwargs):
        z = v / 2 * sin(u / 2)
        plot3d_parametric_surface(
            x, y, z, (u, 0, 2*pi), (v, -1, 1),
-           "v", {"color_map": k3d.colormaps.paraview_color_maps.Hue_L60},
-           backend=KB,
+           "v", {"colorscale": "mygbm"},
            use_cm=True, color_func=lambda u, v: u,
-           title="Möbius \\, strip",
-           wireframe=True, wf_n1=20, wf_rendering_kw={"width": 0.004})
+           wireframe=True, wf_n1=20,
+           title="Möbius strip",
+           colorbar_ticks_formatter=multiples_of_pi_over_2(label="π"),
+           backend=PB)
 
     Riemann surfaces of the real part of the multivalued function `z**n`,
     using Plotly:

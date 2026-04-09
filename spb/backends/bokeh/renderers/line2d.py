@@ -23,6 +23,14 @@ def _draw_line2d_helper(renderer, data):
         handle.append(h)
         tooltips = [("x", "@xs"), ("y", "@ys"), ("u", "@us")]
         if s.colorbar:
+            if s.colorbar_ticks_formatter:
+                cb.ticker = s.colorbar_ticks_formatter.BB_ticker()
+                cb.formatter = s.colorbar_ticks_formatter.BB_formatter()
+                # tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+                #     min(param), max(param))
+                # lkw["marker"]["colorbar"]["tickvals"] = tickvals
+                # lkw["marker"]["colorbar"]["ticktext"] = ticktext
+
             handle.append(cb)
             p._fig.add_layout(cb, "right")
     else:

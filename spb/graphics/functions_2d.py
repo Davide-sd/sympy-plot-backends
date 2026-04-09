@@ -410,7 +410,7 @@ def line_parametric_2d(
        >>> t, u, v = symbols('t, u, v')
 
     A parametric plot of a single expression (a Hypotrochoid using an equal
-    aspect ratio):
+    aspect ratio), showing colorbar's ticks at multiple of pi:
 
     .. plot::
        :context: close-figs
@@ -421,7 +421,8 @@ def line_parametric_2d(
        ...     line_parametric_2d(
        ...         2 * cos(u) + 5 * cos(2 * u / 3),
        ...         2 * sin(u) - 5 * sin(2 * u / 3),
-       ...         (u, 0, 6 * pi)
+       ...         (u, 0, 6 * pi),
+       ...         colorbar_ticks_formatter=multiples_of_pi(),
        ...     ),
        ...     aspect="equal"
        ... )

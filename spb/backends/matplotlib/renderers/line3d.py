@@ -18,9 +18,17 @@ def _draw_line3d_helper(renderer, data):
             kw = p.merge({}, lkw, s.rendering_kw)
             c = p.Line3DCollection(segments, **kw)
             p._ax.add_collection(c)
-            p._add_colorbar(
+            colorbar = p._add_colorbar(
                 c, s.get_label(p.use_latex), s.use_cm and s.colorbar)
-            handle = (c, kw, p.fig.axes[-1])
+
+            if s.colorbar_ticks_formatter:
+                ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                    param.min(), param.max(), latex=True)
+                colorbar.set_ticks(
+                    ticks=ticks,
+                    labels=labels
+                )
+            handle = (c, kw, colorbar)
         else:
             slabel = s.get_label(p.use_latex)
             lkw["label"] = slabel if s.show_in_legend else "_nolegend_"
@@ -50,9 +58,17 @@ def _draw_line3d_helper(renderer, data):
         kw = p.merge({}, lkw, s.rendering_kw)
         l = p._ax.scatter(x, y, z, **kw)
         if s.use_cm:
-            p._add_colorbar(
+            colorbar = p._add_colorbar(
                 l, s.get_label(p.use_latex), s.use_cm and s.colorbar)
-            handle = [l, kw, p.fig.axes[-1]]
+            handle = [l, kw, colorbar]
+
+            if s.colorbar_ticks_formatter:
+                ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                    param.min(), param.max(), latex=True)
+                colorbar.set_ticks(
+                    ticks=ticks,
+                    labels=labels
+                )
         else:
             handle = [l]
     return handle
@@ -82,10 +98,17 @@ def _update_line3d_helper(renderer, data, handle):
             line.set_offset(p.np.c_[x, y, z])
 
     if s.is_parametric and s.use_cm:
+        line.set_clim(vmin=min(param), vmax=max(param))
         line.set_array(param)
-        kw, cax = handle[1:]
-        p._update_colorbar(
-            cax, kw["cmap"], s.get_label(p.use_latex), param=param)
+        colorbar = handle[-1]
+        colorbar.update_normal(line)
+        if s.colorbar_ticks_formatter:
+            ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                param.min(), param.max(), latex=True)
+            colorbar.set_ticks(
+                ticks=ticks,
+                labels=labels
+            )
 
 
 class Line3DRenderer(MatplotlibRenderer):

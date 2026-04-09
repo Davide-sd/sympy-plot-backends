@@ -43,6 +43,15 @@ def _draw_surface_helper(renderer, data):
         norm=norm,
         cmap=cmap
     )
+    if is_cb_added and s.colorbar_ticks_formatter:
+        cb = is_cb_added
+        # NOTE: yep, I used PB_ticks because it does the job fine
+        ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+            vmin, vmax, latex=True)
+        cb.set_ticks(
+            ticks=ticks,
+            labels=labels
+        )
     return [c, kw, is_cb_added, p.fig.axes[-1]]
 
 
@@ -76,6 +85,15 @@ def _update_surface_helper(renderer, data, handle):
     if is_cb_added:
         p._update_colorbar(
             cax, kw["cmap"], s.get_label(p.use_latex), norm=norm)
+        if s.colorbar_ticks_formatter:
+            cb = is_cb_added
+            # NOTE: yep, I used PB_ticks because it does the job fine
+            ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                vmin, vmax, latex=True)
+            cb.set_ticks(
+                ticks=ticks,
+                labels=labels
+            )
 
 
 class SurfaceRenderer(MatplotlibRenderer):

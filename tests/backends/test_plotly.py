@@ -13,7 +13,8 @@ from spb import (
     plot_vector, plot3d_revolution, plot3d_spherical,
     plot3d_parametric_surface, plot_contour, plot3d, plot3d_parametric_line,
     plot_parametric, plot_geometry, graphics, surface,
-    plot_polar, multiples_of_pi_over_4, tick_formatter_multiples_of
+    plot_polar, multiples_of_pi_over_4, tick_formatter_multiples_of,
+    multiples_of_pi_over_2, multiples_of_pi
 )
 from spb.series import SurfaceOver2DRangeSeries, ParametricSurfaceSeries
 from sympy import (
@@ -92,6 +93,9 @@ from .make_tests import (
     make_test_hooks_2d,
     make_test_surface_use_cm_cmin_cmax_zlim,
     make_test_hline_vline_label,
+    make_test_colorbar_ticks_surface,
+    make_test_colorbar_ticks_line_parametric_2d,
+    make_test_colorbar_ticks_line_parametric_3d,
 )
 
 
@@ -1926,3 +1930,54 @@ def test_hline_vline_label():
     assert p.fig.layout.shapes[0].name ==  "hline"
     assert p.fig.layout.shapes[1].name == "hline2"
     assert p.fig.layout.shapes[2].name is None
+
+
+def test_colorbar_ticks_surface():
+    p1 = make_test_colorbar_ticks_surface(PB, None)
+    p2 = make_test_colorbar_ticks_surface(
+        PB,
+        multiples_of_pi_over_2(label="π"),
+        {"colorscale": "phase", "cmin": 0, "cmax": 2*np.pi})
+    expected_tick_vals = [
+        0.0, 1.5707963267948966, 3.141592653589793,
+        4.71238898038469, 6.283185307179586]
+
+    assert p1.fig.data[0].colorbar.ticktext is None
+    assert p1.fig.data[0].colorbar.tickvals is None
+    assert p2.fig.data[0].colorbar.ticktext == ('0', 'π/2', 'π', '3π/2', '2π')
+    assert np.allclose(
+        p2.fig.data[0].colorbar.tickvals, expected_tick_vals)
+
+
+def test_colorbar_ticks_line_parametric_2d():
+    p1 = make_test_colorbar_ticks_line_parametric_2d(PB, None)
+    p2 = make_test_colorbar_ticks_line_parametric_2d(
+        PB, multiples_of_pi(label="π"))
+
+    expected_tick_vals = np.pi * np.array([
+        0, 1, 2, 3, 4, 5, 6])
+    expected_tick_lbls = ('0', 'π', '2π', '3π', '4π', '5π', '6π')
+
+    assert p1.fig.data[0].marker.colorbar.ticktext is None
+    assert p1.fig.data[0].marker.colorbar.tickvals is None
+    assert p2.fig.data[0].marker.colorbar.ticktext == expected_tick_lbls
+    assert np.allclose(
+        p2.fig.data[0].marker.colorbar.tickvals,
+        expected_tick_vals)
+
+
+def test_colorbar_ticks_line_parametric_3d():
+    p1 = make_test_colorbar_ticks_line_parametric_3d(PB, None)
+    p2 = make_test_colorbar_ticks_line_parametric_3d(
+        PB, multiples_of_pi_over_2(label="π"))
+
+    expected_tick_vals = np.pi * np.array([
+        0, 0.5, 1, 1.5, 2])
+    expected_tick_lbls = ('0', 'π/2', 'π', '3π/2', '2π')
+
+    assert p1.fig.data[0].line.colorbar.ticktext is None
+    assert p1.fig.data[0].line.colorbar.tickvals is None
+    assert p2.fig.data[0].line.colorbar.ticktext == expected_tick_lbls
+    assert np.allclose(
+        p2.fig.data[0].line.colorbar.tickvals,
+        expected_tick_vals)

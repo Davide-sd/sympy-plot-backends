@@ -29,6 +29,11 @@ def _draw_surface_helper(renderer, data):
         cmax=cmax
     )
 
+    if s.colorbar_ticks_formatter:
+        tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(cmin, cmax)
+        skw["colorbar"]["tickvals"] = tickvals
+        skw["colorbar"]["ticktext"] = ticktext
+
     kw = p.merge({}, skw, s.rendering_kw)
     handle = p.go.Surface(x=xx, y=yy, z=zz, **kw)
     p._fig.add_trace(handle)
@@ -52,6 +57,11 @@ def _update_surface_helper(renderer, data, idx):
     handle["surfacecolor"] = surfacecolor
     handle["cmin"] = cmin
     handle["cmax"] = cmax
+
+    if s.colorbar_ticks_formatter:
+        tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(cmin, cmax)
+        handle["colorbar"]["tickvals"] = tickvals
+        handle["colorbar"]["ticktext"] = ticktext
 
 
 class SurfaceRenderer(Renderer):

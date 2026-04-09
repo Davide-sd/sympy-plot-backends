@@ -61,6 +61,11 @@ def _draw_line2d_helper(renderer, data):
                 # That raises a strange error.
                 lkw["marker"]["colorbar"] = p._create_colorbar(
                     s.get_label(p.use_latex), True)
+                if s.colorbar_ticks_formatter:
+                    tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+                        min(param), max(param))
+                    lkw["marker"]["colorbar"]["tickvals"] = tickvals
+                    lkw["marker"]["colorbar"]["ticktext"] = ticktext
 
         kw = p.merge({}, lkw, s.rendering_kw)
 
@@ -132,6 +137,11 @@ def _update_line2d_helper(renderer, data, idxs):
         handle["y"] = y
         handle["marker"]["color"] = param
         handle["customdata"] = param
+        if s.colorbar_ticks_formatter:
+            tickvals, ticktext = s.colorbar_ticks_formatter.PB_ticks(
+                min(param), max(param))
+            handle["marker"]["colorbar"]["tickvals"] = tickvals
+            handle["marker"]["colorbar"]["ticktext"] = ticktext
     else:
         x, y = data
         if hasattr(s, "is_polar") and s.is_polar:

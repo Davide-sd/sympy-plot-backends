@@ -28,6 +28,13 @@ def _draw_line2d_helper(renderer, data):
         colorbar = p._add_colorbar(
             c, s.get_label(p.use_latex), s.use_cm and s.colorbar
         )
+        if s.colorbar_ticks_formatter:
+            ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                param.min(), param.max(), latex=True)
+            colorbar.set_ticks(
+                ticks=ticks,
+                labels=labels
+            )
         handle = (c, kw, colorbar, p.fig.axes[-1])
     else:
         if s.get_label(False) != "__k__":
@@ -83,6 +90,13 @@ def _update_line2d_helper(renderer, data, handles):
 
         if colorbar:
             colorbar.update_normal(line)
+            if s.colorbar_ticks_formatter:
+                ticks, labels = s.colorbar_ticks_formatter.PB_ticks(
+                    param.min(), param.max(), latex=True)
+                colorbar.set_ticks(
+                    ticks=ticks,
+                    labels=labels
+                )
 
     else:
         line = line_handles[0]
