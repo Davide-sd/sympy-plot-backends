@@ -186,6 +186,32 @@ parameterization:
       wireframe=True, wf_n1=100, wf_n2=30, n1=250)
 
 
+Riemann surface of ``Log(z)``, colored by its argument, using Plotly:
+
+.. plotly::
+   :camera: 1.25, -1.25, 1, 0, 0, -0.3, 0, 0, 1
+
+   from sympy import *
+   from spb import *
+   r, theta = symbols("r theta")
+   graphics(
+      surface_parametric(
+         r * cos(theta), r * sin(theta), theta,
+         (r, 0, 2), (theta, -4*pi, 4*pi),
+         n1 = 10, n2=1000,
+         wireframe=True, wf_n1=6, wf_n2=40,
+         use_cm=True,
+         rendering_kw={"colorscale": "mygbm", "cmin": 0, "cmax": 2*np.pi},
+         color_func=lambda x, y, z, r, theta: theta % (2 * np.pi),
+         label="theta [rad]",
+         colorbar_ticks_formatter=multiples_of_pi_over_4(label="π")
+      ),
+      backend=PB,
+      aspect=dict(x=1, y=1, z=1.15),
+      xlabel="Real", ylabel="Imag", zlabel="Im(Log(z))"
+   )
+
+
 Visualizing a 2D vector field:
 
 .. plotly::
