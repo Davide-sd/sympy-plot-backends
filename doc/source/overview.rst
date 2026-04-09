@@ -105,10 +105,11 @@ Polar animation with Matplotlib:
    :include-source: True
 
    import numpy as np
-   from spb import plot_parametric
+   from spb import plot_parametric, multiples_of_pi_over_3
    plot_parametric(
       lambda t: np.sin(3 * t + np.pi / 4), lambda t: np.sin(4 * t),
-      ("t", 0, 2 * np.pi), "t [rad]", xlabel="x", ylabel="y", aspect="equal")
+      ("t", 0, 2 * np.pi), "t [rad]", xlabel="x", ylabel="y", aspect="equal",
+      colorbar_ticks_formatter=multiples_of_pi_over_3())
 
 
 Interactive-Parametric domain coloring plot of a complex function:
