@@ -6,12 +6,13 @@ from spb.backends.base_backend import Plot
 from spb.backends.k3d.renderers import (
     Line3DRenderer, Vector3DRenderer,
     ComplexRenderer, SurfaceRenderer, Implicit3DRenderer,
+    Implicit3DRVoxelenderer,
     GeometryRenderer, Arrow3DRenderer
 )
 from spb.series import (
     Parametric3DLineSeries, ComplexParametric3DLineSeries,
     List3DSeries, Vector3DSeries, SliceVector3DSeries,
-    RiemannSphereSeries, Implicit3DSeries,
+    RiemannSphereSeries, Implicit3DSeries, Implicit3DSeriesVoxel,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, Geometry3DSeries, Arrow3DSeries
@@ -65,6 +66,7 @@ class K3DBackend(Plot):
         Vector3DSeries: Vector3DRenderer,
         SliceVector3DSeries: Vector3DRenderer,
         Implicit3DSeries: Implicit3DRenderer,
+        Implicit3DSeriesVoxel: Implicit3DRVoxelenderer,
         ComplexDomainColoringSeries: ComplexRenderer,
         ComplexSurfaceSeries: ComplexRenderer,
         RiemannSphereSeries: ComplexRenderer,

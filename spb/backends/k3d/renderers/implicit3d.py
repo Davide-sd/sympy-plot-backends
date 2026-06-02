@@ -32,3 +32,35 @@ class Implicit3DRenderer(Renderer):
     draw_update_map = {
         _draw_implicit3d_helper: _update_implicit3d_helper
     }
+
+def _draw_implicit3dvoxel_helper(renderer, data):
+    p, s = renderer.plot, renderer.series
+    np = p.np
+
+    r = data
+    xmin, xmax = s.start_x, s.end_x
+    ymin, ymax = s.start_y, s.end_y
+    zmin, zmax = s.start_z, s.end_z
+    a = dict(
+        bounds=[xmin, xmax, ymin, ymax, zmin, zmax],
+    )
+    kw = p.merge({}, a, s.rendering_kw)
+    plt_vox = p.k3d.voxels(r, **kw)
+    plt_empty = p.k3d.voxels(np.ones((1, 1, 1), dtype=np.uint8),
+                                opacity=0,
+                                outlines=False,
+                                bounds=[xmin, xmax, ymin, ymax, zmin, zmax])
+
+    p._fig += plt_vox
+    p._fig += plt_empty
+    return plt_vox
+
+
+def _update_implicit3dvoxel_helper(renderer, data, handle):
+    raise NotImplementedError
+
+
+class Implicit3DRVoxelenderer(Renderer):
+    draw_update_map = {
+        _draw_implicit3dvoxel_helper: _update_implicit3dvoxel_helper
+    }

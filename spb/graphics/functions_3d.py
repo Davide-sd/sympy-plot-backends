@@ -1,11 +1,13 @@
 from sympy import (
-    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane
+    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Rel
 )
+from sympy.logic.boolalg import BooleanFunction
 from spb.doc_utils.docstrings import _PARAMS
 from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
-    Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries
+    Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries,
+    Implicit3DSeriesVoxel
 )
 from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges,
@@ -863,8 +865,8 @@ def implicit_3d(
 
     ranges = _preprocess_multiple_ranges(
         [expr], [range_x, range_y, range_z], 3, params)
-    s = Implicit3DSeries(
-        expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
+    cl = Implicit3DSeriesVoxel if isinstance(expr, BooleanFunction) else Implicit3DSeries
+    s = cl(expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 
 
