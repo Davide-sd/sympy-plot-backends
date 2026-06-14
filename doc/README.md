@@ -22,3 +22,5 @@ perl -i -gpe 's/[ ]{8}/    /g' toc
 ```bash
 sed -i '/Sympy Plotting Backends Documentation\|Chapter 1.  Development and Support\|1.5.  Changelog\|1.4.  Tutorials\|1.3.  SPB Modules Reference\|1.1.  Overview\|"3"\|1.2.  Installation\|"CHAPTER"/d' toc 
 ```
+
+The original recipe.toml file I used for the very first step may also be handy: https://github.com/user-attachments/files/28923679/recipe.txt (you can rename to `recipe.toml`, I changed to `.txt` for GitHub).
