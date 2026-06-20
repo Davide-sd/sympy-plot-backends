@@ -1,3 +1,4 @@
+(a ready-built PDF is available [here](https://codeberg.org/jipmelon/t/src/branch/main/SympyPlottingBackends_out.pdf))
 ```bash
 uv venv
 . .venv/bin/activate
