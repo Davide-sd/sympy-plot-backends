@@ -160,6 +160,8 @@ def test_plot_sum():
     second_col = np.array(p3.colorloop[1])
     if line_col.dtype == second_col.dtype == "<U7":
         assert str(line_col) == str(second_col)
+    elif isinstance(line_col, np.ndarray):
+        assert np.allclose(line_col, second_col)
     else:
         assert np.allclose(line_col, hex2rgb(str(second_col)[1:]))
 

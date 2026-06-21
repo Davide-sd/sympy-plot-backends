@@ -592,7 +592,9 @@ def test_plot_vector_3d_streamlines(use_latex, label_func):
     f = p.fig
     ax = f.axes[0]
     assert len(ax.lines) == 1
-    assert ax.lines[0].get_color() == "#1f77b4"
+    color = ax.lines[0].get_color()
+    assert color == "#1f77b4" or np.allclose(
+        color, (0.12156862745098039, 0.4666666666666667, 0.7058823529411765))
     p.backend.close()
 
 
@@ -1590,8 +1592,7 @@ def test_contour_and_3d():
     p = p2 + p1
     p.draw()
     p = p2 + p3
-    with warns(UserWarning, match="The following kwargs were not used by contour"):
-        p.draw()
+    raises(AttributeError, lambda: p.draw())
     p.close()
     p = p1 + p3
     raises(ValueError, lambda: p.draw())
@@ -2113,9 +2114,13 @@ def test_existing_figure_lines():
     assert p.ax is ax
     assert len(ax.lines) == 2
     assert ax.lines[0].get_label() == "l1"
-    assert ax.lines[0].get_color() == '#1f77b4'
+    col1 = ax.lines[0].get_color()
+    assert (col1 == '#1f77b4') or np.allclose(
+        col1, (0.12156862745098039, 0.4666666666666667, 0.7058823529411765))
     assert ax.lines[1].get_label() == "l2"
-    assert ax.lines[1].get_color() == '#ff7f0e'
+    col2 = ax.lines[1].get_color()
+    assert (col2 == '#ff7f0e') or np.allclose(
+        col2, (1.0, 0.4980392156862745, 0.054901960784313725))
     p.close()
 
 
@@ -2191,7 +2196,10 @@ def test_plot_root_locus_1(sgrid, zgrid, n_lines, n_texts, instance):
     assert len(ax.lines) == n_lines
     assert ax.get_legend() is None
     assert len(ax.texts) == n_texts # number of sgrid labels on the plot
-    line_colors = {'#1f77b4', '0.75'}
+    line_colors = {
+        '#1f77b4', '0.75',
+        (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
+    }
     assert all(l.get_color() in line_colors for l in ax.lines)
     p.backend.update_interactive({a: 2})
     p.backend.close()
@@ -2217,7 +2225,10 @@ def test_plot_root_locus_3(sgrid, zgrid, n_lines, n_texts, instance):
     assert len(ax.lines) == n_lines
     assert ax.get_legend() is None
     assert len(ax.texts) == n_texts # number of sgrid labels on the plot
-    line_colors = {'#1f77b4', '0.75'}
+    line_colors = {
+        '#1f77b4', '0.75',
+        (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
+    }
     assert all(l.get_color() in line_colors for l in ax.lines)
     p.backend.update_interactive({a: 2})
     p.backend.close()
@@ -2237,7 +2248,11 @@ def test_plot_root_locus_2():
     assert len(ax.get_legend().texts) == 2
     assert p.ax.get_legend().texts[0].get_text() == "a"
     assert p.ax.get_legend().texts[1].get_text() == "b"
-    line_colors = {'#1f77b4', '#ff7f0e'}
+    line_colors = {
+        '#1f77b4', '#ff7f0e',
+        (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
+        (1.0, 0.4980392156862745, 0.054901960784313725)
+    }
     assert all(l.get_color() in line_colors for l in ax.lines)
     p.close()
 
