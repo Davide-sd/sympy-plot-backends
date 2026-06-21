@@ -117,6 +117,7 @@ ct = import_module("control")
 ipy = import_module("ipywidgets")
 scipy = import_module("scipy")
 vtk = import_module("vtk", catch=(RuntimeError,))
+ski = import_module("skimage")
 
 
 # NOTE
@@ -1175,6 +1176,7 @@ def test_plot_polar_use_cm():
     p.close()
 
 
+@pytest.mark.skipif(ski is None, reason="scikit-image is not installed")
 def test_plot3d_implicit():
     # verify that plot3d_implicit don't raise errors
 
@@ -2894,6 +2896,7 @@ def test_colorbar_ticks_line_parametric_3d():
     assert lbl2 == expected_tick_lbls
 
 
+@pytest.mark.skipif(ski is None, reason="scikit-image is not installed")
 def test_implicit_3d_voxels_trisurf():
     p1 = make_test_implicit_3d_voxels_trisurf(MB)
     assert len(p1.ax.collections) > 1
