@@ -110,7 +110,7 @@ def plot3d_parametric_line(*args, **kwargs):
        ...     3 * sin(t) + 2 * sin(3 * t), cos(t) - 2 * cos(3 * t), cos(5 * t),
        ...     (t, 0, 2 * pi), "t [rad]", {"cmap": "hsv", "lw": 1.5},
        ...     aspect="equal",
-       ...     colorbar_ticks_formatter=multiples_of_pi_over_2()))
+       ...     colorbar_ticks_formatter=multiples_of_pi_over_2())
        Plot object containing:
        [0]: 3D parametric cartesian line: (3*sin(t) + 2*sin(3*t), cos(t) - 2*cos(3*t), cos(5*t)) for t over (0, 2*pi)
 
@@ -787,6 +787,9 @@ def plot3d_implicit(*args, **kwargs):
     .. k3d-screenshot::
        :camera: 10.29, -15.33, -9.3, 0, 0, 0, 0.28, -0.41, 0.87
 
+       from sympy import *
+       from spb import *
+       var("x:z")
        plot3d_implicit(
            x*y*z < 1, (x, -5, 5), (y, -5, 5), (z, -5, 5),
            n=150, backend=KB
@@ -795,6 +798,9 @@ def plot3d_implicit(*args, **kwargs):
     .. k3d-screenshot::
        :camera: -5.2, -1.86, 2.06, 0, 0.87, 0, 0.23, 0.16, 0.96
 
+       from sympy import *
+       from spb import *
+       var("x:z")
        plot3d_implicit(
            (x**2 + y**2 + z**2 >= 1) & (x**2 + y**2 + z**2 <= 3) & (y >= 0),
            (x, -2, 2), (y, -2, 2), (z, -2, 2),

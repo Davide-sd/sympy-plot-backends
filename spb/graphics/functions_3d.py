@@ -859,6 +859,9 @@ def implicit_3d(
     .. k3d-screenshot::
        :camera: 10.29, -15.33, -9.3, 0, 0, 0, 0.28, -0.41, 0.87
 
+       from sympy import *
+       from spb import *
+       var("x:z")
        graphics(
            implicit_3d(x*y*z < 1, (x, -5, 5), (y, -5, 5), (z, -5, 5), n=150),
            backend=KB
@@ -867,6 +870,9 @@ def implicit_3d(
     .. k3d-screenshot::
        :camera: -5.2, -1.86, 2.06, 0, 0.87, 0, 0.23, 0.16, 0.96
 
+       from sympy import *
+       from spb import *
+       var("x:z")
        graphics(
            implicit_3d(
                (x**2 + y**2 + z**2 >= 1) & (x**2 + y**2 + z**2 <= 3) & (y >= 0),

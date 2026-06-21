@@ -430,7 +430,7 @@ def plot_parametric(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi, floor, log
-       >>> from spb import plot_parametric
+       >>> from spb import plot_parametric, multiples_of_pi
        >>> t, u, v = symbols('t, u, v')
 
     A parametric plot of a single expression (a Hypotrochoid using an equal
