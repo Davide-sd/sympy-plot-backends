@@ -7,7 +7,7 @@ from spb import (
     graphics, arrow_2d, arrow_3d, plot_root_locus, plot_pole_zero,
     ngrid, sgrid, zgrid, mcircles, surface, surface_parametric, line,
     root_locus, contour, list_2d, line_parametric_2d, hline, vline,
-    line_parametric_3d
+    line_parametric_3d, implicit_3d
 )
 from spb.series import (
     SurfaceOver2DRangeSeries, ParametricSurfaceSeries, LineOver1DRangeSeries,
@@ -1109,4 +1109,30 @@ def make_test_colorbar_ticks_line_parametric_3d(
             rendering_kw=rkw
         ),
         backend=B, show=False
+    )
+
+
+def make_test_implicit_3d_voxels_trisurf(B):
+    a = (
+        (x ** 2 + y ** 2 + z ** 2 < 25)
+        & (x > 0)
+        & (x + 5 * y ** 2 > 4)
+        & (x ** 2 + y - z ** 3 > 4)
+    )
+    b = (
+        (y + z > -1)
+        & (y ** 2 < 2)
+        & (x ** 1 - y ** 2 < -5)
+    )
+
+    return graphics(
+        implicit_3d(
+            a | b,
+            (x, -5, 5),
+            (y, -5, 5),
+            (z, -5, 5),
+            n1=5, n2=7, n3=9
+        ),
+        backend=B,
+        show=False
     )

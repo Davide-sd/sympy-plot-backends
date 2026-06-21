@@ -18,3 +18,4 @@ kaleido
 ipywidgets<8,>=7.6.0
 sphinxcontrib-video
 anywidget # for plotly v6+
+scikit-image # for 3D implicit plotting

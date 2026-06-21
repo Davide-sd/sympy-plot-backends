@@ -96,6 +96,7 @@ from .make_tests import (
     make_test_colorbar_ticks_surface,
     make_test_colorbar_ticks_line_parametric_2d,
     make_test_colorbar_ticks_line_parametric_3d,
+    make_test_implicit_3d_voxels_trisurf,
 )
 
 
@@ -1981,3 +1982,11 @@ def test_colorbar_ticks_line_parametric_3d():
     assert np.allclose(
         p2.fig.data[0].line.colorbar.tickvals,
         expected_tick_vals)
+
+
+def test_implicit_3d_voxels_trisurf():
+    p1 = make_test_implicit_3d_voxels_trisurf(PB)
+    assert len(p1.fig.data) == 1
+    assert isinstance(p1.fig.data[0], go.Mesh3d)
+    mesh_x, mesh_y, mesh_z, f = p1[0].get_data()
+    assert all(t.shape == (4,6,8) for t in [mesh_x, mesh_y, mesh_z, f])

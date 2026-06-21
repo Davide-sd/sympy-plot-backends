@@ -2223,7 +2223,8 @@ class Implicit3DSeries(SurfaceBaseSeries):
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
         kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
-        kwargs.setdefault("evaluator", GridEvaluator(series=self))
+        kwargs.setdefault("evaluator", GridEvaluator(
+            series=self, at_cell_center=False))
         super().__init__(**kwargs)
         self.evaluator.set_expressions()
         self.var_x, self.start_x, self.end_x = self.range_x
@@ -2273,6 +2274,14 @@ class Implicit3DSeries(SurfaceBaseSeries):
         t = self._get_transform_helper()
         x, y, z, f = args
         return t(x, self.tx), t(y, self.ty), t(z, self.tz), f
+
+
+@modify_parameterized_doc()
+class Implicit3DVoxelSeries(Implicit3DSeries):
+    def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
+        kwargs.setdefault("evaluator", GridEvaluator(
+            series=self, at_cell_center=True))
+        super().__init__(expr, range_x, range_y, range_z, label, **kwargs)
 
 
 @modify_parameterized_doc()

@@ -10,7 +10,7 @@ from spb.backends.matplotlib.renderers import (
     NyquistRenderer, Arrow2DRendererFancyArrowPatch,
     Arrow3DRendererFancyArrowPatch, RootLocusRenderer, SGridLineRenderer,
     ZGridLineRenderer, NGridLineRenderer, MCirclesRenderer, PoleZeroRenderer,
-    NicholsLineRenderer
+    NicholsLineRenderer, Implicit3DRenderer, Implicit3DVoxelRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
@@ -25,7 +25,8 @@ from spb.series import (
     Arrow2DSeries, Arrow3DSeries, RootLocusSeries, SGridLineSeries,
     ZGridLineSeries, SystemResponseSeries, ColoredSystemResponseSeries,
     PoleZeroSeries, NGridLineSeries, PoleZeroWithSympySeries,
-    MCirclesSeries, HLineSeries, VLineSeries
+    MCirclesSeries, HLineSeries, VLineSeries, Implicit3DSeries,
+    Implicit3DVoxelSeries
 )
 from sympy.external import import_module
 from packaging import version
@@ -97,6 +98,8 @@ class MatplotlibBackend(Plot):
         MCirclesSeries: MCirclesRenderer,
         PoleZeroSeries: PoleZeroRenderer,
         PoleZeroWithSympySeries: PoleZeroRenderer,
+        Implicit3DSeries: Implicit3DRenderer,
+        Implicit3DVoxelSeries: Implicit3DVoxelRenderer
     }
 
     def __init__(self, *args, **kwargs):
@@ -125,6 +128,7 @@ class MatplotlibBackend(Plot):
         self.Line3DCollection = self.mpl_toolkits.mplot3d.art3d.Line3DCollection
         self.Path3DCollection = self.mpl_toolkits.mplot3d.art3d.Path3DCollection
         self.Axes3D = self.mpl_toolkits.mplot3d.Axes3D
+        self.Poly3DCollection = self.mpl_toolkits.mplot3d.art3d.Poly3DCollection
 
         kwargs["_library"] = "matplotlib"
         kwargs.setdefault("colormaps", [
