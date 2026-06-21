@@ -110,6 +110,7 @@ from .make_tests import (
     make_test_colorbar_ticks_surface,
     make_test_colorbar_ticks_line_parametric_2d,
     make_test_colorbar_ticks_line_parametric_3d,
+    make_test_implicit_3d_voxels_trisurf,
 )
 
 ct = import_module("control")
@@ -1175,7 +1176,8 @@ def test_plot_polar_use_cm():
 def test_plot3d_implicit():
     # verify that plot3d_implicit don't raise errors
 
-    raises(NotImplementedError, lambda: make_test_plot3d_implicit(MB).draw())
+    p = make_test_plot3d_implicit(MB)
+    assert len(p.ax.collections) == 1
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")
@@ -2875,3 +2877,8 @@ def test_colorbar_ticks_line_parametric_3d():
     lbl2 = [t.get_text() for t in ticks2]
     assert np.allclose(val2, expected_tick_vals)
     assert lbl2 == expected_tick_lbls
+
+
+def test_implicit_3d_voxels_trisurf():
+    p1 = make_test_implicit_3d_voxels_trisurf(MB)
+    assert len(p1.ax.collections) > 1

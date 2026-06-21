@@ -782,6 +782,25 @@ def plot3d_implicit(*args, **kwargs):
             (expr2, range_x2, range_y2, range_z2, rendering_kw2 [opt]),
             **kwargs)`
 
+    Volumetric plots:
+
+    .. k3d-screenshot::
+       :camera: 10.29, -15.33, -9.3, 0, 0, 0, 0.28, -0.41, 0.87
+
+       plot3d_implicit(
+           x*y*z < 1, (x, -5, 5), (y, -5, 5), (z, -5, 5),
+           n=150, backend=KB
+       )
+
+    .. k3d-screenshot::
+       :camera: -5.2, -1.86, 2.06, 0, 0.87, 0, 0.23, 0.16, 0.96
+
+       plot3d_implicit(
+           (x**2 + y**2 + z**2 >= 1) & (x**2 + y**2 + z**2 <= 3) & (y >= 0),
+           (x, -2, 2), (y, -2, 2), (z, -2, 2),
+           n=150, backend=KB
+       )
+
     Notes
     =====
     1. the number of discretization points is crucial as the algorithm will
@@ -792,6 +811,7 @@ def plot3d_implicit(*args, **kwargs):
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
+    4. Volumetric plots will use voxels.
 
     Examples
     ========

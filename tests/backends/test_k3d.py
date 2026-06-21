@@ -58,7 +58,8 @@ from .make_tests import (
     make_test_real_imag,
     make_test_arrow_3d,
     make_test_hooks_3d,
-    make_test_surface_use_cm_cmin_cmax_zlim
+    make_test_surface_use_cm_cmin_cmax_zlim,
+    make_test_implicit_3d_voxels_trisurf
 )
 
 
@@ -962,3 +963,10 @@ def test_surface_shape():
     assert surf.indices.shape == (342, 3)
     assert surf.attribute.shape == (200, )
 
+
+def test_implicit_3d_voxels_trisurf():
+    p1 = make_test_implicit_3d_voxels_trisurf(KB)
+    assert len(p1.fig.objects) == 1
+    assert isinstance(p1.fig.objects[0], k3d.objects.Voxels)
+    mesh_x, mesh_y, mesh_z, f = p1[0].get_data()
+    assert all(t.shape == (4,6,8) for t in [mesh_x, mesh_y, mesh_z, f])

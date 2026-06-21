@@ -23,6 +23,7 @@ _all_deps = [
     "vtk",  # needed for streamlines in k3d
     "control>=0.10.0",
     "imageio", "imageio-ffmpeg", "psutil", "av", "tqdm", # to save animations
+    "scikit-image", # for 3D implicit plotting
     # mayavi-related
     # "mayavi>=4.8.0",
     # "PyQt5>=5.15.7",

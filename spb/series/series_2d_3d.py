@@ -2223,7 +2223,8 @@ class Implicit3DSeries(SurfaceBaseSeries):
         kwargs["range_y"] = range_y
         kwargs["range_z"] = range_z
         kwargs["_range_names"] = ["range_x", "range_y", "range_z"]
-        kwargs.setdefault("evaluator", GridEvaluator(series=self))
+        kwargs.setdefault("evaluator", GridEvaluator(
+            series=self, at_cell_center=False))
         super().__init__(**kwargs)
         self.evaluator.set_expressions()
         self.var_x, self.start_x, self.end_x = self.range_x
@@ -2274,55 +2275,13 @@ class Implicit3DSeries(SurfaceBaseSeries):
         x, y, z, f = args
         return t(x, self.tx), t(y, self.ty), t(z, self.tz), f
 
+
 @modify_parameterized_doc()
-class Implicit3DSeriesVoxel(Implicit3DSeries):
+class Implicit3DVoxelSeries(Implicit3DSeries):
     def __init__(self, expr, range_x, range_y, range_z, label="", **kwargs):
+        kwargs.setdefault("evaluator", GridEvaluator(
+            series=self, at_cell_center=True))
         super().__init__(expr, range_x, range_y, range_z, label, **kwargs)
-
-    def get_data(self):
-        """
-        Evaluate the expression over the provided domain. The backend will
-        then try to compute and visualize the final result, if it support this
-        data series.
-
-        Returns
-        =======
-        mesh_x : np.ndarray [n1 x n2 x n3]
-        mesh_y : np.ndarray [n1 x n2 x n3]
-        mesh_z : np.ndarray [n1 x n2 x n3]
-        f : np.ndarray [n1 x n2 x n3]
-        """
-        import sympy.plotting.intervalmath.lib_interval as li
-        np = import_module('numpy')
-
-        var_x, start_x, end_x = self.ranges[0]
-        var_y, start_y, end_y = self.ranges[1]
-        var_z, start_z, end_z = self.ranges[2]
-
-        xsample = np.linspace(start_x, end_x, self.n1)
-        ysample = np.linspace(start_y, end_y, self.n2)
-        zsample = np.linspace(start_z, end_z, self.n3)
-
-        mesh_y, mesh_z, mesh_x = np.meshgrid(xsample, ysample, zsample)
-
-        user_functions = {}
-        printer = IntervalMathPrinter({
-            'fully_qualified_modules': False, 'inline': True,
-            'allow_unknown_functions': True,
-            'user_functions': user_functions})
-        keys = [t for t in dir(li) if ("__" not in t) and (t not in ["import_module", "interval"])]
-        vals = [getattr(li, k) for k in keys]
-        d = {k: v for k, v in zip(keys, vals)}
-        func = lambdify((var_x, var_y, var_z), self.expr, modules=[d], printer=printer)
-
-        res = func(mesh_x, mesh_y, mesh_z).astype(np.uint8)
-        
-        return res
-
-    def _apply_transform(self, *args):
-        t = self._get_transform_helper()
-        x, y, z, f = args
-        return t(x, self.tx), t(y, self.ty), t(z, self.tz), f
 
 
 @modify_parameterized_doc()

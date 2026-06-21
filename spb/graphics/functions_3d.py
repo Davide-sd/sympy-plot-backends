@@ -1,5 +1,7 @@
 from sympy import (
-    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Rel
+    pi, Symbol, sin, cos, sqrt, atan2, Tuple, Plane, Rel,
+    StrictGreaterThan, GreaterThan, StrictLessThan, LessThan,
+    Equality
 )
 from sympy.logic.boolalg import BooleanFunction
 from spb.doc_utils.docstrings import _PARAMS
@@ -7,7 +9,7 @@ from spb.doc_utils.ipython import modify_graphics_series_doc
 from spb.series import (
     Parametric3DLineSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     Implicit3DSeries, List3DSeries, ComplexSurfaceBaseSeries, PlaneSeries,
-    Implicit3DSeriesVoxel
+    Implicit3DVoxelSeries
 )
 from spb.utils import (
     _create_missing_ranges, _preprocess_multiple_ranges,
@@ -782,7 +784,7 @@ def implicit_3d(
     rendering_kw=None, **kwargs
 ):
     """
-    Plots an isosurface of a function.
+    Plots an isosurface or a volumetric plot of a function.
 
     Notes
     =====
@@ -794,6 +796,7 @@ def implicit_3d(
     3. To plot ``f(x, y, z) = c`` either write ``expr = f(x, y, z) - c`` or
        pass the appropriate keyword to ``rendering_kw``. Read the backends
        documentation to find out the available options.
+    4. Volumetric plots will use voxels.
 
     Returns
     =======
@@ -821,6 +824,19 @@ def implicit_3d(
            implicit_3d(x**4 + y**4 + z**4 - (x**2 + y**2 + z**2 - 0.3),
                (x, -2, 2), (y, -2, 2), (z, -2, 2)),
            backend=PB)
+    
+    .. k3d-screenshot::
+       :camera: 4.3, -5.82, 4.95, 0.4, -0.25, -0.67, -0.32, 0.5, 0.8
+
+       from sympy import *
+       from spb import *
+       var("x, y, z")
+       graphics(
+           implicit_3d(
+               Eq(sin(x) + cos(y) + sin(y) * cos(z) + sin(z) * cos(x), 0),
+               (x, -2*pi, 2*pi), (y, -2*pi, 2*pi), (z, -2*pi, 2*pi), n=100),
+           backend=KB
+       )
 
     Visualize the isocontours from `isomin=0` to `isomax=2` by providing a
     ``rendering_kw`` dictionary:
@@ -837,6 +853,27 @@ def implicit_3d(
                }),
            backend=PB
        )
+
+    Volumetric plots:
+
+    .. k3d-screenshot::
+       :camera: 10.29, -15.33, -9.3, 0, 0, 0, 0.28, -0.41, 0.87
+
+       graphics(
+           implicit_3d(x*y*z < 1, (x, -5, 5), (y, -5, 5), (z, -5, 5), n=150),
+           backend=KB
+       )
+
+    .. k3d-screenshot::
+       :camera: -5.2, -1.86, 2.06, 0, 0.87, 0, 0.23, 0.16, 0.96
+
+       graphics(
+           implicit_3d(
+               (x**2 + y**2 + z**2 >= 1) & (x**2 + y**2 + z**2 <= 3) & (y >= 0),
+               (x, -2, 2), (y, -2, 2), (z, -2, 2), n=150),
+           backend=KB
+       )
+
 
     See Also
     ========
@@ -863,9 +900,14 @@ def implicit_3d(
             "visualization might be flipped."
         )
 
+    if isinstance(expr, Equality):
+        expr = expr.lhs - expr.rhs
+
     ranges = _preprocess_multiple_ranges(
         [expr], [range_x, range_y, range_z], 3, params)
-    cl = Implicit3DSeriesVoxel if isinstance(expr, BooleanFunction) else Implicit3DSeries
+    types = (BooleanFunction, StrictGreaterThan, GreaterThan,
+        StrictLessThan, LessThan)
+    cl = Implicit3DVoxelSeries if isinstance(expr, types) else Implicit3DSeries
     s = cl(expr, *ranges, label, rendering_kw=rendering_kw, **kwargs)
     return [s]
 

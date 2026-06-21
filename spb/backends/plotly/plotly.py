@@ -8,14 +8,15 @@ from spb.backends.utils import tick_formatter_multiples_of
 from spb.backends.plotly.renderers import (
     Line2DRenderer, Line3DRenderer, Vector2DRenderer, Vector3DRenderer,
     ComplexRenderer, ContourRenderer, SurfaceRenderer, Implicit3DRenderer,
-    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer
+    GeometryRenderer, GenericRenderer, HVLineRenderer, Arrow2DRenderer,
+    Implicit3DVoxelRenderer
 )
 from spb.series import (
     LineOver1DRangeSeries, List2DSeries, Parametric2DLineSeries,
     ColoredLineOver1DRangeSeries, AbsArgLineSeries, ComplexPointSeries,
     Parametric3DLineSeries, ComplexParametric3DLineSeries,
     List3DSeries, Vector2DSeries, Vector3DSeries, SliceVector3DSeries,
-    RiemannSphereSeries, Implicit3DSeries,
+    RiemannSphereSeries, Implicit3DSeries, Implicit3DVoxelSeries,
     ComplexDomainColoringSeries, ComplexSurfaceSeries,
     ContourSeries, SurfaceOver2DRangeSeries, ParametricSurfaceSeries,
     PlaneSeries, Geometry2DSeries, Geometry3DSeries, GenericDataSeries,
@@ -70,6 +71,7 @@ class PlotlyBackend(Plot):
         Vector3DSeries: Vector3DRenderer,
         SliceVector3DSeries: Vector3DRenderer,
         Implicit3DSeries: Implicit3DRenderer,
+        Implicit3DVoxelSeries: Implicit3DVoxelRenderer,
         ComplexDomainColoringSeries: ComplexRenderer,
         ComplexSurfaceSeries: ComplexRenderer,
         RiemannSphereSeries: ComplexRenderer,

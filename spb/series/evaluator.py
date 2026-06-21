@@ -572,6 +572,14 @@ class GridEvaluator(_LambdifierMixin):
         numpy functions don't like complex-type arguments, and appropriate
         actions should be taken."""
     )
+    at_cell_center = param.Boolean(False, doc="""
+        Consider a range that should be discretized with N number of
+        discretization points, for example from -2 to 2 with N=5.
+
+        * if ``at_cell_center=False``: will produce [-2, -1, 0, 1, 2, 3]
+        * if ``at_cell_center=True``: will produce [-1.5, -0.5, 0.5, 1.5].
+          Note that the number of points is N-1. This is particularly useful
+          when dealing with volumetric discretization, such in voxels.""")
 
     def _create_discretized_domain(self):
         """
@@ -597,6 +605,9 @@ class GridEvaluator(_LambdifierMixin):
                 scale=self.series.scales[i],
                 only_integers=needs_integer_discr
             )
+
+            if self.at_cell_center:
+                d = (d[:-1] + d[1:]) / 2
 
             if (
                 (not self.series.force_real_eval) and

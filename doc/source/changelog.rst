@@ -2,6 +2,13 @@
  Changelog
 ==========
 
+v4.2.0
+======
+
+Implemented 3D volumetric implicit plotting with K3D-Jupyter, Plotly
+and Matplotlib.
+
+
 v4.1.2
 ======
 

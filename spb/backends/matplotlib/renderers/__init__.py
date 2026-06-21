@@ -21,6 +21,7 @@ from spb.backends.matplotlib.renderers.ngrid import NGridLineRenderer
 from spb.backends.matplotlib.renderers.mcircles import MCirclesRenderer
 from spb.backends.matplotlib.renderers.polezero import PoleZeroRenderer
 from spb.backends.matplotlib.renderers.nichols import NicholsLineRenderer
+from spb.backends.matplotlib.renderers.implicit3d import Implicit3DRenderer, Implicit3DVoxelRenderer
 
 __all__ = [
     "Line2DRenderer", "Line3DRenderer", "ContourRenderer", "SurfaceRenderer",
@@ -30,5 +31,6 @@ __all__ = [
     "Arrow2DRendererQuivers", "Arrow2DRendererFancyArrowPatch",
     "Arrow3DRendererFancyArrowPatch", "RootLocusRenderer", "SGridLineRenderer",
     "ZGridLineRenderer", "NGridLineRenderer", "MCirclesRenderer",
-    "PoleZeroRenderer", "NicholsLineRenderer"
+    "PoleZeroRenderer", "NicholsLineRenderer",
+    "Implicit3DRenderer", "Implicit3DVoxelRenderer"
 ]
