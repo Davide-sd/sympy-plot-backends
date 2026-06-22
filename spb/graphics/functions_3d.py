@@ -824,19 +824,6 @@ def implicit_3d(
            implicit_3d(x**4 + y**4 + z**4 - (x**2 + y**2 + z**2 - 0.3),
                (x, -2, 2), (y, -2, 2), (z, -2, 2)),
            backend=PB)
-    
-    .. k3d-screenshot::
-       :camera: 4.3, -5.82, 4.95, 0.4, -0.25, -0.67, -0.32, 0.5, 0.8
-
-       from sympy import *
-       from spb import *
-       var("x, y, z")
-       graphics(
-           implicit_3d(
-               Eq(sin(x) + cos(y) + sin(y) * cos(z) + sin(z) * cos(x), 0),
-               (x, -2*pi, 2*pi), (y, -2*pi, 2*pi), (z, -2*pi, 2*pi), n=100),
-           backend=KB
-       )
 
     Visualize the isocontours from `isomin=0` to `isomax=2` by providing a
     ``rendering_kw`` dictionary:
