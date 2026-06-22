@@ -84,7 +84,7 @@ def plot3d_parametric_line(*args, **kwargs):
        :include-source: True
 
        >>> from sympy import symbols, cos, sin, pi, root
-       >>> from spb import plot3d_parametric_line
+       >>> from spb import plot3d_parametric_line, multiples_of_pi_over_2
        >>> t = symbols('t')
 
     Single plot.
