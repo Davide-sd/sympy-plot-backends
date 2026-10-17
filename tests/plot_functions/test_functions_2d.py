@@ -695,16 +695,46 @@ def test_plot_piecewise_undefined_points(p_options):
 
 
 def test_plot_piecewise_unchanged_cases(p_options):
-    # Verify that poles and floor of a nonlinear argument are left as before
+    # Verify that floor of a nonlinear argument is left as before
 
     x = symbols("x")
-    p = plot_piecewise(1 / (x - 1), (x, -1, 3), **p_options)
-    assert len(p.series) == 1
-    assert isinstance(p.series[0], LineOver1DRangeSeries)
-
     p = plot_piecewise(floor(x**2), (x, -1, 1), **p_options)
     assert len(p.series) == 1
     assert isinstance(p.series[0], LineOver1DRangeSeries)
+
+
+def _line_ranges(p):
+    return [(round(float(s.ranges[0][1]), 4), round(float(s.ranges[0][2]), 4))
+            for s in p.series if isinstance(s, LineOver1DRangeSeries)]
+
+
+def test_plot_piecewise_vertical_asymptotes(p_options):
+    # Verify that the curve is not joined across a vertical asymptote, and
+    # that the y-limits leave out the values close to it, unless ylim is
+    # given.
+
+    x = symbols("x")
+    p = plot_piecewise(1 / (x - 1), (x, -1, 3), **p_options)
+    assert _line_ranges(p) == [(-1, 1), (1, 3)]
+    low, high = p.ylim
+    assert -15 < low < -2 and 2 < high < 15
+
+    p = plot_piecewise(1 / (x - 1), (x, -1, 3), ylim=(-1, 1), **p_options)
+    assert tuple(p.ylim) == (-1, 1)
+
+    p = plot_piecewise(tan(x), (x, -4, 4), **p_options)
+    assert len(_line_ranges(p)) == 3
+
+    # a hole and a jump are not asymptotes; without asymptotes, ylim is
+    # left to the backend
+    p = plot_piecewise(sin(x) / x + Heaviside(x - 1), (x, -3, 3), **p_options)
+    assert p.ylim is None
+
+    # an asymptote at the end of a piece: the pieces are already split
+    f = Piecewise((x, x < 0), (1 / x, True))
+    p = plot_piecewise(f, (x, -2, 2), **p_options)
+    assert len(_line_ranges(p)) == 2
+    assert p.ylim is not None
 
 
 def test_plot_piecewise_short_open_interval(p_options):

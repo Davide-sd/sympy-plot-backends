@@ -2,8 +2,9 @@ from sympy import (
     sin, cos, Piecewise, piecewise_fold, Interval, Union,
     FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D,
     And, Heaviside, ceiling, degree, floor, frac, limit, sign, solveset,
-    together
+    together, oo, S
 )
+from sympy.calculus.singularities import singularities
 from sympy.core.relational import Relational
 from sympy.geometry.line import LinearEntity3D
 # NOTE: from sympy import EmptySet is a different thing!!!
@@ -217,6 +218,80 @@ def _removable_points(expr, _range, max_points=20):
         if limits and all(lim.is_finite for lim in limits):
             points.append(c)
     return points
+
+
+def _pieces_and_sets(expr, _range):
+    """The pieces of ``expr``, each with the set where it applies, after
+    the functions that jump are rewritten as Piecewise."""
+    expr = _jumps_to_piecewise(expr, _range)
+    if isinstance(expr, Piecewise):
+        return expr.as_expr_set_pairs()
+    return [(expr, S.Reals)]
+
+
+def _real_singularities(e, x, domain):
+    """singularities(e, x, domain), without calling it for a polynomial."""
+    if e.is_polynomial(x):
+        return S.EmptySet
+    return singularities(e, x, domain)
+
+
+def _piece_ends(expr, _range):
+    """The ends of the pieces of ``expr`` in the plotting range."""
+    x, a, b = _range
+    ends = set()
+    try:
+        for e, s in _pieces_and_sets(expr, _range):
+            boundary = s.intersect(Interval(a, b)).boundary
+            if isinstance(boundary, FiniteSet):
+                ends.update(boundary)
+    except Exception:
+        pass
+    return ends
+
+
+def _infinite_limit(e, x, s, c):
+    """Whether a one-sided limit of ``e`` at ``c`` is infinite, from a side
+    of ``c`` where the set ``s`` of the piece applies."""
+    for d, t in (("-", c - 1), ("+", c + 1)):
+        if s.intersect(Interval(*sorted([c, t]))).measure:
+            if limit(e, x, c, d).has(oo, -oo, S.ComplexInfinity):
+                return True
+    return False
+
+
+def _vertical_asymptotes(expr, _range, max_points=50):
+    """Points inside the plotting range where a one-sided limit of ``expr``
+    is infinite. Empty if they cannot be computed."""
+    x, a, b = _range
+    window = Interval(a, b)
+    points = set()
+    try:
+        # quick exit, before the pieces are computed
+        if _real_singularities(expr, x, window).is_empty:
+            return []
+    except Exception:
+        pass
+    try:
+        for e, s in _pieces_and_sets(expr, _range):
+            s = s.intersect(window)
+            if s.is_empty:
+                continue
+            candidates = _real_singularities(e, x, window).intersect(
+                s.closure)
+            if candidates.is_empty:
+                continue
+            if (
+                not isinstance(candidates, FiniteSet)
+                or len(candidates) > max_points
+            ):
+                return []
+            points.update(
+                c for c in candidates
+                if c not in (a, b) and _infinite_limit(e, x, s, c))
+    except Exception:
+        return []
+    return sorted(points)
 
 
 def _prepare_piecewise(expr, _range):
