@@ -23,6 +23,7 @@ from spb.graphics import (
     graphics, line, line_parametric_2d,
     surface, contour, implicit_2d, list_2d, geometry
 )
+from spb.graphics.functions_2d import _piece_ends, _vertical_asymptotes
 from spb.series import (
     Parametric2DLineSeries, PlaneSeries, GenericDataSeries,
     LineOver1DRangeSeries, List2DSeries, ImplicitSeries, ContourSeries,
@@ -1700,10 +1701,75 @@ def plot_list(*args, **kwargs):
     return graphics(*series, **kwargs)
 
 
+def _split_range(expr, _range, asymptotes):
+    """Split the plotting range at the vertical asymptotes that are inside a
+    piece, so that the curve is not joined across them. (At the ends of the
+    pieces the curve is already split.)"""
+    if not asymptotes:
+        return [_range]
+    x, start, end = _range
+    ends = _piece_ends(expr, _range)
+    cuts = [c for c in asymptotes if c not in ends]
+    if not cuts:
+        return [_range]
+    offset = (end - start) * 1e-6
+    bounds = [start] + [b for c in cuts for b in (c - offset, c + offset)]
+    bounds.append(end)
+    return [(x, bounds[i], bounds[i + 1]) for i in range(0, len(bounds), 2)]
+
+
+def _line_split_at_asymptotes(expr, r, lbl, rkw, **kwargs):
+    """The series of ``line`` for ``expr``, with the plotting range split at
+    its vertical asymptotes, and the asymptotes."""
+    asymptotes = _vertical_asymptotes(expr, r)
+    series = []
+    for sub_range in _split_range(expr, r, asymptotes):
+        series += line(expr, sub_range, lbl, rkw, **kwargs)
+    return series, asymptotes
+
+
+def _ylim_away_from_asymptotes(groups):
+    """y-limits from the values of the curves that are not close to a
+    vertical asymptote: the values close to it would hide the rest of the
+    plot. ``groups`` holds (series, asymptotes, distance) for each
+    expression. None if there are no vertical asymptotes."""
+    if not any(g[1] for g in groups):
+        return None
+    np = import_module("numpy")
+    values = []
+    for series, asymptotes, distance in groups:
+        for s in series:
+            if not isinstance(s, (LineOver1DRangeSeries, List2DSeries)):
+                continue
+            xx, yy = s.get_data()[:2]
+            xx = np.asarray(xx, dtype=float)
+            yy = np.asarray(yy, dtype=float)
+            keep = np.isfinite(yy)
+            for c in asymptotes:
+                keep &= np.abs(xx - float(c)) > float(distance)
+            values.append(yy[keep])
+    values = np.concatenate(values) if values else np.array([])
+    if values.size == 0:
+        return None
+    low, high = float(values.min()), float(values.max())
+    margin = 0.1 * (high - low) if high > low else 1
+    return (low - margin, high + margin)
+
+
 @modify_plot_functions_doc(LineOver1DRangeSeries, replace=_repl)
 def plot_piecewise(*args, **kwargs):
     """
     Plots univariate piecewise functions.
+
+    Jumps are shown with filled and empty dots. Expressions containing
+    ``sign``, ``Heaviside``, ``floor``, ``ceiling`` or ``frac`` are rewritten
+    as piecewise functions over the plotting range; for ``floor``,
+    ``ceiling`` and ``frac`` this requires an argument that is linear in the
+    plotting variable. Points where the expression is undefined but has
+    finite one-sided limits, such as ``x = 1`` for ``(x**2 - 1) / (x - 1)``,
+    get empty dots. The curve is not joined across a vertical asymptote, such
+    as ``x = 1`` for ``1 / (x - 1)``; if ``ylim`` is not given, the y-limits
+    are chosen from the values that are not close to the vertical asymptotes.
 
     Typical usage examples are in the followings:
 
@@ -1776,6 +1842,24 @@ def plot_piecewise(*args, **kwargs):
        [0]: cartesian line: 0 for x over (-10, 0)
        [1]: cartesian line: 1 for x over (1.00000000000000e-6, 10)
 
+    Functions with jumps, such as ``floor``, are rewritten as piecewise
+    functions:
+
+    .. plot::
+       :context: close-figs
+       :format: doctest
+       :include-source: True
+
+       >>> from sympy import floor
+       >>> plot_piecewise(floor(x), (x, -1, 1))
+       Plot object containing:
+       [0]: cartesian line: -1 for x over (-1, -1.00000000000000e-6)
+       [1]: 2D list plot
+       [2]: cartesian line: 0 for x over (0, 0.999999000000000)
+       [3]: 2D list plot
+       [4]: 2D list plot
+       [5]: 2D list plot
+
     Plot multiple expressions in which the second piecewise expression has
     a dotted line style. Use the ``label`` keyword argument to set the
     appropriate entries for the legend:
@@ -1799,11 +1883,12 @@ def plot_piecewise(*args, **kwargs):
        [3]: 2D list plot
        [4]: cartesian line: sin(x) for x over (-8, -5.00000100000000)
        [5]: 2D list plot
-       [6]: cartesian line: cos(x) for x over (5.00000100000000, 8)
+       [6]: cartesian line: 1/x for x over (-5, -1.60000000000000e-5)
        [7]: 2D list plot
-       [8]: cartesian line: 1/x for x over (-5, 5)
+       [8]: cartesian line: cos(x) for x over (5.00000100000000, 8)
        [9]: 2D list plot
-       [10]: 2D list plot
+       [10]: cartesian line: 1/x for x over (1.60000000000000e-5, 5)
+       [11]: 2D list plot
 
     See Also
     ========
@@ -1844,9 +1929,12 @@ def plot_piecewise(*args, **kwargs):
     # If a user want to set custom rendering keywords, just use the notation
     # (expr, range, label [optional], rendering_kw [optional])
     color_series_dict = dict()
+    window_groups = []
     for i, a in enumerate(plot_expr):
         expr, r, lbl, rkw = a
-        series = line(expr, r, lbl, rkw, **kwargs)
+        series, asymptotes = _line_split_at_asymptotes(
+            expr, r, lbl, rkw, **kwargs)
+        window_groups.append((list(series), asymptotes, (r[2] - r[1]) / 50))
         if i < len(labels):
             # this solve issue 32:
             # https://github.com/Davide-sd/sympy-plot-backends/issues/32
@@ -1858,6 +1946,11 @@ def plot_piecewise(*args, **kwargs):
                 else:
                     s.label = ""
         color_series_dict[i] = series
+
+    # the y-limits come from the values that are not close to a vertical
+    # asymptote
+    if "ylim" not in kwargs:
+        kwargs["ylim"] = _ylim_away_from_asymptotes(window_groups)
 
     # NOTE: let's overwrite this keyword argument: the dictionary will be used
     # by the backend to assign the proper colors to the pieces

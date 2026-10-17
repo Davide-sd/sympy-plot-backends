@@ -20,7 +20,7 @@ from sympy import (
     And, Or, Eq, Ne, Interval, Sum, oo, I, pi, S,
     sympify, Integral, Circle, Point, Ellipse, Rational,
     Polygon, Curve, Segment, Point2D, Point3D, Line3D, Plane, IndexedBase,
-    Function
+    Function, sign, floor, ceiling, frac
 )
 from sympy.testing.pytest import skip
 from sympy.external import import_module
@@ -632,6 +632,124 @@ def test_plot_piecewise_multiple_functions(p_options):
         label=["A", "B"], **p_options)
     assert len(p.series) == 9
     assert len([s for s in p.series if s.get_label(True)]) == 2
+
+
+def _dots(p):
+    # (x, y, filled) of every dot of a plot, rounded and sorted
+    return sorted(
+        (round(float(t.get_data()[0][i]), 3) + 0.0,
+         round(float(t.get_data()[1][i]), 3) + 0.0, t.is_filled)
+        for t in p.series if isinstance(t, List2DSeries)
+        for i in range(len(t.get_data()[0])))
+
+
+def test_plot_piecewise_jump_functions(p_options):
+    # Verify that sign, Heaviside, floor, ceiling and frac are rewritten as
+    # Piecewise, so that their jumps get filled and empty dots instead of
+    # vertical lines.
+
+    x = symbols("x")
+    p = plot_piecewise(sign(x), (x, -2, 2), **p_options)
+    assert _dots(p) == [(0, -1, False), (0, 0, True), (0, 1, False)]
+
+    p = plot_piecewise(Heaviside(x), (x, -2, 2), **p_options)
+    assert _dots(p) == [(0, 0, False), (0, 0.5, True), (0, 1, False)]
+
+    p = plot_piecewise(floor(x), (x, -1, 2), **p_options)
+    assert _dots(p) == [
+        (0, -1, False), (0, 0, True), (1, 0, False), (1, 1, True),
+        (2, 1, False), (2, 2, True)]
+
+    p = plot_piecewise(ceiling(x), (x, -1, 1), **p_options)
+    assert _dots(p) == [(-1, -1, True), (-1, 0, False), (0, 0, True),
+                        (0, 1, False)]
+
+    p = plot_piecewise(frac(x), (x, 0, 2), **p_options)
+    assert _dots(p) == [(1, 0, True), (1, 1, False), (2, 0, True),
+                        (2, 1, False)]
+
+
+def test_plot_piecewise_undefined_points(p_options):
+    # Verify that points where the expression is undefined, but both
+    # one-sided limits are finite, get empty dots: a hole, or the two ends
+    # of a jump.
+
+    x = symbols("x")
+    p = plot_piecewise((x**2 - 1) / (x - 1), (x, -1, 3), **p_options)
+    assert _dots(p) == [(1, 2, False), (1, 2, False)]
+
+    p = plot_piecewise(sin(x) / x, (x, -3, 3), **p_options)
+    assert _dots(p) == [(0, 1, False), (0, 1, False)]
+
+    p = plot_piecewise(Abs(x) / x, (x, -2, 2), **p_options)
+    assert _dots(p) == [(0, -1, False), (0, 1, False)]
+
+    # a hole together with a jump: the jump is rewritten first, and the
+    # hole is found inside a piece
+    p = plot_piecewise(sin(x) / x + Heaviside(x - 1), (x, -3, 3), **p_options)
+    assert _dots(p) == [(0, 1, False), (0, 1, False), (1, 0.841, False),
+                        (1, 1.341, True), (1, 1.841, False)]
+
+    p = plot_piecewise(floor(x) + Abs(x) / x, (x, -0.5, 0.5), **p_options)
+    assert _dots(p) == [(0, -2, False), (0, 1, False)]
+
+
+def test_plot_piecewise_unchanged_cases(p_options):
+    # Verify that floor of a nonlinear argument is left as before
+
+    x = symbols("x")
+    p = plot_piecewise(floor(x**2), (x, -1, 1), **p_options)
+    assert len(p.series) == 1
+    assert isinstance(p.series[0], LineOver1DRangeSeries)
+
+
+def _line_ranges(p):
+    return [(round(float(s.ranges[0][1]), 4), round(float(s.ranges[0][2]), 4))
+            for s in p.series if isinstance(s, LineOver1DRangeSeries)]
+
+
+def test_plot_piecewise_vertical_asymptotes(p_options):
+    # Verify that the curve is not joined across a vertical asymptote, and
+    # that the y-limits leave out the values close to it, unless ylim is
+    # given.
+
+    x = symbols("x")
+    p = plot_piecewise(1 / (x - 1), (x, -1, 3), **p_options)
+    assert _line_ranges(p) == [(-1, 1), (1, 3)]
+    low, high = p.ylim
+    assert -15 < low < -2 and 2 < high < 15
+
+    p = plot_piecewise(1 / (x - 1), (x, -1, 3), ylim=(-1, 1), **p_options)
+    assert tuple(p.ylim) == (-1, 1)
+
+    p = plot_piecewise(tan(x), (x, -4, 4), **p_options)
+    assert len(_line_ranges(p)) == 3
+
+    # a hole and a jump are not asymptotes; without asymptotes, ylim is
+    # left to the backend
+    p = plot_piecewise(sin(x) / x + Heaviside(x - 1), (x, -3, 3), **p_options)
+    assert p.ylim is None
+
+    # an asymptote at the end of a piece: the pieces are already split
+    f = Piecewise((x, x < 0), (1 / x, True))
+    p = plot_piecewise(f, (x, -2, 2), **p_options)
+    assert len(_line_ranges(p)) == 2
+    assert p.ylim is not None
+
+
+def test_plot_piecewise_short_open_interval(p_options):
+    # Verify that the open end of a piece shorter than one unit is evaluated
+    # inside the piece, so that its empty dot has a finite value.
+
+    x = symbols("x")
+    f = Piecewise((sqrt(Rational(1, 2) - x), x < Rational(1, 2)), (1, True))
+    p = plot_piecewise(f, (x, 0, 1), **p_options)
+    empty = [t for t in p.series
+             if isinstance(t, List2DSeries) and not t.is_filled]
+    assert len(empty) == 1
+    xx, yy = empty[0].get_data()
+    assert xx[0] < 0.5
+    assert np.isfinite(yy[0])
 
 
 @pytest.mark.skipif(ipy is None, reason="ipywidgets is not installed")

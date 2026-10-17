@@ -1,7 +1,10 @@
 from sympy import (
     sin, cos, Piecewise, piecewise_fold, Interval, Union,
-    FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D
+    FiniteSet, Eq, Ne, Expr, Plane, Curve, Point3D,
+    And, Heaviside, ceiling, degree, floor, frac, limit, sign, solveset,
+    together, oo, S
 )
+from sympy.calculus.singularities import singularities
 from sympy.core.relational import Relational
 from sympy.geometry.line import LinearEntity3D
 # NOTE: from sympy import EmptySet is a different thing!!!
@@ -64,7 +67,7 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
                 while diff < 1:
                     diff *= 10
                     e -= 1
-                offset *= e
+                offset *= 10**e
 
             # prevent NaNs from happening at the ends of the interval
             if _set.left_open:
@@ -134,6 +137,180 @@ def _process_piecewise(piecewise, _range, label, **kwargs):
     return series
 
 
+def _jumps_to_piecewise(expr, _range, max_pieces=100):
+    """
+    Rewrite sign, Heaviside, floor, ceiling and frac as Piecewise over the
+    plotting range, so that their jumps are drawn with dots.
+
+    floor, ceiling and frac are rewritten only when their argument is linear
+    in the plotting variable and the range covers at most ``max_pieces``
+    integer steps. Otherwise they are left unchanged.
+    """
+    x, a, b = _range
+
+    def steps(g, kind):
+        if not g.is_polynomial(x) or degree(g, x) != 1:
+            return None
+        lo, hi = sorted([g.subs(x, a), g.subs(x, b)])
+        if hi - lo > max_pieces:
+            return None
+        if kind == "floor":
+            return Piecewise(*[
+                (k, (g >= k) & (g < k + 1))
+                for k in range(int(floor(lo)), int(floor(hi)) + 1)])
+        return Piecewise(*[
+            (k, (g > k - 1) & (g <= k))
+            for k in range(int(ceiling(lo)), int(ceiling(hi)) + 1)])
+
+    def rewrite(e):
+        g = e.args[0]
+        if isinstance(e, sign):
+            # the plotting variable is real; SymPy only rewrites sign of a
+            # real argument, so build the same Piecewise here
+            return Piecewise((1, g > 0), (-1, g < 0), (0, True))
+        if isinstance(e, Heaviside):
+            return e.rewrite(Piecewise)
+        new = steps(g, "ceiling" if isinstance(e, ceiling) else "floor")
+        if new is None:
+            return e
+        # frac(g) = g - floor(g)
+        return g - new if isinstance(e, frac) else new
+
+    def is_jump(e):
+        jump_types = (sign, Heaviside, floor, ceiling, frac)
+        return isinstance(e, jump_types) and e.has(x)
+
+    return piecewise_fold(expr.replace(is_jump, rewrite))
+
+
+def _removable_points(expr, _range, max_points=20):
+    """
+    Return the points of the plotting range where ``expr`` is undefined
+    (a zero of its denominator) but both one-sided limits are finite, as
+    for the hole of (x**2 - 1) / (x - 1) at x = 1 or the jump of
+    Abs(x) / x at x = 0. Poles are not returned.
+
+    Only denominators that are polynomials in the plotting variable are
+    examined. For a Piecewise, each piece is examined in the set where it
+    applies.
+    """
+    x, a, b = _range
+    if isinstance(expr, Piecewise):
+        points = set()
+        for e, s in expr.as_expr_set_pairs():
+            points.update(
+                c for c in _removable_points(e, _range, max_points)
+                if c in s)
+        return sorted(points)
+    den = together(expr).as_numer_denom()[1]
+    if not den.has(x) or not den.is_polynomial(x):
+        return []
+    zeros = solveset(den, x, Interval(a, b))
+    if not isinstance(zeros, FiniteSet) or len(zeros) > max_points:
+        return []
+    points = []
+    for c in sorted(zeros):
+        sides = (["-"] if c > a else []) + (["+"] if c < b else [])
+        try:
+            limits = [limit(expr, x, c, side) for side in sides]
+        except (NotImplementedError, ValueError, TypeError):
+            continue
+        if limits and all(lim.is_finite for lim in limits):
+            points.append(c)
+    return points
+
+
+def _pieces_and_sets(expr, _range):
+    """The pieces of ``expr``, each with the set where it applies, after
+    the functions that jump are rewritten as Piecewise."""
+    expr = _jumps_to_piecewise(expr, _range)
+    if isinstance(expr, Piecewise):
+        return expr.as_expr_set_pairs()
+    return [(expr, S.Reals)]
+
+
+def _real_singularities(e, x, domain):
+    """singularities(e, x, domain), without calling it for a polynomial."""
+    if e.is_polynomial(x):
+        return S.EmptySet
+    return singularities(e, x, domain)
+
+
+def _piece_ends(expr, _range):
+    """The ends of the pieces of ``expr`` in the plotting range."""
+    x, a, b = _range
+    ends = set()
+    try:
+        for e, s in _pieces_and_sets(expr, _range):
+            boundary = s.intersect(Interval(a, b)).boundary
+            if isinstance(boundary, FiniteSet):
+                ends.update(boundary)
+    except Exception:
+        pass
+    return ends
+
+
+def _infinite_limit(e, x, s, c):
+    """Whether a one-sided limit of ``e`` at ``c`` is infinite, from a side
+    of ``c`` where the set ``s`` of the piece applies."""
+    for d, t in (("-", c - 1), ("+", c + 1)):
+        if s.intersect(Interval(*sorted([c, t]))).measure:
+            if limit(e, x, c, d).has(oo, -oo, S.ComplexInfinity):
+                return True
+    return False
+
+
+def _vertical_asymptotes(expr, _range, max_points=50):
+    """Points inside the plotting range where a one-sided limit of ``expr``
+    is infinite. Empty if they cannot be computed."""
+    x, a, b = _range
+    window = Interval(a, b)
+    points = set()
+    try:
+        # quick exit, before the pieces are computed
+        if _real_singularities(expr, x, window).is_empty:
+            return []
+    except Exception:
+        pass
+    try:
+        for e, s in _pieces_and_sets(expr, _range):
+            s = s.intersect(window)
+            if s.is_empty:
+                continue
+            candidates = _real_singularities(e, x, window).intersect(
+                s.closure)
+            if candidates.is_empty:
+                continue
+            if (
+                not isinstance(candidates, FiniteSet)
+                or len(candidates) > max_points
+            ):
+                return []
+            points.update(
+                c for c in candidates
+                if c not in (a, b) and _infinite_limit(e, x, s, c))
+    except Exception:
+        return []
+    return sorted(points)
+
+
+def _prepare_piecewise(expr, _range):
+    """
+    Prepare an expression for ``_process_piecewise``: rewrite the functions
+    that jump, and remove from the domain the points where the expression is
+    undefined but has finite one-sided limits, so that they get empty dots.
+    """
+    # rewrite first: SymPy's limit can hang on an expression containing
+    # Heaviside, for example sin(x)/x + Heaviside(x - 1) at x = 0
+    expr = _jumps_to_piecewise(expr, _range)
+    points = _removable_points(expr, _range)
+    if points:
+        x = _range[0]
+        expr = piecewise_fold(
+            Piecewise((expr, And(*[Ne(x, c) for c in points]))))
+    return expr
+
+
 def _build_line_series(expr, r, label, **kwargs):
     """
     Loop over the provided arguments. If a piecewise function is found,
@@ -141,6 +318,8 @@ def _build_line_series(expr, r, label, **kwargs):
     """
     series = []
     pp = kwargs.get("process_piecewise", False)
+    if not callable(expr) and pp:
+        expr = _prepare_piecewise(expr, r)
     if not callable(expr) and expr.has(Piecewise) and pp:
         series += _process_piecewise(expr, r, label, **kwargs)
     else:
